@@ -3,6 +3,6 @@
 - [[BAT]キャメルスネーク変換](./[BAT]キャメルスネーク変換/ConvertCase/)
 - [[BAT]ファイル削除](./[BAT]ファイル削除/DeleteFile/)
 - [[PS]ファイル削除](./[BAT]ファイル削除/DeleteScript1/)
-- [[MCR]パターン作成](./[MCR]パターン作成/CREATE_PATTERN/)
+- [[MCR]パターン作成](https://github.com/mevius02/tool/blob/main/[MCR]パターン作成/CREATE_PATTERN.md)
 - [[MCR]CSV作成](./[MCR]CSVファイル作成/CREATE_CSV/)
 - [[MCR]SQL作成](./[MCR]SQL作成/CREATE_SQL/)
