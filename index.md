@@ -1,0 +1,8 @@
+- [[BAT]Log取得](./[BAT]Log取得/GetLog.md)
+- [[BAT]SQLバックアップ](./[BAT]SQLバックアップ/BackupSQL.md)
+- [[BAT]キャメルスネーク変換](./[BAT]キャメルスネーク変換/ConvertCase.md)
+- [[BAT]ファイル削除](./[BAT]ファイル削除/DeleteFile.md)
+- [[PS]ファイル削除](./[BAT]ファイル削除/DeleteScript1.md)
+- [[MCR]パターン作成](./[MCR]パターン作成/CREATE_PATTERN.md)
+- [[MCR]CSV作成](./[MCR]CSVファイル作成/CREATE_CSV.md)
+- [[MCR]SQL作成](./[MCR]SQL作成/CREATE_SQL.md)
