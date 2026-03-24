@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DeleteFile.bat</title>
+</head>
+<body>
+
+<pre id="code">ì«Ç›çûÇ›íÜ...</pre>
+
+<script>
+fetch("GetLog.bat")
+  .then(res => res.arrayBuffer())
+  .then(buf => {
+    const decoder = new TextDecoder("shift_jis");
+    document.getElementById("code").textContent =
+      decoder.decode(buf);
+  });
+</script>
+
+</body>
+</html>
