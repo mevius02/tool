@@ -1,4 +1,3 @@
-色名
 Black
 DarkBlue
 DarkGreen
