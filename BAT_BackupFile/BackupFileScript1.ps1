@@ -48,6 +48,7 @@ function LogInfo {
     Write-Host "[" -NoNewline
     Write-Host "INFO" -ForegroundColor Blue -NoNewline
     Write-Host "] " $Msg
+    Write-Information "[INFO]  $Msg"
 }
 # ■■■ ログ出力(WARN) ■■■■■■■■■■
 function LogWarn {
@@ -96,14 +97,14 @@ function IsMatchItemNm {
 ### ================================
 ###  メイン処理
 ### ================================
-LogInfo -Msg ""
+WriteLog -Lvl INFO -Msg ""
 $fileNm = Split-Path $PSCommandPath -Leaf
-LogInfo -Msg "■■■■■ 実行PS: $fileNm ■■■■■■■■■■"
+WriteLog -Lvl INFO -Msg "■■■■■ 実行PS: $fileNm ■■■■■■■■■■"
 
 ### === エラーチェック ==========
 # Backup対象 指定チェック
 if (-not $SourcePaths) {
-    LogError -Msg "Backup対象が指定されていません"
+    WriteLog -Lvl ERROR -Msg "Backup対象が指定されていません"
     exit 1
 }
 # Backup対象 存在チェック
@@ -139,19 +140,19 @@ foreach ($path in $SourcePaths) {
 if (0 -eq $BackupTgtPaths.Count -or 0 -lt $ErrPaths.Count) {
     LogError -Msg "Backup対象が存在しません"
     foreach ($errPath in $ErrPaths) {
-        LogError -Msg $errPath
+        WriteLog -Lvl ERROR -Msg $errPath
     }
     exit 1
 }
 # Backup先 指定チェック
 if (-not $DestPath -or $DestPath.Trim() -eq "") {
-    LogError -Msg "Backup先が指定されていません"
+    WriteLog -Lvl ERROR -Msg "Backup先が指定されていません"
     exit 1
 }
 # Backup先 存在チェック
 if (-not (Test-Path -LiteralPath $DestPath)) {
-    LogError -Msg "Backup先が存在しません"
-    LogError -Msg $DestPath
+    WriteLog -Lvl ERROR -Msg "Backup先が存在しません"
+    WriteLog -Lvl ERROR -Msg $DestPath
     exit 1
 }
 

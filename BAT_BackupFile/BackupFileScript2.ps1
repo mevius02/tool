@@ -2,10 +2,7 @@
 ###  Backup設定エリア(ユーザー編集はここだけ)
 ### ========================================
 # ●Backup対象(ファイル/フォルダ)パス(絶対パス)
-$SourcePaths = @(
-    "C:\Users\meviu\Desktop\TOOL\BAT_BackupFile\newFolder_test\新しいフォルダー1\FILE1.txt"
-    , "C:\Users\meviu\Desktop\TOOL\BAT_BackupFile\newFolder_test\新しいフォルダー2\新しいフォルダー2-1"
-)
+$SourcePaths = @()
 # ●Backup先パス
 $DestPath = "C:\Users\meviu\Desktop\TOOL\BAT_BackupFile\newFolder"
 # ●タイムスタンプ付与設定

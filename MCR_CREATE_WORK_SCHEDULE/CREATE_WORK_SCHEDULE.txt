@@ -1,0 +1,592 @@
+'変数未宣言エラー設定ON
+Option Explicit
+'------------------------------------------------------------
+'概要 : Sheet[勤務予定表/祝日]作成
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_WorkSchedule()
+    '処理中描画OFF設定
+    SetDrawProcess False
+
+    '●Loopカウンタ [i/j/k]
+    Dim i As Long, j As Long, k As Long
+    '●タイムスタンプ
+    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
+    '●Index(開始列/開始行/終了列/終了行)
+    Dim colStartIdx As Long
+    Dim rowStartIdx As Long
+    Dim colEndIdx As Long
+    Dim rowEndIdx As Long
+    '●範囲
+    Dim rng As Range
+
+    '●新規Sheet
+    Dim newSheet As Variant
+    '●新規Sheet名
+    Dim newSheetNm As String
+
+    '●入力年
+    Dim inputYear As Long
+    '●入力可能年範囲(1年前～10年後)
+    Dim minYear As Double: minYear = Year(Now) - 1
+    Dim maxYear As Double: maxYear = Year(Now) + 10
+
+    '●入力勤務時間
+    Dim inputWorkHr As Double
+    '●入力可能勤務時間範囲(0h～24h)
+    Dim minHr As Double: minHr = 0
+    Dim maxHr As Double: maxHr = 24
+
+    '●祝日Map(日付/祝日名)
+    Dim holidayMap As New Collection
+    '●祝日Map行
+    Dim holidayArr As Variant
+
+    '●祝日辞書(検索用)
+    Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
+
+    '●日数
+    Dim dateCnt As Integer: dateCnt = 1
+
+    '●前年/今年(罫線用)
+    Dim preYear As Long
+    Dim crntYear As Long
+    '●Border配列(罫線用)
+    Dim borderType As Variant
+
+    '●一時保持用(Date)
+    Dim tmpDate As Date
+
+    '========== 入力受付 作成年 ==========
+    inputYear = Int(InputForm_Num("", "作成する年を入力して下さい（" & minYear & "～" & maxYear & "）", Year(Now), minYear, maxYear))
+    'キャンセルの場合
+    If inputYear = -1 Then Exit Sub
+    '========== 入力受付 勤務時間数 ==========
+    inputWorkHr = InputForm_Num("", "勤務時間数を入力して下さい（" & minHr & "～" & maxHr & "）", 8, minHr, maxHr)
+    If inputWorkHr = -1 Then Exit Sub
+
+    '■■■■■■■■■■ Sheet[祝日]作成 (存在しない場合) & 詳細設定(1) ■■■■■■■■■■
+    newSheetNm = "祝日"
+    If Not IsExistsSheet(newSheetNm) Then
+        '========== Sheet作成 & 詳細設定(1) ==========
+        Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+        With newSheet
+            '●Sheet名
+            .name = newSheetNm
+            '●Tab色
+            .Tab.Color = RGB(&HF0, &H90, &H90) '#F09090
+            '●Cell固定文字列
+            .Range("A1").Value = "年"
+            .Range("B1").Value = "月日"
+            .Range("C1").Value = "祝日名"
+            .Range("D1").Value = "日数"
+            '●太字
+            .Range("A1:D1").Font.Bold = True
+            '●Cell背景色
+            .Range("A1:D1").Interior.Color = RGB(&HDA, &HE9, &HF8) '#DAE9F8
+            '●フィルター
+            .Range("A1:D1").AutoFilter
+            '●列幅
+            .Columns("A:B").ColumnWidth = 8
+            .Columns("C").ColumnWidth = 12
+            .Columns("D").ColumnWidth = 8
+            '●文字揃え
+            .Cells.VerticalAlignment = xlTop               '上揃え
+            .Cells.HorizontalAlignment = xlLeft            '左揃え
+            .Columns("A:B").HorizontalAlignment = xlCenter '文字揃え(横)
+            .Range("C1").HorizontalAlignment = xlCenter    '文字揃え(横)
+            .Columns("D").HorizontalAlignment = xlCenter   '文字揃え(横)
+        End With
+
+        '========== 祝日Map 作成 ==========
+        SetHolidayMap holidayMap, minYear, maxYear
+
+        '========== 祝日データセット ==========
+        preYear = minYear '現在年
+        For i = 1 To holidayMap.count
+            holidayArr = holidayMap(i)
+            '月日/祝日名 セット
+            newSheet.Cells(i + 1, "B").Value = holidayArr(0)
+            newSheet.Cells(i + 1, "C").Value = holidayArr(1)
+            crntYear = Year(newSheet.Cells(i + 1, "B").Value2)
+            '日数 セット
+            If preYear = crntYear Then
+                newSheet.Cells(i + 1, "D").Value = CStr(dateCnt)
+                dateCnt = dateCnt + 1
+            Else
+                newSheet.Cells(i + 1, "D").Value = 1
+                preYear = Year(newSheet.Cells(i + 1, "B").Value2)
+                dateCnt = 2
+            End If
+        Next i
+        'A列セット
+        newSheet.Range("A2:A" & holidayMap.count + 1).FormulaR1C1 = "=RC[1]"
+
+        '■■■■■ 詳細設定(2) ■■■■■
+        '●表示形式
+        newSheet.Range("A2:A" & holidayMap.count + 1).NumberFormatLocal = "yyyy"
+        newSheet.Range("B2:B" & holidayMap.count + 1).NumberFormatLocal = "m/d"
+        '●目盛線
+        ActiveWindow.DisplayGridlines = False
+        '●罫線1
+        Set rng = Range(newSheet.Cells(2, "A"), newSheet.Cells(holidayMap.count + 1, "D"))
+        With rng.Borders(xlInsideHorizontal)
+            .Weight = xlHairline
+            .ColorIndex = xlAutomatic
+        End With
+        '●罫線2
+        preYear = Year(newSheet.Range("B2").Value2)
+        For i = 3 To holidayMap.count + 1
+            crntYear = Year(newSheet.Cells(i, "B").Value2)
+            If preYear <> crntYear Then
+                With newSheet.Range("A" & i & ":D" & i).Borders(xlEdgeTop)
+                    .LineStyle = xlDouble
+                    .Weight = xlThick
+                End With
+                preYear = crntYear
+            End If
+        Next i
+        '●ウィンドウ枠の固定
+        newSheet.Activate
+        newSheet.Range("A2").Select
+        ActiveWindow.FreezePanes = True
+        '●条件付き書式(奇数行背景色)
+        Set rng = Range(newSheet.Cells(2, "A"), newSheet.Cells(holidayMap.count + 1, "D"))
+        rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242) '#F2F2F2
+    End If
+
+    '■■■■■■■■■■ 祝日辞書 作成 ■■■■■■■■■■
+    'Sheet[祝日]を作成しなかった場合、直接Sheetから取得、作成
+    Set newSheet = Sheets(newSheetNm)
+    If holidayDict.count = 0 And IsExistsSheet(newSheetNm) Then
+        rowEndIdx = newSheet.Cells(newSheet.Rows.count, "B").End(xlUp).row
+        For Each rng In newSheet.Range("B2:B" & rowEndIdx)
+            If IsDate(rng.Value) Then
+                holidayDict(CLng(CDate(rng.Value))) = True
+            End If
+        Next
+    End If
+
+    '■■■■■■■■■■ Sheet[YYYY]作成 ■■■■■■■■■■
+    '●一括セット用
+    Dim balkSetWeek(1 To 1, 1 To 31) As Variant '曜日
+    Dim balkSetDate(1 To 1, 1 To 31) As Variant '日付
+    Dim balkSetPlan(1 To 1, 1 To 31) As Variant '予
+    Dim balkSetAct(1 To 1, 1 To 31) As Variant  '実
+    Dim balkSetType(1 To 1, 1 To 31) As Variant '出リ
+
+    '========== Sheet存在チェック & Sheet名 作成 ==========
+    If Not IsExistsSheet(CStr(inputYear)) Then
+        newSheetNm = CStr(inputYear)
+    Else
+        newSheetNm = CStr(inputYear) & "_" & timestamp
+    End If
+
+    '========== Sheet作成 & 詳細設定(1) ==========
+    Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    With newSheet
+        '●Sheet名
+        .name = newSheetNm
+        '●文字揃え
+        .Cells.VerticalAlignment = xlTop    '上揃え
+        .Cells.HorizontalAlignment = xlLeft '左揃え
+    End With
+    '12か月分Loop
+    For i = 1 To 12
+        rowStartIdx = i * 12
+        With newSheet
+            '●Cell固定文字列
+            .Cells(rowStartIdx + 3, "A").Value = "予"
+            .Cells(rowStartIdx + 4, "A").Value = "実"
+            .Cells(rowStartIdx + 5, "A").Value = "出"
+            .Cells(rowStartIdx + 6, "A").Value = "備"
+            .Cells(rowStartIdx, "C").Value = DateSerial(inputYear, i, 1)
+            .Cells(rowStartIdx + 1, "AI").Value = "予定(日)"
+            .Cells(rowStartIdx + 2, "AI").Value = "予定(時)"
+            .Cells(rowStartIdx + 3, "AI").Value = "実績(日)"
+            .Cells(rowStartIdx + 4, "AI").Value = "実績(時)"
+            .Cells(rowStartIdx + 5, "AI").Value = "出社"
+            .Cells(rowStartIdx + 6, "AI").Value = "リモート"
+            .Cells(rowStartIdx + 7, "AI").Value = "出率"
+            .Cells(rowStartIdx + 1, "AJ").Formula = "=COUNT(C" & rowStartIdx + 3 & ":AG" & rowStartIdx + 3 & ")"
+            .Cells(rowStartIdx + 2, "AJ").Formula = "=LET(v, SUM(C" & rowStartIdx + 3 & ":AG" & rowStartIdx + 3 & "),IF(v = INT(v),TEXT(v, ""0"") & "" h"",TEXT(v, ""0.###"") & "" h""))"
+            .Cells(rowStartIdx + 3, "AJ").Formula = "=COUNT(C" & rowStartIdx + 4 & ":AG" & rowStartIdx + 4 & ")"
+            .Cells(rowStartIdx + 4, "AJ").Formula = "=LET(v, SUM(C" & rowStartIdx + 4 & ":AG" & rowStartIdx + 4 & "),IF(v = INT(v),TEXT(v, ""0"") & "" h"",TEXT(v, ""0.###"") & "" h""))"
+            .Cells(rowStartIdx + 5, "AJ").Formula = "=COUNTIF(C" & rowStartIdx + 5 & ":AG" & rowStartIdx + 5 & ",""出"")"
+            .Cells(rowStartIdx + 6, "AJ").Formula = "=COUNTIF(C" & rowStartIdx + 5 & ":AG" & rowStartIdx + 5 & ",""リ"")"
+            .Cells(rowStartIdx + 7, "AJ").Formula = "=AJ" & rowStartIdx + 5 & "/(AJ" & rowStartIdx + 5 & "+AJ" & rowStartIdx + 6 & ")"
+            .Cells(rowStartIdx + 2, "C").Formula = "=C" & rowStartIdx
+            For j = 1 To 31
+                '初期化
+                balkSetWeek(1, j) = ""
+                balkSetDate(1, j) = ""
+                balkSetPlan(1, j) = ""
+                balkSetAct(1, j) = ""
+                balkSetType(1, j) = ""
+                balkSetWeek(1, j) = "=TEXT(" & GetColNm(j + 2) & rowStartIdx + 2 & ",""aaa"")"
+                balkSetDate(1, j) = "=IF(" & GetColNm(j + 2) & rowStartIdx + 2 & "="""","""",IF(" & GetColNm(j + 2) & rowStartIdx + 2 & "+1<=EOMONTH($C$" & rowStartIdx & ",0)," & GetColNm(j + 2) & rowStartIdx + 2 & "+1,""""))"
+                '平日の場合、[勤務時間/出リ] セット
+                tmpDate = DateSerial(inputYear, i, j)
+                If Month(tmpDate) = i And weekday(tmpDate, vbMonday) <= 5 Then
+                    '祝日でない場合
+                    If Not holidayDict.exists(tmpDate) Then
+                        balkSetPlan(1, j) = inputWorkHr
+                        balkSetAct(1, j) = inputWorkHr
+                        balkSetType(1, j) = "リ"
+                    End If
+                End If
+            Next j
+            .Cells(rowStartIdx + 1, "C").Resize(1, 31).Formula = balkSetWeek
+            .Cells(rowStartIdx + 2, "D").Resize(1, 30).Formula = balkSetDate
+            .Cells(rowStartIdx + 3, "C").Resize(1, 31).Value = balkSetPlan
+            .Cells(rowStartIdx + 4, "C").Resize(1, 31).Value = balkSetAct
+            .Cells(rowStartIdx + 5, "C").Resize(1, 31).Value = balkSetType
+            '●太字
+            .Range("C" & rowStartIdx).Font.Bold = True
+            '●Cell背景色
+            .Cells(rowStartIdx + 3, "A").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            .Cells(rowStartIdx, "C").Interior.Color = RGB(218, 242, 208) '#DAF2D0
+            .Range(newSheet.Cells(rowStartIdx + 3, "C"), newSheet.Cells(rowStartIdx + 3, "AG")).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            .Range(newSheet.Cells(rowStartIdx + 1, "AI"), newSheet.Cells(rowStartIdx + 2, "AJ")).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            '●列幅
+            .Columns("A").ColumnWidth = 3
+            .Columns("B").ColumnWidth = 0.5
+            If Len(mid(inputWorkHr, InStr(inputWorkHr, ".") + 1)) < 2 Then
+                .Columns("C:AG").ColumnWidth = 3
+            Else
+                .Columns("C:AG").ColumnWidth = 4
+            End If
+            .Columns("AH").ColumnWidth = 0.5
+            .Columns("AI:AJ").ColumnWidth = 8
+            '●Cell結合
+            .Range("C" & rowStartIdx & ":AG" & rowStartIdx).Merge Across:=True
+            .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10).Merge
+            .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10).Merge
+            '●文字揃え
+            .Range("A" & rowStartIdx + 3 & ":A" & rowStartIdx + 6).HorizontalAlignment = xlCenter   '文字揃え(横)
+            .Range("C" & rowStartIdx & ":AG" & rowStartIdx + 5).HorizontalAlignment = xlCenter      '文字揃え(横)
+            .Range("AI" & rowStartIdx + 1 & ":AI" & rowStartIdx + 7).HorizontalAlignment = xlCenter '文字揃え(横)
+            .Range("AJ" & rowStartIdx + 1 & ":AJ" & rowStartIdx + 7).HorizontalAlignment = xlRight  '文字揃え(横)
+            .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10).VerticalAlignment = xlTop       '文字揃え(縦)
+            .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10).VerticalAlignment = xlTop      '文字揃え(縦)
+            '●表示形式
+            If i = 1 Then .Range("C" & rowStartIdx).NumberFormatLocal = "m"" 月 (""ggge""年)"""
+            If i <> 1 Then .Range("C" & rowStartIdx).NumberFormatLocal = "m"" 月"""
+            .Range("C" & rowStartIdx + 2 & ":AG" & rowStartIdx + 2).NumberFormatLocal = "d"
+            .Range("AJ" & rowStartIdx + 1).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & rowStartIdx + 3).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & rowStartIdx + 5).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & rowStartIdx + 6).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & rowStartIdx + 7).NumberFormatLocal = "0 %"
+            '●罫線
+            For j = 1 To 2
+                If j = 1 Then Set rng = .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10)
+                If j = 2 Then Set rng = .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10)
+                For Each borderType In Array(xlEdgeTop, xlEdgeBottom, xlEdgeLeft, xlEdgeRight, xlInsideHorizontal, xlInsideVertical)
+                    rng.Borders(borderType).Weight = xlThin
+                    rng.Borders(borderType).Color = RGB(191, 191, 191) '#BFBFBF
+                Next borderType
+            Next j
+            '●グループ化
+            .Range("A" & rowStartIdx + 1 & ":A" & rowStartIdx + 11).EntireRow.Group
+            '●条件付き書式(背景色)
+            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 5, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=C$" & rowStartIdx + 2 & "=""""").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B,C" & rowStartIdx + 2 & ")>0").Interior.Color = RGB(240, 144, 144) '#F09090
+            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowStartIdx + 2 & ",2)=7").Interior.Color = RGB(251, 226, 213) '#FBE2D5
+            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowStartIdx + 2 & ",2)=6").Interior.Color = RGB(218, 233, 248) '#DAE9F8
+        End With
+    Next i
+
+    '■■■■■ 詳細設定(2) ■■■■■
+    '●目盛線
+    ActiveWindow.DisplayGridlines = False
+    '●1～11行目まで削除
+    newSheet.Rows("1:11").Delete
+    '●行削除状態更新
+    ActiveSheet.UsedRange
+
+    SetDrawProcess True
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の描画を設定する
+'引数 : flg(True=描画ON / False=描画OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SetDrawProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg
+    Application.DisplayAlerts = flg
+End Sub
+'------------------------------------------------------------
+'概要 : sheetNmのSheetが存在するか判定し、結果を返す
+'引数 : sheetNm : Sheet名
+'戻値 : 判定結果(True=存在する / False=存在しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsSheet(sheetNm As String) As Boolean
+    '一時的にエラー処理OFF設定
+    On Error Resume Next
+    IsExistsSheet = Not Worksheets(sheetNm) Is Nothing
+    'エラー処理ON設定
+    On Error GoTo 0
+End Function
+'------------------------------------------------------------
+'概要 : 入力Form : 数値
+'引数 : title   : タイトル文
+'     : msg     : 説明文
+'     : initVal : 初期値
+'     : minNum  : 有効範囲(最小)
+'     : maxNum  : 有効範囲(最大)
+'戻値 : 入力値
+'備考 : キャンセル選択 or 範囲外エラーの場合 -1を返す
+'------------------------------------------------------------
+Public Function InputForm_Num(title As String, msg As String, initVal As String, minNum As Double, maxNum As Double) As Double
+    '●入力値
+    Dim inputVal As Variant
+    Dim inputValDbl As Double
+    '入力受付
+    inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
+    '=== キャンセル ==========
+    If VarType(inputVal) = vbBoolean And inputVal = False Then
+        InputForm_Num = -1
+        Exit Function
+    End If
+    'Double型変換
+    inputValDbl = CDbl(inputVal)
+    '=== 範囲チェック ==========
+    If inputValDbl < minNum Or maxNum < inputValDbl Then
+        MsgBox "範囲内で入力して下さい（" & minNum & " ～ " & maxNum & "）", vbExclamation
+        InputForm_Num = -1
+        Exit Function
+    End If
+    InputForm_Num = inputValDbl
+End Function
+'------------------------------------------------------------
+'概要 : 祝日Map作成、セット
+'     : 参照引数[holidayMap]にセットする
+'引数 : holidayMap : 祝日Map
+'     : minYear    : 祝日作成年(開始)
+'     : maxYear    : 祝日作成年(終了)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SetHolidayMap( _
+    ByRef holidayMap As Collection, _
+    ByVal minYear As Long, _
+    ByVal maxYear As Long)
+
+    '●Loopカウンタ [i/j/k]
+    Dim i As Long, j As Long, k As Long
+    '●祝日作成日付(開始)
+    Dim startDate As Date: startDate = DateSerial(minYear, 1, 1)
+    '●祝日作成日付(終了)
+    Dim endDate As Date: endDate = DateSerial(maxYear, 12, 31)
+    '●年
+    Dim y As Long
+    '●日
+    Dim d As Date
+    '●祝日Map行
+    Dim holidayArr As Variant
+
+    '========== 法定祝日 追加 ==========
+    For y = Year(startDate) To Year(endDate)
+        AddHolidayMap holidayMap, DateSerial(y, 1, 1), "元日"
+        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 1, 2, vbMonday), "成人の日"
+        AddHolidayMap holidayMap, DateSerial(y, 2, 11), "建国記念の日"
+        AddHolidayMap holidayMap, DateSerial(y, 2, 23), "天皇誕生日"
+        AddHolidayMap holidayMap, GetDateOfVernalEquinox(y), "春分の日"
+        AddHolidayMap holidayMap, DateSerial(y, 4, 29), "昭和の日"
+        AddHolidayMap holidayMap, DateSerial(y, 5, 3), "憲法記念日"
+        AddHolidayMap holidayMap, DateSerial(y, 5, 4), "みどりの日"
+        AddHolidayMap holidayMap, DateSerial(y, 5, 5), "こどもの日"
+        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 7, 3, vbMonday), "海の日"
+        AddHolidayMap holidayMap, DateSerial(y, 8, 11), "山の日"
+        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 9, 3, vbMonday), "敬老の日"
+        AddHolidayMap holidayMap, GetDateOfAutumnalEquinox(y), "秋分の日"
+        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 10, 2, vbMonday), "スポーツの日"
+        AddHolidayMap holidayMap, DateSerial(y, 11, 3), "文化の日"
+        AddHolidayMap holidayMap, DateSerial(y, 11, 23), "勤労感謝の日"
+    Next y
+    '========== 振替休日 追加 ==========
+    '(祝日が日曜日の場合、翌平日を休日とする)
+    For i = 1 To holidayMap.count
+        holidayArr = holidayMap(i)
+        d = holidayArr(0) '法定祝日
+        '法定祝日が日曜日の場合、翌日セット
+        If weekday(d, vbSunday) = vbSunday Then
+            d = d + 1
+            '翌日も祝日の場合、翌平日セット
+            Do While IsExistsHoliday(holidayMap, d)
+                d = d + 1
+            Loop
+            AddHolidayMap holidayMap, d, "振替休日"
+        End If
+    Next i
+    '========== 国民の祝日 追加 ==========
+    '(祝日に挟まれた平日は休日とする)
+    Dim holidayArr1 As Variant, holidayArr2 As Variant
+    '昇順ソート
+    SortHolidayMap holidayMap
+    For i = 1 To holidayMap.count - 1
+        holidayArr1 = holidayMap(i)
+        holidayArr2 = holidayMap(i + 1)
+        '1日だけ間が空いている場合
+        If holidayArr2(0) - holidayArr1(0) = 2 Then
+            AddHolidayMap holidayMap, holidayArr1(0) + 1, "国民の祝日"
+        End If
+    Next i
+    '昇順ソート
+    SortHolidayMap holidayMap
+
+End Sub
+'------------------------------------------------------------
+'概要 : 祝日Map 行追加
+'     : 参照引数[holidayMap]に1行追加する
+'引数 : holidayMap : 祝日Map
+'     : dt         : 祝日
+'     : nm         : 祝日名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub AddHolidayMap( _
+    ByRef holidayMap As Collection, _
+    ByVal dt As Date, _
+    ByVal nm As String)
+    '重複しない日付の場合
+    If Not IsExistsHoliday(holidayMap, dt) Then
+        holidayMap.Add Array(dt, nm)
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : 祝日Mapに存在する日付か判定し、結果を返す
+'引数 : holidayMap : 祝日Map
+'     : checkDate  : チェック日付
+'戻値 : 判定結果(True=存在する / False=存在しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsHoliday( _
+    ByRef holidayMap As Collection, _
+    ByVal checkDate As Date) As Boolean
+    '●Loopカウンタ [i]
+    Dim i As Long
+    '●祝日Map行
+    Dim holidayArr As Variant
+    For i = 1 To holidayMap.count
+        holidayArr = holidayMap(i)
+        If holidayArr(0) = checkDate Then
+            IsExistsHoliday = True
+            Exit Function
+        End If
+    Next i
+End Function
+'------------------------------------------------------------
+'概要 : y年のm月の第n w曜日の日付 取得
+'引数 : y : 年
+'     : m : 月
+'     : y : 第n
+'     : w : 曜日
+'戻値 : 日付
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDateOfWeekForMonth( _
+    ByVal y As Long, _
+    ByVal m As Long, _
+    ByVal n As Long, _
+    ByVal w As VbDayOfWeek) As Date
+    '●日付
+    Dim d As Date: d = DateSerial(y, m, 1)
+    Do While weekday(d, vbSunday) <> w
+        d = d + 1
+    Loop
+    GetDateOfWeekForMonth = d + (n - 1) * 7
+End Function
+'------------------------------------------------------------
+'概要 : 春分の日 取得(簡易近似式)
+'引数 : y : 年
+'戻値 : 日付(推測日)
+'備考 : 春分の日および秋分の日は、国立天文台の計算結果に基づき､官報で告示された日とする
+'------------------------------------------------------------
+Private Function GetDateOfVernalEquinox(ByVal y As Long) As Date
+    '●日付
+    Dim d As Integer
+    Select Case y
+        Case 1900 To 1979
+            d = Int(20.8357 + 0.242194 * (y - 1980) - Int((y - 1983) / 4))
+        Case 1980 To 2099
+            d = Int(20.8431 + 0.242194 * (y - 1980) - Int((y - 1980) / 4))
+        Case Else
+            d = 20
+    End Select
+    GetDateOfVernalEquinox = DateSerial(y, 3, d)
+End Function
+'------------------------------------------------------------
+'概要 : 秋分の日 取得(簡易近似式)
+'引数 : y : 年
+'戻値 : 日付(推測日)
+'備考 : 春分の日および秋分の日は、国立天文台の計算結果に基づき､官報で告示された日とする
+'------------------------------------------------------------
+Private Function GetDateOfAutumnalEquinox(ByVal y As Long) As Date
+    '●日付
+    Dim d As Integer
+    Select Case y
+        Case 1900 To 1979
+            d = Int(23.2588 + 0.242194 * (y - 1980) - Int((y - 1983) / 4))
+        Case 1980 To 2099
+            d = Int(23.2488 + 0.242194 * (y - 1980) - Int((y - 1980) / 4))
+        Case Else
+            d = 23
+    End Select
+    GetDateOfAutumnalEquinox = DateSerial(y, 9, d)
+End Function
+'------------------------------------------------------------
+'概要 : 昇順ソート
+'引数 : holidayMap : 祝日Map
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SortHolidayMap(ByRef holidayMap As Collection)
+    '●Loopカウンタ [i/j]
+    Dim i As Long, j As Long
+    '●祝日Map行
+    Dim holidayArr As Variant
+    '●一時用
+    Dim tmp As Variant
+
+    '変換[Collection → 配列]
+    ReDim holidayArr(1 To holidayMap.count)
+    For i = 1 To holidayMap.count
+        holidayArr(i) = holidayMap(i)
+    Next i
+    'バブルソート(日付で昇順)
+    For i = 1 To UBound(holidayArr) - 1
+        For j = i + 1 To UBound(holidayArr)
+            '次行の方が小さい場合、入替
+            If holidayArr(j)(0) < holidayArr(i)(0) Then
+                tmp = holidayArr(i)
+                holidayArr(i) = holidayArr(j)
+                holidayArr(j) = tmp
+            End If
+        Next j
+    Next i
+    '変換[配列 → Collection]
+    Set holidayMap = New Collection
+    For i = 1 To UBound(holidayArr)
+        holidayMap.Add holidayArr(i)
+    Next i
+End Sub
+'------------------------------------------------------------
+'概要 : 列Indexから列名(アルファベット)を返す
+'引数 : colIdx : 列Index
+'戻値 : 列名(アルファベット)
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColNm(colIdx As Long) As String
+    GetColNm = Split(Cells(1, colIdx).Address(True, False), "$")(0)
+End Function
+

@@ -45,84 +45,16 @@ $ExistsFolderPaths = @()
 $ErrPaths = @()
 
 ### ========================================
-###  関数
+###  PSM1ファイル読込
 ### ========================================
-# ■■■ ログ出力(INFO) ■■■■■■■■■■
-function LogInfo {
-    param([string]$Msg)
-    Write-Host "[" -NoNewline
-    Write-Host "INFO" -ForegroundColor Blue -NoNewline
-    Write-Host "] " $Msg
-}
-# ■■■ ログ出力(WARN) ■■■■■■■■■■
-function LogWarn {
-    param([string]$Msg)
-    Write-Host "[" -NoNewline
-    Write-Host "WARN" -ForegroundColor Yellow -NoNewline
-    Write-Host "] " $Msg
-}
-# ■■■ ログ出力(ERROR) ■■■■■■■■■■
-function LogError {
-    param([string]$Msg)
-    Write-Host "[" -NoNewline
-    Write-Host "ERROR" -ForegroundColor Red -NoNewline
-    Write-Host "]" $Msg
-}
+Import-Module "$PSScriptRoot\DeleteFileModule.psm1"
 
-# ■■■ ゴミ箱削除 ■■■■■■■■■■
-function RemoveItem {
-    param([string]$Path, [switch]$Recurse)
-    ### === 削除 ==========
-    try {
-        # 最下層まで削除する場合
-        if ($Recurse) {
-            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
-        } else {
-            Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
-        }
-    } catch {
-        if ($ErrCheckFlg) {
-            LogError -Msg "削除に失敗しました"
-            throw
-        }
-    }
-}
-
-# ■■■ 配下一覧 取得 ■■■■■■■■■■
-function GetChildItems {
-    param([string]$Path, [switch]$Recurse)
-    try {
-        if ($Recurse) {
-            return Get-ChildItem -LiteralPath $Path -Recurse -ErrorAction Stop
-        } else {
-            return Get-ChildItem -LiteralPath $Path -ErrorAction Stop
-        }
-    } catch {
-        if ($ErrCheckFlg) {
-            throw
-        } else {
-            # 空配列返却
-            return @()
-        }
-    }
-}
-
-# ■■■ ファイル/フォルダ名 一致判定 ■■■■■■■■■■
-function IsMatchItemNm {
-    param($name)
-    # === [前方一致/後方一致/部分一致] いずれか一致しない場合 ==========
-    if ($MatchPrefix   -ne "" -and -not $name.StartsWith($MatchPrefix)) { return $false }
-    if ($MatchSuffix   -ne "" -and -not $name.EndsWith($MatchSuffix))   { return $false }
-    if ($MatchContains -ne "" -and -not $name.Contains($MatchContains)) { return $false }
-    return $true
-}
-
-### ================================
+### ========================================
 ###  メイン処理
-### ================================
-LogInfo -Msg ""
+### ========================================
+WriteLog -Lvl INFO -Msg ""
 $fileNm = Split-Path $PSCommandPath -Leaf
-LogInfo -Msg "■■■■■ 実行PS: $fileNm ■■■■■■■■■■"
+WriteLog -Lvl INFO -Msg "■■■■■ 実行PS: $fileNm ■■■■■■■■■■"
 
 if ($ErrCheckFlg)      { LogInfo -Msg "指定パス未存在時エラー終了: ON" }
 if (-not $ErrCheckFlg) { LogWarn -Msg "指定パス未存在時エラー終了: OFF" }
@@ -160,10 +92,10 @@ foreach ($path in $DelFolderPaths) {
 }
 # 出力
 if (0 -lt $ErrPaths.Count) {
-    LogInfo -Msg ""
-    LogError -Msg "指定パスが存在しません"
+    WriteLog -Lvl INFO -Msg ""
+    WriteLog -Lvl ERROR -Msg "指定パスが存在しません"
     foreach ($errPath in $ErrPaths) {
-        LogError -Msg $errPath
+        WriteLog -Lvl ERROR -Msg $errPath
     }
     # エラー終了設定の場合
     if ($ErrCheckFlg) {
@@ -174,24 +106,24 @@ if (0 -lt $ErrPaths.Count) {
 ### === 削除 ==========
 # --- ファイル ----------
 if ($ExistsFilePaths) {
-    LogInfo -Msg ""
-    LogInfo -Msg "=== ファイル削除 ==========" 
+    WriteLog -Lvl INFO -Msg ""
+    WriteLog -Lvl INFO -Msg "=== ファイル削除 ==========" 
 }
 foreach ($path in $ExistsFilePaths) {
-    LogInfo -Msg $path
+    WriteLog -Lvl INFO -Msg $path
     # 削除
     RemoveItem -Path $path
 }
 
 # --- フォルダ内 ----------
 if ($ExistsContentsPaths) {
-    LogInfo -Msg ""
-    LogInfo -Msg "=== フォルダ内削除 =========="
+    WriteLog -Lvl INFO -Msg ""
+    WriteLog -Lvl INFO -Msg "=== フォルダ内削除 =========="
 }
 foreach ($path in $ExistsContentsPaths) {
     # ●削除成功フラグ
     $deletedFlg = $false
-    LogInfo -Msg $path
+    WriteLog -Lvl INFO -Msg $path
     # 配下のファイル/フォルダ一覧 取得
     $items = GetChildItems -Path $path
     foreach ($item in $items) {
@@ -214,20 +146,20 @@ foreach ($path in $ExistsContentsPaths) {
     }
     # 削除対象無しの場合
     if (-not $deletedFlg) {
-        LogWarn -Msg "フォルダ内に削除対象がありません"
+        WriteLog -Lvl WARN -Msg "フォルダ内に削除対象がありません"
     }
 }
 
 # --- フォルダごと ----------
 if ($ExistsFolderPaths) {
-    LogInfo -Msg ""
-    LogInfo -Msg "=== フォルダごと削除 =========="
+    WriteLog -Lvl INFO -Msg ""
+    WriteLog -Lvl INFO -Msg "=== フォルダごと削除 =========="
 }
 foreach ($path in $ExistsFolderPaths) {
     LogInfo -Msg $path
     $items = GetChildItems -Path $path -Recurse
     foreach ($item in $items) {
-        LogInfo -Msg $($item.FullName)
+        WriteLog -Lvl INFO -Msg $($item.FullName)
     }
     RemoveItem -Path $path -Recurse
 }

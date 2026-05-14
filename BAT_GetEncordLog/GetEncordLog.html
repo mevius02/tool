@@ -13,7 +13,7 @@ body { font-family: monospace; white-space: pre; }
 
 <script>
 // ★★★★★ ここだけ修正 ★★★★★
-fetch("DeleteFile.bat")
+fetch("GetEncordLog.bat")
   .then(res => res.arrayBuffer())
   .then(buf => {
     const uint = new Uint8Array(buf);
