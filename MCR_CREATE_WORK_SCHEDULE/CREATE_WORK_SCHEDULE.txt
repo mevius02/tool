@@ -218,6 +218,7 @@ Public Sub CreateSheet_WorkSchedule()
             .Cells(rowStartIdx + 6, "AJ").Formula = "=COUNTIF(C" & rowStartIdx + 5 & ":AG" & rowStartIdx + 5 & ",""リ"")"
             .Cells(rowStartIdx + 7, "AJ").Formula = "=AJ" & rowStartIdx + 5 & "/(AJ" & rowStartIdx + 5 & "+AJ" & rowStartIdx + 6 & ")"
             .Cells(rowStartIdx + 2, "C").Formula = "=C" & rowStartIdx
+            '31日分Loop
             For j = 1 To 31
                 '初期化
                 balkSetWeek(1, j) = ""
@@ -337,7 +338,7 @@ Private Function IsExistsSheet(sheetNm As String) As Boolean
     On Error GoTo 0
 End Function
 '------------------------------------------------------------
-'概要 : 入力Form : 数値
+'概要 : 入力Form(数値)
 '引数 : title   : タイトル文
 '     : msg     : 説明文
 '     : initVal : 初期値
@@ -489,7 +490,7 @@ End Function
 '概要 : y年のm月の第n w曜日の日付 取得
 '引数 : y : 年
 '     : m : 月
-'     : y : 第n
+'     : n : 第n
 '     : w : 曜日
 '戻値 : 日付
 '備考 : -
@@ -545,7 +546,7 @@ Private Function GetDateOfAutumnalEquinox(ByVal y As Long) As Date
     GetDateOfAutumnalEquinox = DateSerial(y, 9, d)
 End Function
 '------------------------------------------------------------
-'概要 : 昇順ソート
+'概要 : 昇順ソート(祝日Map用)
 '引数 : holidayMap : 祝日Map
 '戻値 : -
 '備考 : -
