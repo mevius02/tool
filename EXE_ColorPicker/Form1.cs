@@ -57,7 +57,7 @@ namespace ColorPicker
         Form magnifierForm = new Form();
         PictureBox magnifierBox = new PictureBox();
 
-        // ★ コンストラクタ（正しい位置）
+        // コンストラクタ
         public Form1()
         {
             this.FormBorderStyle = FormBorderStyle.None;
@@ -66,7 +66,7 @@ namespace ColorPicker
             this.ControlBox = false;
             this.BackColor = Color.White;
 
-            // Form の初期サイズ
+            // Formサイズ
             this.Size = new Size(120, 50);
 
             // 色パネル
@@ -75,7 +75,7 @@ namespace ColorPicker
             panelColor.Paint += PanelColor_Paint;
             this.Controls.Add(panelColor);
 
-            // % レイアウト
+            // レイアウト
             this.Resize += (s, e) => LayoutColorPanel();
             LayoutColorPanel();
 

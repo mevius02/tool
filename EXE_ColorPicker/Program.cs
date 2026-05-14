@@ -11,7 +11,7 @@ internal static class Program
     [STAThread]
     static void Main()
     {
-        SetProcessDPIAware(); // ← これがズレを完全に消す
+        SetProcessDPIAware(); // ズレ解消
 
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
