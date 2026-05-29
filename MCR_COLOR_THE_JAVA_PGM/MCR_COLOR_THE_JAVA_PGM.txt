@@ -1,0 +1,375 @@
+'変数未宣言エラー設定ON
+Option Explicit
+'------------------------------------------------------------
+'概要 : Main
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub Main()
+    '処理中描画OFF設定
+    SetDrawProcess True
+
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.count, 2).End(xlUp).row
+    Dim rng As Range: Set rng = Range(ws.Cells(1, "B"), ws.Cells(lastRow, "B"))
+
+    ColorTheJavaPgm rng
+
+    '処理中描画ON設定
+    SetDrawProcess False
+End Sub
+'------------------------------------------------------------
+'概要 : Javaプログラムに文字色を付ける
+'引数 : tgtRng : 対象セル範囲
+'戻値 : -
+'備考 : 完全な着色は不可(別ファイル起因など)
+'     : ※処理時間かかるので、大量変換する場合、部分的にコメントアウト推奨
+'------------------------------------------------------------
+Private Sub ColorTheJavaPgm(tgtRng As Range)
+    '●Loopカウンタ [i/j/k]
+    Dim i As Long, j As Long, k As Long
+    '●範囲/範囲値リスト
+    Dim rng As Range
+    Dim rngVals As Variant
+
+    '●予約語リスト
+    Dim ctrlDict As Object: Set ctrlDict = CreateObject("Scripting.Dictionary")     '制御
+    Dim declDict As Object: Set declDict = CreateObject("Scripting.Dictionary")     '宣言
+    Dim accessDict As Object: Set accessDict = CreateObject("Scripting.Dictionary") 'アクセス修飾子
+    Dim refDict As Object: Set refDict = CreateObject("Scripting.Dictionary")       '参照
+    Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")     '型
+    Dim constDict As Object: Set constDict = CreateObject("Scripting.Dictionary")   '定数
+
+    '●フォント
+    Dim fontIni As String: fontIni = "Consolas" '(初期)
+    '●色
+    Dim color As Long
+    Dim bgColorIni As Long: bgColorIni = RGB(30, 30, 30)              '#1E1E1E (初期)背景色
+    Dim colorStrIni As Long: colorStrIni = RGB(212, 212, 212)         '#D4D4D4 (初期)文字色
+    Dim colorPurple As Long: colorPurple = RGB(197, 134, 192)         '#C586C0 制御
+    Dim colorBlue As Long: colorBlue = RGB(86, 156, 214)              '#569CD6 宣言/定数/アクセス修飾子
+    Dim colorGreen As Long: colorGreen = RGB(78, 201, 176)            '#4EC9B0 型
+    Dim colorYellow As Long: colorYellow = RGB(220, 220, 170)         '#DCDCAA 関数
+    Dim colorLightBlue As Long: colorLightBlue = RGB(156, 220, 254)   '#9CDCFE 定数
+    Dim colorOrange As Long: colorOrange = RGB(206, 145, 120)         '#CE9178 固定文字列
+    Dim colorCmnt As Long: colorCmnt = RGB(106, 153, 85)              '#6A9955 コメント
+    Dim colorBrktYellow As Long: colorBrktYellow = RGB(255, 215, 0)   '#FFD700 括弧(黄)
+    Dim colorBrktPurple As Long: colorBrktPurple = RGB(197, 134, 192) '#C586C0 括弧(紫)
+    Dim colorBrktBlue As Long: colorBrktBlue = RGB(23, 159, 255)      '#179FFF 括弧(青)
+
+    '●1行
+    Dim txt As String
+    '●1行文字数
+    Dim txtLen As Long
+    '●単語
+    Dim word As String
+    '●始点/終点/スラッシュ位置
+    Dim bgnIdx As Long, endIdx As Long, slashIdx As Long
+    '●1文字
+    Dim ch As String
+
+    '●区切り文字リスト
+    Dim dlmtDict As Object: Set dlmtDict = CreateObject("Scripting.Dictionary")
+    dlmtDict(" ") = True
+    dlmtDict("(") = True
+    dlmtDict(")") = True
+    dlmtDict("{") = True
+    dlmtDict("}") = True
+    dlmtDict("[") = True
+    dlmtDict("]") = True
+    dlmtDict("<") = True
+    dlmtDict(">") = True
+    dlmtDict(",") = True
+    dlmtDict(".") = True
+    dlmtDict(":") = True
+    dlmtDict(";") = True
+    dlmtDict("=") = True
+    dlmtDict("+") = True
+    dlmtDict("-") = True
+    dlmtDict("*") = True
+    dlmtDict("/") = True
+    dlmtDict("!") = True
+    dlmtDict("&") = True
+    dlmtDict("|") = True
+
+    '●packageフラグ
+    Dim pkgFlg As Boolean: pkgFlg = False
+    '●importフラグ
+    Dim impFlg As Boolean: impFlg = False
+    '●annotationフラグ
+    Dim anoFlg As Boolean: anoFlg = False
+    '●classフラグ
+    Dim clsFlg As Boolean: clsFlg = False
+    '●直前型フラグ(変数定義フラグ)
+    Dim preTypeFlg As Boolean: preTypeFlg = False
+    '●コメント行フラグ
+    Dim cmntFlg As Boolean: cmntFlg = False
+
+    '●Class名
+    Dim clsNm As String
+
+    '●変数名リスト
+    Dim varNmDict As Object: Set varNmDict = CreateObject("Scripting.Dictionary")
+
+    '●予約語(制御)
+    ctrlDict("new") = True
+    ctrlDict("throw") = True
+    ctrlDict("throws") = True
+    ctrlDict("if") = True
+    ctrlDict("else") = True
+    ctrlDict("switch") = True
+    ctrlDict("case") = True
+    ctrlDict("for") = True
+    ctrlDict("while") = True
+    ctrlDict("break") = True
+    ctrlDict("try") = True
+    ctrlDict("catch") = True
+    ctrlDict("finally") = True
+    ctrlDict("return") = True
+    '●予約語(宣言)
+    declDict("package") = True
+    declDict("import") = True
+    declDict("class") = True
+    declDict("extends") = True
+    declDict("implements") = True
+    declDict("interface") = True
+    '●予約語(アクセス修飾子)
+    accessDict("public") = True
+    accessDict("private") = True
+    accessDict("protected") = True
+    accessDict("static") = True
+    accessDict("final") = True
+    '●予約語(参照)
+    refDict("super") = True
+    refDict("this") = True
+    '●予約語(型)
+    typeDict("void") = True
+    typeDict("String") = True
+    typeDict("Integer") = True
+    typeDict("int") = True
+    typeDict("Short") = True
+    typeDict("short") = True
+    typeDict("Long") = True
+    typeDict("long") = True
+    typeDict("Double") = True
+    typeDict("double") = True
+    typeDict("Boolean") = True
+    typeDict("boolean") = True
+    typeDict("Byte") = True
+    typeDict("byte") = True
+    typeDict("StringBuilder") = True
+    typeDict("System") = True
+    typeDict("ApplicatinException") = True
+    typeDict("NullPointerException") = True
+    typeDict("NumberFormatException") = True
+    typeDict("NegativeArraySizeException") = True
+    '●予約語(定数)
+    constDict("null") = True
+    constDict("true") = True
+    constDict("false") = True
+
+    '●括弧合計数
+    Dim brktCnt As Long
+
+    '全行データ取得
+    rngVals = tgtRng.Value2
+
+    '1行ずつループ
+    For Each rng In tgtRng
+        txt = CStr(rng.Value2) '1行文字列
+        txtLen = Len(txt)      '1行文字数
+
+        '========== 初期化 ==========
+        rng.Interior.color = bgColorIni '背景色
+        rng.Font.color = colorStrIni    '文字色
+        rng.Font.name = fontIni         'フォント
+        pkgFlg = False
+        impFlg = False
+        clsFlg = False
+        preTypeFlg = False
+
+        '文字列桁数Loop
+        i = 1
+        Do While i <= txtLen
+            '========== 単語切り抜き ==========
+            '始点
+            Do While i <= txtLen And dlmtDict.exists(mid$(txt, i, 1))
+                i = i + 1
+            Loop
+            If txtLen < i Then Exit Do
+            bgnIdx = i
+            '終点
+            Do While i <= txtLen And Not dlmtDict.exists(mid$(txt, i, 1))
+                i = i + 1
+            Loop
+            endIdx = i - 1
+            '判定
+            If bgnIdx <= endIdx Then
+                '単語
+                word = mid$(txt, bgnIdx, endIdx - bgnIdx + 1)
+                '色コード(初期)
+                color = -1
+                '●Class名(Class定義場所以外)
+                If clsNm = word Then
+                    color = colorGreen
+                '●Class名(Class定義場所)
+                ElseIf clsFlg Then
+                    color = colorGreen
+                    clsFlg = False
+                    clsNm = word
+                '●package/import
+                ElseIf pkgFlg Or impFlg Then
+                    If accessDict.exists(word) Then
+                        color = colorBlue
+                    Else
+                        color = colorGreen
+                    End If
+                '●アノテーション
+                ElseIf Left(word, 1) = "@" Then
+                    rng.Characters(bgnIdx + 1, endIdx - bgnIdx + 1).Font.color = colorGreen
+                '●制御
+                ElseIf ctrlDict.exists(word) Then
+                    color = colorPurple
+                '●宣言
+                ElseIf declDict.exists(word) Then
+                    color = colorBlue
+                    If word = "package" Then pkgFlg = True
+                    If word = "import" Then impFlg = True
+                    If word = "class" Then clsFlg = True
+                '●アクセス修飾子
+                ElseIf accessDict.exists(word) Then
+                    color = colorBlue
+                '●参照
+                ElseIf refDict.exists(word) Then
+                    color = colorBlue
+                '●型
+                ElseIf typeDict.exists(word) Then
+                    color = colorGreen
+                    preTypeFlg = True
+                '●関数名
+                ElseIf endIdx < txtLen And mid$(txt, endIdx + 1, 1) = "(" Then
+                    color = colorYellow
+                '●変数宣言(直前が型の場合)
+                ElseIf preTypeFlg Then
+                    If varNmDict.exists(word) Then
+                        color = colorLightBlue
+                        preTypeFlg = False
+                    ElseIf Not typeDict.exists(word) Then
+                        color = colorLightBlue
+                        preTypeFlg = False
+                        varNmDict(word) = True
+                    End If
+                '●定数
+                ElseIf constDict.exists(word) Then
+                    color = colorBlue
+                '●数値/変数名
+                ElseIf IsNumeric(word) Or varNmDict.exists(word) Then
+                    color = colorLightBlue
+                End If
+                '色セット
+                If color <> -1 Then rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.color = color
+            End If
+            endIdx = i - 1
+        Loop
+
+        'ImportClass名 保持
+        If impFlg Then typeDict(word) = True
+
+        '●括弧 (){}[]
+        For i = 1 To txtLen
+            ch = mid$(txt, i, 1)
+            If ch = "{" Or ch = "(" Or ch = "[" Then
+                brktCnt = brktCnt + 1
+                Select Case ((brktCnt - 1) Mod 3) + 1
+                    Case 1: color = colorBrktYellow
+                    Case 2: color = colorBrktPurple
+                    Case 3: color = colorBrktBlue
+                End Select
+                rng.Characters(i, 1).Font.color = color
+            ElseIf ch = "}" Or ch = ")" Or ch = "]" Then
+                Select Case ((brktCnt - 1) Mod 3) + 1
+                    Case 1: color = colorBrktYellow
+                    Case 2: color = colorBrktPurple
+                    Case 3: color = colorBrktBlue
+                End Select
+                rng.Characters(i, 1).Font.color = color
+                brktCnt = brktCnt - 1
+            End If
+        Next
+
+        '●固定文字列
+        bgnIdx = 1
+        Do While bgnIdx <= txtLen
+            '始点
+            bgnIdx = InStr(bgnIdx, txt, """", vbBinaryCompare)
+            If bgnIdx = 0 Then Exit Do
+            '終点
+            endIdx = InStr(bgnIdx + 1, txt, """", vbBinaryCompare)
+            If 0 < endIdx Then
+                rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.color = colorOrange
+                bgnIdx = endIdx + 1
+            End If
+        Loop
+
+        '●コメント
+        'コメント続きの場合
+        If cmntFlg Then
+            endIdx = InStr(1, txt, "*/", vbBinaryCompare)
+            '*/が行内に有る場合
+            If 0 < endIdx Then
+                rng.Characters(1, endIdx + 1).Font.color = colorCmnt
+                cmntFlg = False
+            Else
+                rng.Characters(1, txtLen).Font.color = colorCmnt
+            End If
+        Else
+            '"//" 位置特定
+            slashIdx = InStr(1, txt, "//", vbBinaryCompare)
+            '"/*" or "/**" 位置特定
+            bgnIdx = InStr(1, txt, "/*", vbBinaryCompare)
+            '// の場合
+            If 0 < slashIdx And (bgnIdx = 0 Or slashIdx < bgnIdx) Then
+                Dim quoteCnt As Long
+                quoteCnt = Len(Left$(txt, slashIdx - 1)) - Len(Replace(Left$(txt, slashIdx - 1), """", ""))
+                '偶数=文字列外
+                If quoteCnt Mod 2 = 0 Then rng.Characters(slashIdx, txtLen - slashIdx + 1).Font.color = colorCmnt
+            '/* or /** の場合
+            ElseIf 0 < bgnIdx Then
+                quoteCnt = Len(Left$(txt, bgnIdx - 1)) - Len(Replace(Left$(txt, bgnIdx - 1), """", ""))
+                If quoteCnt Mod 2 = 0 Then
+                    endIdx = InStr(bgnIdx + 2, txt, "*/", vbBinaryCompare)
+                    '*/ が行内に有る場合
+                    If 0 < endIdx Then
+                        rng.Characters(bgnIdx, endIdx - bgnIdx + 2).Font.color = colorCmnt
+                    Else
+                        rng.Characters(bgnIdx, txtLen - bgnIdx + 1).Font.color = colorCmnt
+                        cmntFlg = True
+                    End If
+                End If
+            End If
+        End If
+        '●日本語フォント変更
+        For i = 1 To txtLen
+            ch = mid$(txt, i, 1)
+            If ch Like "[一-龠ぁ-んァ-ン]" Then rng.Characters(i, 1).Font.name = "Yu Gothic UI"
+        Next
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の描画を設定する
+'引数 : flg(True=描画ON / False=描画OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SetDrawProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg
+    Application.DisplayAlerts = flg
+    Application.EnableEvents = flg
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic
+    Else
+        Application.Calculation = xlCalculationManual
+    End If
+End Sub
+
