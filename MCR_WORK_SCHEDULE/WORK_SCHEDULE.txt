@@ -64,7 +64,7 @@ Public Sub CreateSheet_WorkSchedule()
     'キャンセルの場合
     If inputYear = -1 Then Exit Sub
     '========== 入力受付 勤務時間数 ==========
-    inputWorkHr = InputForm_Num("", "勤務時間数を入力して下さい（" & minHr & "～" & maxHr & "）", 8, minHr, maxHr)
+    inputWorkHr = InputForm_Num("", "1日の勤務時間数を入力して下さい（" & minHr & "～" & maxHr & "）", 8, minHr, maxHr)
     If inputWorkHr = -1 Then Exit Sub
 
     '■■■■■■■■■■ Sheet[祝日]作成 (存在しない場合) & 詳細設定(1) ■■■■■■■■■■
