@@ -343,6 +343,12 @@ End Sub
 Private Sub SetDrawProcess(ByVal flg As Boolean)
     Application.ScreenUpdating = flg
     Application.DisplayAlerts = flg
+    Application.EnableEvents = flg
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic
+    Else
+        Application.Calculation = xlCalculationManual
+    End If
 End Sub
 '------------------------------------------------------------
 '概要 : sheetNmのSheetが存在するか判定し、結果を返す
