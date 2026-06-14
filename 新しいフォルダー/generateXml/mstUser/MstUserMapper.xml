@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.progmat.ut.common.infra.mapper.mstUser.MstUserMapper">
+
+	<select id="select" resultType="jp.progmat.ut.common.domain.entity.mstUser.MstUserEntity">
+		SELECT
+		<if test="distinct">
+		DISTINCT
+		</if>
+			user_id,
+			password,
+			user_name,
+			insert_user_id,
+			insert_datetime,
+			update_user_id,
+			update_datetime,
+			delete_flg
+		FROM mst_user
+		WHERE
+			user_id IS NOT NULL
+		<if test="where.userId != null">
+			AND user_id = #{where.userId}
+		</if>
+		<if test="where.password != null">
+			AND password = #{where.password}
+		</if>
+		<if test="where.userName != null">
+			AND user_name = #{where.userName}
+		</if>
+		<if test="where.insertUserId != null">
+			AND insert_user_id = #{where.insertUserId}
+		</if>
+		<if test="where.insertDatetime != null">
+			AND insert_datetime = #{where.insertDatetime}
+		</if>
+		<if test="where.updateUserId != null">
+			AND update_user_id = #{where.updateUserId}
+		</if>
+		<if test="where.updateDatetime != null">
+			AND update_datetime = #{where.updateDatetime}
+		</if>
+		<if test="where.deleteFlg != null">
+			AND delete_flg = #{where.deleteFlg}
+		</if>
+		<if test="orderBy != null">
+		ORDER BY
+			 ${orderBy}
+		</if>
+	</select>
+
+	<select id="count" resultType="java.lang.Long">
+		SELECT
+		<if test="distinct">
+		DISTINCT
+		</if>
+			COUNT(*)
+		FROM mst_user
+		WHERE
+			user_id IS NOT NULL
+		<if test="where.userId != null">
+			AND user_id = #{where.userId}
+		</if>
+		<if test="where.password != null">
+			AND password = #{where.password}
+		</if>
+		<if test="where.userName != null">
+			AND user_name = #{where.userName}
+		</if>
+		<if test="where.insertUserId != null">
+			AND insert_user_id = #{where.insertUserId}
+		</if>
+		<if test="where.insertDatetime != null">
+			AND insert_datetime = #{where.insertDatetime}
+		</if>
+		<if test="where.updateUserId != null">
+			AND update_user_id = #{where.updateUserId}
+		</if>
+		<if test="where.updateDatetime != null">
+			AND update_datetime = #{where.updateDatetime}
+		</if>
+		<if test="where.deleteFlg != null">
+			AND delete_flg = #{where.deleteFlg}
+		</if>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO mst_user (
+			user_id,
+			password,
+			user_name,
+			insert_user_id,
+			insert_datetime,
+			update_user_id,
+			update_datetime,
+			delete_flg
+		) VALUES (
+			#{record.userId, jdbcType=VARCHAR},
+			#{record.password, jdbcType=VARCHAR},
+			#{record.userName, jdbcType=VARCHAR},
+			#{record.insertUserId, jdbcType=VARCHAR},
+			#{record.insertDatetime, jdbcType=TIMESTAMP},
+			#{record.updateUserId, jdbcType=VARCHAR},
+			#{record.updateDatetime, jdbcType=TIMESTAMP},
+			#{record.deleteFlg, jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<insert id="insertSelective">
+		INSERT INTO mst_user
+		<trim prefix="(" suffix=") " suffixOverrides=",">
+			<if test="record.userId != null">
+				user_id,
+			</if>
+			<if test="record.password != null">
+				password,
+			</if>
+			<if test="record.userName != null">
+				user_name,
+			</if>
+			<if test="record.insertUserId != null">
+				insert_user_id,
+			</if>
+			<if test="record.insertDatetime != null">
+				insert_datetime,
+			</if>
+			<if test="record.updateUserId != null">
+				update_user_id,
+			</if>
+			<if test="record.updateDatetime != null">
+				update_datetime,
+			</if>
+			<if test="record.deleteFlg != null">
+				delete_flg,
+			</if>
+		</trim>
+		<trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+			<if test="record.userId != null">
+				#{record.userId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.password != null">
+				#{record.password, jdbcType=VARCHAR},
+			</if>
+			<if test="record.userName != null">
+				#{record.userName, jdbcType=VARCHAR},
+			</if>
+			<if test="record.insertUserId != null">
+				#{record.insertUserId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.insertDatetime != null">
+				#{record.insertDatetime, jdbcType=TIMESTAMP},
+			</if>
+			<if test="record.updateUserId != null">
+				#{record.updateUserId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.updateDatetime != null">
+				#{record.updateDatetime, jdbcType=TIMESTAMP},
+			</if>
+			<if test="record.deleteFlg != null">
+				#{record.deleteFlg, jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+
+	<update id="update">
+		UPDATE mst_user SET
+			user_id = #{record.userId, jdbcType=VARCHAR},
+			password = #{record.password, jdbcType=VARCHAR},
+			user_name = #{record.userName, jdbcType=VARCHAR},
+			insert_user_id = #{record.insertUserId, jdbcType=VARCHAR},
+			insert_datetime = #{record.insertDatetime, jdbcType=TIMESTAMP},
+			update_user_id = #{record.updateUserId, jdbcType=VARCHAR},
+			update_datetime = #{record.updateDatetime, jdbcType=TIMESTAMP},
+			delete_flg = #{record.deleteFlg, jdbcType=VARCHAR}
+		WHERE
+			user_id IS NOT NULL
+		<if test="where.userId != null">
+			AND user_id = #{where.userId}
+		</if>
+		<if test="where.password != null">
+			AND password = #{where.password}
+		</if>
+		<if test="where.userName != null">
+			AND user_name = #{where.userName}
+		</if>
+		<if test="where.insertUserId != null">
+			AND insert_user_id = #{where.insertUserId}
+		</if>
+		<if test="where.insertDatetime != null">
+			AND insert_datetime = #{where.insertDatetime}
+		</if>
+		<if test="where.updateUserId != null">
+			AND update_user_id = #{where.updateUserId}
+		</if>
+		<if test="where.updateDatetime != null">
+			AND update_datetime = #{where.updateDatetime}
+		</if>
+		<if test="where.deleteFlg != null">
+			AND delete_flg = #{where.deleteFlg}
+		</if>
+	</update>
+
+	<update id="updateSelective">
+		UPDATE mst_user
+		<set>
+			<if test="record.userId != null">
+				user_id = #{record.userId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.password != null">
+				password = #{record.password, jdbcType=VARCHAR},
+			</if>
+			<if test="record.userName != null">
+				user_name = #{record.userName, jdbcType=VARCHAR},
+			</if>
+			<if test="record.insertUserId != null">
+				insert_user_id = #{record.insertUserId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.insertDatetime != null">
+				insert_datetime = #{record.insertDatetime, jdbcType=TIMESTAMP},
+			</if>
+			<if test="record.updateUserId != null">
+				update_user_id = #{record.updateUserId, jdbcType=VARCHAR},
+			</if>
+			<if test="record.updateDatetime != null">
+				update_datetime = #{record.updateDatetime, jdbcType=TIMESTAMP},
+			</if>
+			<if test="record.deleteFlg != null">
+				delete_flg = #{record.deleteFlg, jdbcType=VARCHAR},
+			</if>
+		</set>
+		WHERE
+			user_id IS NOT NULL
+		<if test="where.userId != null">
+			AND user_id = #{where.userId}
+		</if>
+		<if test="where.password != null">
+			AND password = #{where.password}
+		</if>
+		<if test="where.userName != null">
+			AND user_name = #{where.userName}
+		</if>
+		<if test="where.insertUserId != null">
+			AND insert_user_id = #{where.insertUserId}
+		</if>
+		<if test="where.insertDatetime != null">
+			AND insert_datetime = #{where.insertDatetime}
+		</if>
+		<if test="where.updateUserId != null">
+			AND update_user_id = #{where.updateUserId}
+		</if>
+		<if test="where.updateDatetime != null">
+			AND update_datetime = #{where.updateDatetime}
+		</if>
+		<if test="where.deleteFlg != null">
+			AND delete_flg = #{where.deleteFlg}
+		</if>
+	</update>
+
+</mapper>

@@ -1,0 +1,10 @@
+ユーザマスタ
+user_id
+ユーザID	user_id	character varying(100)
+パスワード	password	character varying(100)
+ユーザ名	user_name	character varying(100)
+追加ユーザID	insert_user_id	character varying(100)
+追加日時	insert_datetime	timestamp without time zone
+追加ユーザID	update_user_id	character varying(100)
+追加日時	update_datetime	timestamp without time zone
+削除フラグ	delete_flg	character varying(1)

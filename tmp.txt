@@ -1,0 +1,1240 @@
+cobolのバッチ系大規模システムのプログラムはあるけど仕様書が無く、プログラムから仕様書を作れる範囲で作りたい。プログラムと言っているのは.jcl、.cob、.cpyファイルの3種類。作り方はExcelのvbaで作る。Excelと同じ階層にCOB、PGM、CPYフォルダがあり、その中に3種類のCOBOLファイルが全て入ってる。この状況だと、どこまでの仕様書が作れる？
+
+この状況なら、かなりの部分までは自動生成できます。
+
+ただし、「業務仕様」はほぼ作れず、「システム仕様」はかなり作れるというのが現実です。
+
+作れる仕様書
+① バッチ一覧
+JCLから抽出できます。
+
+例
+
+項目	内容
+ジョブ名	JOB001
+実行プログラム	SALES001
+実行順序	STEP01→STEP02
+使用ファイル	売上ファイル
+呼出先	SORT、COBOL
+JCL解析だけで作成可能。
+
+② ジョブネット図
+JCLのSTEP順序から作れます。
+
+JOB001
+
+STEP01
+ ↓
+SALES001
+
+STEP02
+ ↓
+SALES002
+
+STEP03
+ ↓
+SALES003
+さらに、
+
+JOB_A
+ ↓
+売上データ
+
+JOB_B
+のようなデータ連携図も作れます。
+
+③ プログラム一覧
+COBから取得。
+
+プログラム名	呼出先
+SALES001	TAX001
+SALES002	TAX001
+TAX001	なし
+COBOLでは
+
+CALL 'TAX001'
+を探せばよい。
+
+④ プログラム構造図
+PERFORMを解析。
+
+MAIN-RTN.
+
+    PERFORM INIT
+
+    PERFORM READ-FILE
+
+    PERFORM UPDATE-DATA
+
+    PERFORM END-RTN.
+↓
+
+MAIN
+├─INIT
+├─READ-FILE
+├─UPDATE-DATA
+└─END
+これも自動生成可能。
+
+⑤ ファイル一覧
+SELECT句から取得。
+
+SELECT SALES-FILE
+    ASSIGN TO SALES001.
+↓
+
+プログラム	ファイル
+SALES001	SALES001
+⑥ 入出力一覧
+FD解析。
+
+FD SALES-FILE.
+01 SALES-REC.
+↓
+
+ファイル	入出力
+SALES-FILE	INPUT
+RESULT-FILE	OUTPUT
+⑦ COPY一覧
+COPY CUSTREC.
+↓
+
+プログラム	COPY
+SALES001	CUSTREC
+⑧ テーブルレイアウト
+CPYから生成可能。
+
+例えば
+
+01 CUSTOMER-REC.
+   05 CUSTOMER-ID PIC X(10).
+   05 CUSTOMER-NAME PIC X(40).
+   05 BIRTHDAY PIC 9(8).
+↓
+
+項目名	型	桁数
+CUSTOMER-ID	CHAR	10
+CUSTOMER-NAME	CHAR	40
+BIRTHDAY	NUMERIC	8
+これはかなり精度高く作れます。
+
+⑨ ファイルレイアウト
+CPYとFDを組み合わせる。
+
+FD CUSTOMER-FILE.
+01 CUSTOMER-REC.
+
+COPY CUSTREC.
+↓
+
+顧客ファイル仕様書
+
+項目	桁
+CUSTOMER-ID	10
+CUSTOMER-NAME	40
+BIRTHDAY	8
+⑩ プログラム関連図
+CALL解析。
+
+JOB001
+ ↓
+SALES001
+ ├─TAX001
+ ├─POINT001
+ └─LOG001
+大規模システムではかなり有効。
+
+作れない仕様書
+ここが重要です。
+
+× 業務フロー
+例えば
+
+IF SALES-AMT > 100000
+が
+
+高額取引判定
+
+法人判定
+
+VIP判定
+
+なのかは分からない。
+
+× 項目の業務意味
+WS-KBN
+から
+
+顧客区分
+  1:個人
+  2:法人
+は分からない。
+
+× 画面仕様
+バッチしか無いので無理。
+
+× 業務ルール説明
+IF A > B
+は抽出できるが
+
+在庫数が発注点を下回った場合に補充発注する
+までは生成できない。
+
+VBAで作るなら優先順位
+まずは以下を作るのがおすすめ。
+
+第1段階
+JCL一覧
+
+プログラム一覧
+
+CALL関連図
+
+COPY一覧
+
+比較的簡単。
+
+第2段階
+ファイル一覧
+
+ファイルレイアウト
+
+項目定義書
+
+CPY解析が必要。
+
+第3段階
+PERFORM構造図
+
+ジョブフロー図
+
+データフロー図
+
+少し難易度が上がる。
+
+実際の現場だと、
+
+「JCL → COB → COPY を全部解析して、Excelで『ジョブ一覧』『プログラム一覧』『ファイル定義書』『データ項目定義書』『CALL関連図』を出力するツール」
+
+まで作れれば、仕様書が存在しないCOBOL資産の解析としてはかなり実用的です。特に大規模システムでは、最終的に「どのジョブがどのプログラムを呼び、どのファイルを読み書きしているか」を一覧化できるだけでも保守効率が大きく向上します。
+
+
+そうです。ただし、最初から10シート全部を作ろうとするとかなり大変なので、実際には段階的に作るのがおすすめです。
+
+最終的な理想形
+Excelブックに以下の10シートがあるイメージです。
+
+No	シート名	元データ
+1	ジョブ一覧	JCL
+2	ジョブフロー	JCL
+3	プログラム一覧	COB
+4	プログラム関連図	COB
+5	COPY一覧	COB
+6	ファイル一覧	COB
+7	入出力一覧	COB
+8	項目定義書	CPY
+9	ファイルレイアウト	COB＋CPY
+10	プログラム構造図	COB
+優先順位で考えると
+最優先
+まずは4シート。
+
+シート名	効果
+ジョブ一覧	何が動いているか分かる
+プログラム一覧	プログラム資産把握
+COPY一覧	共通定義把握
+プログラム関連図	CALL関係把握
+これだけでもかなり価値があります。
+
+例えば
+
+JOBA
+ ↓
+PGM001
+ ├─PGM010
+ ├─PGM020
+ └─PGM030
+が見えるだけで調査速度が大きく変わります。
+
+次に欲しい
+ファイル系
+シート名
+ファイル一覧
+入出力一覧
+項目定義書
+ファイルレイアウト
+COBOL資産調査では実はここが一番重要です。
+
+理由は、
+
+開発者が最初に知りたいのは
+
+どのファイルを読む？
+どのファイルを更新する？
+レコード構造は？
+だからです。
+
+最後に欲しい
+構造解析系
+シート名
+ジョブフロー
+プログラム構造図
+これは解析難易度が上がります。
+
+例えば
+
+MAIN.
+
+ PERFORM INIT
+
+ PERFORM 1000-READ
+
+ PERFORM 2000-EDIT
+
+ PERFORM 3000-UPDATE
+
+ PERFORM END-RTN
+を解析して
+
+MAIN
+├─INIT
+├─READ
+├─EDIT
+├─UPDATE
+└─END
+を作る必要があります。
+
+仕様書として見た場合
+この10シートが揃うと、
+
+システム全体
+ジョブ一覧
+
+ジョブフロー
+
+プログラム仕様
+プログラム一覧
+
+プログラム関連図
+
+プログラム構造図
+
+データ仕様
+ファイル一覧
+
+入出力一覧
+
+項目定義書
+
+ファイルレイアウト
+
+共通部品仕様
+COPY一覧
+
+という形になり、保守案件やリプレース案件でよく作る「現行調査資料」にかなり近づきます。
+
+大規模COBOLシステムなら、これだけ作れれば「ソースコードしかない状態」から「システムの全体像が把握できる状態」までは持っていけます。業務仕様書までは無理ですが、技術仕様書としては十分実用的です。
+
+
+その10sheetを作る場合、すべて表形式で作成するの？表形式で作成する場合、各sheetのヘッダーがどんな項目名になるのか知りたい
+
+実務で使うことを考えると、10シートすべて表形式で持つのがおすすめです。
+
+理由は、
+
+VBAで出力しやすい
+
+Excelフィルタが使える
+
+ソートできる
+
+CSV化しやすい
+
+PowerBIやAccessにも流用できる
+
+からです。
+
+図（ジョブフロー図やCALL関連図）は後から作れますが、まずは表形式で情報を蓄積する方が価値があります。
+
+① ジョブ一覧
+JCLから生成
+
+JOB名	STEP名	実行PGM	PROC名	DD名	DSN	DISP
+JOB001	STEP01	PGM001	-	INPUT1	XXX.INPUT	SHR
+② ジョブフロー
+JCLのSTEP順序
+
+JOB名	順番	STEP名	実行PGM	前STEP	次STEP
+JOB001	1	STEP01	PGM001	-	STEP02
+JOB001	2	STEP02	PGM002	STEP01	STEP03
+これを元にVisioやExcel図形でフロー化可能。
+
+③ プログラム一覧
+COB解析
+
+PGM名	ソースファイル	呼出元数	呼出先数	COPY数
+PGM001	PGM001.COB	3	5	10
+④ プログラム関連図
+CALL解析
+
+呼出元PGM	呼出先PGM	CALL種別
+PGM001	TAX001	STATIC
+PGM001	LOG001	STATIC
+⑤ COPY一覧
+COPY解析
+
+PGM名	COPY名	行数
+PGM001	CUSTREC	50
+PGM001	TAXREC	120
+⑥ ファイル一覧
+SELECT句解析
+
+PGM名	論理ファイル名	物理ファイル名	入出力
+PGM001	SALES-FILE	SALES001	INPUT
+⑦ 入出力一覧
+FD解析
+
+PGM名	ファイル名	READ	WRITE	REWRITE	DELETE
+PGM001	SALES-FILE	○	×	×	×
+これがあると更新系か参照系か分かる。
+
+⑧ 項目定義書
+CPY解析
+
+COPY名	項目名	PIC	桁数	型
+CUSTREC	CUSTOMER-ID	X(10)	10	CHAR
+CUSTREC	CUSTOMER-NAME	X(40)	40	CHAR
+⑨ ファイルレイアウト
+FD + COPY解析
+
+ファイル名	項目順	項目名	PIC	桁数	開始位置	終了位置
+SALES-FILE	1	CUSTOMER-ID	X(10)	10	1	10
+SALES-FILE	2	CUSTOMER-NAME	X(40)	40	11	50
+これはかなり価値が高いです。
+
+⑩ プログラム構造図
+PERFORM解析
+
+PGM名	親段落	子段落	レベル
+PGM001	MAIN	INIT	1
+PGM001	MAIN	READ-FILE	1
+PGM001	READ-FILE	EDIT-CHECK	2
+例えば
+
+MAIN.
+ PERFORM INIT.
+ PERFORM READ-FILE.
+を
+
+PGM	親	子
+PGM001	MAIN	INIT
+PGM001	MAIN	READ-FILE
+として保持します。
+
+私なら追加する11シート目
+実際の現場で一番役立つのはこれです。
+
+項目使用箇所一覧
+項目名	COPY名	PGM名	使用方法
+CUSTOMER-ID	CUSTREC	PGM001	MOVE
+CUSTOMER-ID	CUSTREC	PGM002	IF
+CUSTOMER-ID	CUSTREC	PGM003	WRITE
+例えば、
+
+CUSTOMER-IDを変更したい
+と言われた時に、
+
+どのプログラムに影響する？
+が即座に分かります。
+
+大規模COBOL保守では、
+
+ジョブ一覧
+
+CALL一覧
+
+ファイル一覧
+
+項目定義書
+
+項目使用箇所一覧
+
+の5つが特に利用頻度が高く、最終的にはこの11シート構成がかなり実践的な資産管理台帳になります。
+
+
+じゃあ11sheetを作成するVBAを作って欲しい。ただし、VBA処理の最初に、11sheetをそれぞれ1sheet単位で作るか作らないかをbooleanのフラグで管理したい。例えばcreateSheet1Flgがtrueなら1sheet目を作る。falseなら作らないとして、実行ユーザーが作りたいsheetだけ作るようにしたい。なので各sheetの作成処理が干渉しない、独立した処理にしたい。まずはsheet1を作成するVBAを教えて
+
+その設計は良いと思います。
+
+11シートを独立して生成できるようにしておくと、
+
+Sheet1だけ作成
+
+Sheet1～5だけ作成
+
+全シート作成
+
+などが簡単になります。
+
+まずは共通の起動処理を作り、その中でフラグ管理します。
+
+Option Explicit
+
+Public Sub CreateCobolSpec()
+
+'==========================
+' シート作成フラグ
+'==========================
+Const createSheet1Flg As Boolean = True   'ジョブ一覧
+Const createSheet2Flg As Boolean = False  'ジョブフロー
+Const createSheet3Flg As Boolean = False  'プログラム一覧
+Const createSheet4Flg As Boolean = False  'プログラム関連図
+Const createSheet5Flg As Boolean = False  'COPY一覧
+Const createSheet6Flg As Boolean = False  'ファイル一覧
+Const createSheet7Flg As Boolean = False  '入出力一覧
+Const createSheet8Flg As Boolean = False  '項目定義書
+Const createSheet9Flg As Boolean = False  'ファイルレイアウト
+Const createSheet10Flg As Boolean = False 'プログラム構造図
+Const createSheet11Flg As Boolean = False '項目使用箇所一覧
+
+If createSheet1Flg Then
+    CreateJobListSheet
+End If
+
+If createSheet2Flg Then
+    CreateJobFlowSheet
+End If
+
+If createSheet3Flg Then
+    CreateProgramListSheet
+End If
+
+If createSheet4Flg Then
+    CreateProgramRelationSheet
+End If
+
+If createSheet5Flg Then
+    CreateCopyListSheet
+End If
+
+If createSheet6Flg Then
+    CreateFileListSheet
+End If
+
+If createSheet7Flg Then
+    CreateIOListSheet
+End If
+
+If createSheet8Flg Then
+    CreateItemDefinitionSheet
+End If
+
+If createSheet9Flg Then
+    CreateFileLayoutSheet
+End If
+
+If createSheet10Flg Then
+    CreateProgramStructureSheet
+End If
+
+If createSheet11Flg Then
+    CreateItemUsageSheet
+End If
+
+MsgBox "完了しました"
+End Sub
+
+次にSheet1（ジョブ一覧）のみ作成します。
+
+前提フォルダ構成
+
+Excel.xlsm
+│
+├─PGM
+│    JOB001.JCL
+│    JOB002.JCL
+│
+├─COB
+│
+└─CPY
+JCL内から以下を取得します。
+
+項目
+JOB名
+STEP名
+実行PGM
+PROC名
+DD名
+DSN
+DISP
+Private Sub CreateJobListSheet()
+
+Dim ws As Worksheet
+Dim rowNo As Long
+
+Set ws = CreateOrClearSheet("01_ジョブ一覧")
+
+rowNo = 2
+
+'ヘッダ
+ws.Cells(1, 1).Value = "JOB名"
+ws.Cells(1, 2).Value = "STEP名"
+ws.Cells(1, 3).Value = "実行PGM"
+ws.Cells(1, 4).Value = "PROC名"
+ws.Cells(1, 5).Value = "DD名"
+ws.Cells(1, 6).Value = "DSN"
+ws.Cells(1, 7).Value = "DISP"
+
+Call AnalyzeJclFolder(ws, rowNo)
+
+ws.Columns.AutoFit
+End Sub
+
+JCLフォルダ解析処理
+
+Private Sub AnalyzeJclFolder(ByVal ws As Worksheet, _
+ByRef rowNo As Long)
+
+Dim folderPath As String
+Dim fileName As String
+
+folderPath = ThisWorkbook.Path & "\PGM\"
+
+fileName = Dir(folderPath & "*.jcl")
+
+Do While fileName <> ""
+
+    AnalyzeJclFile _
+        folderPath & fileName, _
+        ws, _
+        rowNo
+
+    fileName = Dir()
+
+Loop
+End Sub
+
+Private Sub AnalyzeJclFile(ByVal filePath As String, _
+ByVal ws As Worksheet, _
+ByRef rowNo As Long)
+
+Dim ff As Integer
+Dim lineText As String
+
+Dim jobName As String
+Dim stepName As String
+Dim pgmName As String
+Dim procName As String
+
+ff = FreeFile
+
+Open filePath For Input As #ff
+
+Do Until EOF(ff)
+
+    Line Input #ff, lineText
+
+    lineText = Trim(lineText)
+
+    If Left(lineText, 2) <> "//" Then
+        GoTo ContinueLoop
+    End If
+
+    'JOB判定
+    If InStr(lineText, " JOB ") > 0 Then
+
+        jobName = Replace(Split(lineText)(0), "//", "")
+
+    End If
+
+    'EXEC判定
+    If InStr(lineText, " EXEC ") > 0 Then
+
+        stepName = Replace(Split(lineText)(0), "//", "")
+
+        pgmName = ""
+        procName = ""
+
+        If InStr(lineText, "PGM=") > 0 Then
+            pgmName = GetParameterValue(lineText, "PGM")
+        End If
+
+        If InStr(lineText, "PROC=") > 0 Then
+            procName = GetParameterValue(lineText, "PROC")
+        End If
+
+        ws.Cells(rowNo, 1).Value = jobName
+        ws.Cells(rowNo, 2).Value = stepName
+        ws.Cells(rowNo, 3).Value = pgmName
+        ws.Cells(rowNo, 4).Value = procName
+
+        rowNo = rowNo + 1
+
+    End If
+ContinueLoop:
+
+Loop
+
+Close #ff
+End Sub
+
+共通関数
+
+Private Function CreateOrClearSheet( _
+    sheetName As String) As Worksheet
+
+    Dim ws As Worksheet
+
+    On Error Resume Next
+    Set ws = Worksheets(sheetName)
+    On Error GoTo 0
+
+    If ws Is Nothing Then
+
+        Set ws = Worksheets.Add
+
+        ws.Name = sheetName
+
+    Else
+
+        ws.Cells.Clear
+
+    End If
+
+    Set CreateOrClearSheet = ws
+
+End Function
+
+
+Private Function GetParameterValue( _
+    lineText As String, _
+    parameterName As String) As String
+
+    Dim pos As Long
+    Dim tmp As String
+
+    pos = InStr(lineText, parameterName & "=")
+
+    If pos = 0 Then Exit Function
+
+    tmp = Mid(lineText, pos + Len(parameterName) + 1)
+
+    If InStr(tmp, ",") > 0 Then
+        tmp = Left(tmp, InStr(tmp, ",") - 1)
+    End If
+
+    GetParameterValue = Trim(tmp)
+
+End Function
+まずはこのレベルで作るのがおすすめです。
+
+理由は、大規模COBOL案件では最初に「JCLの書き方の癖」を確認する必要があるからです。
+
+実際に数本のJCLを見てから、
+
+PROC展開対応
+
+DD解析対応
+
+DSN解析対応
+
+DISP解析対応
+
+を追加していく方が失敗しにくいです。現場のJCL方言によって解析ロジックがかなり変わるためです。
+
+■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+cobolのバッチ系大規模システムのプログラムはあるけど仕様書が無く、プログラムから仕様書を作れる範囲で作りたい。プログラムと言っているのは.jcl、.cob、.cpyファイルの3種類。作り方はExcelのvbaで作る。Excelと同じ階層にCOB、PGM、CPYフォルダがあり、その中に3種類のCOBOLファイルが全て入ってる。この状況だと、どこまでの仕様書が作れる？
+
+抽出可能な仕様書の種類と自動化の限界を分析した。
+COBOLプログラムから作成できる仕様書の範囲
+各ファイルから抽出できる情報
+ファイル	抽出可能な情報
+.jcl	ジョブ名・ステップ名・実行順序・DD名・データセット名・DISP・COND条件・PROC呼び出し
+.cob	PROGRAM-ID・ファイル定義・データ項目・段落構造・CALL先・ファイルI/O操作・PERFORM構造
+.cpy	共通レコードレイアウト・共通データ項目定義
+作成できる仕様書（8種類）
+✅ ほぼ自動生成できるもの
+1. プログラム一覧表
+PROGRAM-ID / ファイル名 / COPYブック使用一覧 / CALL関係
+2. JCLジョブ仕様書
+ジョブ名 / 各ステップ名 / 実行プログラム / COND条件 / 使用DD一覧
+3. ファイル割当一覧（JCL→COBの紐付き）
+DDname / データセット名 / DISP / 対応するFD名 / R/W区分
+4. ファイルレイアウト定義書
+FD名 / レコード名 / 項目名 / PIC句 / バイト数 / 桁数（.cob / .cpyから）
+5. コピーブック使用一覧
+どのプログラムがどのCOPYブックをCOPYしているか
+🔶 ある程度自動生成できるもの（精度に限界あり）
+6. プログラム間呼び出し関係図（テキスト表形式）
+呼び出し元プログラム / CALL文 / 呼び出し先プログラム / 渡しパラメータ
+※ CALL識別子が変数の場合は追跡困難
+
+7. 処理フロー概要（段落一覧ベース）
+SECTION名 / PARAGRAPH名 / PERFORM先 / 処理概要（段落名から推測）
+※ 段落名が意味のある命名なら有効。PARA-001のような名前は推測不能
+
+8. 入出力ファイル一覧（プログラム単位）
+プログラム名 / ファイル名 / OPEN MODE / READ/WRITE/REWRITE/DELETE
+❌ 自動生成できないもの
+限界事項	理由
+処理の「目的・意図」	コードからはWHATは読めるがWHYは読めない
+業務ルールの説明	IF WK-FLG = '1'が何を意味するか判断不能
+エラー処理ポリシー	ハンドリングコードは読めても方針は不明
+ファイル間のデータ関係	DB的な意味でのリレーションは不明
+テスト仕様	根拠となる業務知識が必要
+Excel VBA実装の構成イメージ
+Excel ファイル
+├── シート①  プログラム一覧
+├── シート②  JCLジョブ仕様
+├── シート③  ファイル割当一覧
+├── シート④  ファイルレイアウト（COB/CPY）
+├── シート⑤  コピーブック使用一覧
+├── シート⑥  プログラム呼び出し関係
+└── シート⑦  処理フロー（段落一覧）
+
+VBAモジュール
+├── Module1_JCLParser.bas   → .jcl解析
+├── Module2_COBParser.bas   → .cob解析
+├── Module3_CPYParser.bas   → .cpy解析
+└── Module_Main.bas         → 統合実行
+まとめ
+「何をしているか（WHAT）」は作れる。「なぜそうしているか（WHY）」は作れない
+
+作成物として最も価値が高いのは ファイルレイアウト定義書 と JOB-プログラム-ファイルの紐付き一覧 で、これらは人手で作ると最も時間がかかる部分なので、VBA自動化の効果が大きいです。
+
+具体的にVBAコードの実装から始めますか？どのシートから優先しますか？
+
+cobolの知識が無いから分からないんだけど、この7sheetはcobolの仕様書になるの？それとも仕様書ではなくただファイル内のバラバラの情報を集めて見やすくしただけ？この7sheetを作るとどんなメリットがあるのかが分からないから教えて
+
+6月14日
+
+7シートの実用的価値を類推で説明した。
+7シートの実用的価値を類推で説明した。
+正直に言うと「仕様書」ではなく「地図」
+結論から言うと、あの7シートは仕様書ではなく、仕様書を作るための地図です。ただし、この地図があるかどうかで作業効率が全く変わります。
+
+Javaで例えると一番わかりやすい
+Springプロジェクトで「仕様書なし・ドキュメントなし」の状態を想像してください。
+
+こんな状況↓
+src/
+├── service/   （何十個ものServiceクラス）
+├── mapper/    （何十個ものMapperクラス）
+└── batch/     （何十個ものJobクラス）
+この状況で「このシステムは何をしてるの？」と聞かれたら、まずやることは：
+
+クラス一覧を把握する
+どのクラスがどのクラスを呼んでるか把握する
+どのテーブル・ファイルを使ってるか把握する
+COBOLのケースも全く同じで、あの7シートはこの「把握する」フェーズを自動化するものです。
+
+7シートの正体と価値
+シート	正体	Javaで例えると
+プログラム一覧	存在確認	クラス一覧
+JCLジョブ仕様	実行設定	application.yml + cronの定義
+ファイル割当一覧	入出力の配線	@Valueで読んでるファイルパス一覧
+ファイルレイアウト	データ構造	DTOクラスのフィールド定義
+コピーブック使用一覧	共通クラスの依存関係	どのServiceが共通Utilを使ってるか
+呼び出し関係	依存グラフ	@Autowiredの依存関係マップ
+処理フロー	メソッド一覧	クラス内のメソッド名一覧
+「地図」があると何が変わるか
+地図なし（今の状態）
+.cobファイルを1個開く
+  → COPY文でcpyファイルを参照してると判明
+  → そのcpyを開く
+  → CALLで別プログラム呼んでると判明
+  → その.cobを開く
+  → JCLでどう動いてるか気になる
+  → JCLを探す...
+ファイルを行ったり来たりしながら、頭の中で繋いでいく地獄
+
+地図あり（7シート完成後）
+シート①でプログラム全体像を把握
+  → シート⑥でCALL関係を確認
+  → シート④でデータ構造を確認
+  → あとはコードを読んで「業務の意図」だけ人間が補足する
+つまりこういうこと
+7シート（地図）
+  ＋
+人間が補足する「なぜそうしてるか」
+  ↓
+  = 本当の仕様書
+7シートは仕様書の骨格であって、肉付けは人間がやる必要があります。ただその骨格を手作業で作ると、大規模システムだと数週間〜数ヶ月かかる作業が、VBAなら数分〜数時間で完成するのが最大のメリットです。
+
+正直なところ
+「コードから自動生成した仕様書です」とは言えない。「仕様書を作るために必要な下調べを自動化したもの」が正確。
+
+ただ、COBOLの大規模システムは何百本というプログラムがあるのが普通なので、この下調べを自動化できるだけで実務上の価値は十分あります。
+
+VBAを作る方向で進めますか？
+
+じゃあ7sheetを作成するVBAを作って欲しい。ただし、VBA処理の最初に、7sheetをそれぞれ1sheet単位で作るか作らないかをbooleanのフラグで管理したい。例えばcreateSheet1Flgがtrueなら1sheet目を作る。falseなら作らないとして、実行ユーザーが作りたいsheetだけ作るようにしたい。なので各sheetの作成処理が干渉しない、独立した処理にしたい。まずはsheet1を作成するVBAを教えて
+
+6月14日
+
+VBAモジュール構造を設計し、COBOL解析ロジックを構築した。
+VBAモジュール構造を設計し、COBOL解析ロジックを構築した。
+モジュール構成（3ファイル）
+Module_Main              ← フラグ定義 + 実行エントリ
+Module_Common            ← 共通関数（全Sheet共通で使う）
+Module_Sheet1_ProgramList ← Sheet1専用処理
+Module_Main
+vb
+Option Explicit
+
+'==================================================
+' 作成フラグ（True:作成 / False:スキップ）
+'==================================================
+Public Const CREATE_SHEET1_FLG As Boolean = True   ' プログラム一覧
+Public Const CREATE_SHEET2_FLG As Boolean = False  ' JCLジョブ仕様
+Public Const CREATE_SHEET3_FLG As Boolean = False  ' ファイル割当一覧
+Public Const CREATE_SHEET4_FLG As Boolean = False  ' ファイルレイアウト
+Public Const CREATE_SHEET5_FLG As Boolean = False  ' コピーブック使用一覧
+Public Const CREATE_SHEET6_FLG As Boolean = False  ' プログラム呼び出し関係
+Public Const CREATE_SHEET7_FLG As Boolean = False  ' 処理フロー
+
+'==================================================
+' メイン実行（ここをボタンまたはF5で実行）
+'==================================================
+Public Sub Main()
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
+    If CREATE_SHEET1_FLG Then Call CreateSheet1_ProgramList
+    ' Sheet2以降は実装後に追記
+    ' If CREATE_SHEET2_FLG Then Call CreateSheet2_JclJobSpec
+
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+
+    MsgBox "処理が完了しました。", vbInformation, "COBOL仕様書生成"
+End Sub
+Module_Common
+vb
+Option Explicit
+
+'==================================================
+' フォルダパス取得
+'==================================================
+Public Function GetCobFolderPath() As String
+    GetCobFolderPath = ThisWorkbook.Path & "\COB\"
+End Function
+
+Public Function GetPgmFolderPath() As String
+    GetPgmFolderPath = ThisWorkbook.Path & "\PGM\"
+End Function
+
+Public Function GetCpyFolderPath() As String
+    GetCpyFolderPath = ThisWorkbook.Path & "\CPY\"
+End Function
+
+'==================================================
+' シート初期化（既存削除→末尾に新規作成）
+'==================================================
+Public Sub InitSheet(sheetName As String, ByRef ws As Worksheet)
+    Dim existWs As Worksheet
+    For Each existWs In ThisWorkbook.Worksheets
+        If existWs.Name = sheetName Then
+            Application.DisplayAlerts = False
+            existWs.Delete
+            Application.DisplayAlerts = True
+            Exit For
+        End If
+    Next existWs
+    Set ws = ThisWorkbook.Worksheets.Add( _
+        After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+    ws.Name = sheetName
+End Sub
+
+'==================================================
+' 配列内重複チェック
+'==================================================
+Public Function IsInArray(targetVal As String, _
+                           arr() As String, _
+                           arrCount As Integer) As Boolean
+    Dim i As Integer
+    For i = 0 To arrCount - 1
+        If arr(i) = targetVal Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next i
+    IsInArray = False
+End Function
+
+'==================================================
+' COBOLコメント行判定
+' → 7列目が * か / ならコメント行
+'==================================================
+Public Function IsCobolCommentLine(line As String) As Boolean
+    If Len(line) < 7 Then
+        IsCobolCommentLine = False
+        Exit Function
+    End If
+    Dim indicator As String
+    indicator = Mid(line, 7, 1)
+    IsCobolCommentLine = (indicator = "*" Or indicator = "/")
+End Function
+
+'==================================================
+' ヘッダー行スタイル（紺背景・白文字・太字）
+'==================================================
+Public Sub SetHeaderStyle(ws As Worksheet, lastCol As Long)
+    With ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol))
+        .Interior.Color = RGB(31, 78, 121)
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+    End With
+End Sub
+Module_Sheet1_ProgramList
+vb
+Option Explicit
+
+'==================================================
+' Sheet1: プログラム一覧 作成
+' 出力列: No / ファイル名 / PROGRAM-ID / 使用COPYブック / CALL先
+'==================================================
+Public Sub CreateSheet1_ProgramList()
+
+    Dim ws       As Worksheet
+    Dim cobFolder As String
+    Dim fileName  As String
+    Dim rowIdx    As Long
+    Dim programId As String
+    Dim copyList  As String
+    Dim callList  As String
+
+    ' シート初期化
+    Call InitSheet("Sheet1_プログラム一覧", ws)
+
+    ' ヘッダー設定
+    ws.Cells(1, 1).Value = "No"
+    ws.Cells(1, 2).Value = "ファイル名"
+    ws.Cells(1, 3).Value = "PROGRAM-ID"
+    ws.Cells(1, 4).Value = "使用COPYブック"
+    ws.Cells(1, 5).Value = "CALL先プログラム"
+    Call SetHeaderStyle(ws, 5)
+
+    ' フォルダ存在確認
+    cobFolder = GetCobFolderPath()
+    If Dir(cobFolder, vbDirectory) = "" Then
+        MsgBox "COBフォルダが見つかりません。" & vbCrLf & cobFolder, vbExclamation
+        Exit Sub
+    End If
+
+    ' COBファイルを1件ずつ処理
+    fileName = Dir(cobFolder & "*.cob")
+    rowIdx = 2
+
+    Do While fileName <> ""
+
+        Call ParseCobFile_Sheet1(cobFolder & fileName, programId, copyList, callList)
+
+        ws.Cells(rowIdx, 1).Value = rowIdx - 1
+        ws.Cells(rowIdx, 2).Value = fileName
+        ws.Cells(rowIdx, 3).Value = programId
+        ws.Cells(rowIdx, 4).Value = copyList
+        ws.Cells(rowIdx, 5).Value = callList
+
+        ' 偶数行に薄いグレー背景（視認性向上）
+        If rowIdx Mod 2 = 0 Then
+            ws.Range(ws.Cells(rowIdx, 1), ws.Cells(rowIdx, 5)) _
+              .Interior.Color = RGB(242, 242, 242)
+        End If
+
+        rowIdx = rowIdx + 1
+        fileName = Dir()
+    Loop
+
+    ' 列幅調整
+    ws.Columns("A:C").AutoFit
+    ws.Columns("D:E").ColumnWidth = 45
+
+    ' 枠線
+    With ws.Range(ws.Cells(1, 1), ws.Cells(rowIdx - 1, 5)).Borders
+        .LineStyle = xlContinuous
+        .Color = RGB(180, 180, 180)
+    End With
+
+    ws.Cells(1, 1).Select
+
+    MsgBox "Sheet1（プログラム一覧）完了。" & vbCrLf & _
+           "件数: " & (rowIdx - 2) & " 件", vbInformation, "COBOL仕様書生成"
+End Sub
+
+'==================================================
+' COBファイル解析（Sheet1専用）
+'==================================================
+Private Sub ParseCobFile_Sheet1(filePath As String, _
+                                 ByRef programId As String, _
+                                 ByRef copyList  As String, _
+                                 ByRef callList  As String)
+    Dim fileNum     As Integer
+    Dim line        As String
+    Dim upperLine   As String
+    Dim copyBooks() As String
+    Dim callProgs() As String
+    Dim copyCount   As Integer
+    Dim callCount   As Integer
+    Dim tmpName     As String
+
+    ReDim copyBooks(0)
+    ReDim callProgs(0)
+    programId = ""
+    copyCount = 0
+    callCount = 0
+
+    fileNum = FreeFile()
+    On Error GoTo FileOpenError
+    Open filePath For Input As #fileNum
+    On Error GoTo 0
+
+    Do While Not EOF(fileNum)
+        Line Input #fileNum, line
+
+        ' コメント行スキップ
+        If IsCobolCommentLine(line) Then GoTo ContinueLoop
+
+        ' 73列目以降はシーケンス番号領域なので切り捨て
+        If Len(line) > 72 Then line = Left(line, 72)
+
+        upperLine = UCase(line)
+
+        ' ---- PROGRAM-ID ----
+        If programId = "" And InStr(upperLine, "PROGRAM-ID") > 0 Then
+            programId = S1_ExtractProgramId(upperLine)
+        End If
+
+        ' ---- COPY文 ----
+        If InStr(upperLine, "COPY ") > 0 Then
+            tmpName = S1_ExtractCopyName(upperLine)
+            If tmpName <> "" Then
+                If Not IsInArray(tmpName, copyBooks, copyCount) Then
+                    ReDim Preserve copyBooks(copyCount)
+                    copyBooks(copyCount) = tmpName
+                    copyCount = copyCount + 1
+                End If
+            End If
+        End If
+
+        ' ---- CALL文 ----
+        If InStr(upperLine, "CALL ") > 0 Then
+            tmpName = S1_ExtractCallName(upperLine)
+            If tmpName <> "" Then
+                If Not IsInArray(tmpName, callProgs, callCount) Then
+                    ReDim Preserve callProgs(callCount)
+                    callProgs(callCount) = tmpName
+                    callCount = callCount + 1
+                End If
+            End If
+        End If
+
+        ContinueLoop:
+    Loop
+
+    Close #fileNum
+
+    ' 結果を文字列化
+    copyList = IIf(copyCount > 0, Join(copyBooks, ", "), "（なし）")
+    callList = IIf(callCount > 0, Join(callProgs, ", "), "（なし）")
+    Exit Sub
+
+FileOpenError:
+    programId = "★読取エラー"
+    copyList  = "★読取エラー"
+    callList  = "★読取エラー"
+End Sub
+
+'--------------------------------------------------
+' PROGRAM-ID 値を抽出
+' 例: "       PROGRAM-ID. MYPROG01." → "MYPROG01"
+'--------------------------------------------------
+Private Function S1_ExtractProgramId(upperLine As String) As String
+    Dim pos      As Integer
+    Dim after    As String
+    Dim result   As String
+
+    pos = InStr(upperLine, "PROGRAM-ID")
+    If pos = 0 Then Exit Function
+
+    after = Trim(Mid(upperLine, pos + Len("PROGRAM-ID")))
+
+    ' 先頭ピリオド除去
+    If Left(after, 1) = "." Then after = Trim(Mid(after, 2))
+    If after = "" Then Exit Function
+
+    ' 最初のトークンを取得
+    result = Split(after, " ")(0)
+
+    ' 末尾ピリオド除去
+    If Right(result, 1) = "." Then result = Left(result, Len(result) - 1)
+
+    S1_ExtractProgramId = Trim(result)
+End Function
+
+'--------------------------------------------------
+' COPY文のコピーブック名を抽出
+' 例: "           COPY COPYBK01."             → "COPYBK01"
+'      "           COPY COPYBK02 REPLACING..." → "COPYBK02"
+'--------------------------------------------------
+Private Function S1_ExtractCopyName(upperLine As String) As String
+    Dim pos    As Integer
+    Dim after  As String
+    Dim result As String
+
+    pos = InStr(upperLine, "COPY ")
+    If pos = 0 Then Exit Function
+
+    after = Trim(Mid(upperLine, pos + 5))
+    If after = "" Then Exit Function
+
+    result = Split(after, " ")(0)
+    If Right(result, 1) = "." Then result = Left(result, Len(result) - 1)
+
+    S1_ExtractCopyName = Trim(result)
+End Function
+
+'--------------------------------------------------
+' CALL文のプログラム名を抽出
+' 静的: CALL 'SUBPROG1'  → "SUBPROG1"
+' 動的: CALL WK-PROG     → "[動的:WK-PROG]"
+'--------------------------------------------------
+Private Function S1_ExtractCallName(upperLine As String) As String
+    Dim pos      As Integer
+    Dim after    As String
+    Dim result   As String
+    Dim endPos   As Integer
+
+    pos = InStr(upperLine, "CALL ")
+    If pos = 0 Then Exit Function
+
+    after = Trim(Mid(upperLine, pos + 5))
+    If after = "" Then Exit Function
+
+    If Left(after, 1) = "'" Or Left(after, 1) = Chr(34) Then
+        ' 静的CALL（リテラル）
+        endPos = InStr(2, after, Left(after, 1))
+        If endPos > 0 Then
+            result = Mid(after, 2, endPos - 2)
+        Else
+            result = Mid(after, 2)
+        End If
+    Else
+        ' 動的CALL（変数）
+        result = "[動的:" & Split(after, " ")(0) & "]"
+    End If
+
+    S1_ExtractCallName = Trim(result)
+End Function
+使い方
+Excelを開いてAlt+F11でVBE起動
+標準モジュールを3つ追加して上記コードをそれぞれ貼り付け
+Main を実行（または CreateSheet1_ProgramList を直接実行）
+出力イメージ
+No	ファイル名	PROGRAM-ID	使用COPYブック	CALL先プログラム
+1	SALES001.cob	SALES001	COMHEAD, ERRCODE	TAXCALC, INVCREATE
+2	INVCREATE.cob	INVCREATE	COMHEAD	（なし）
+動かしてみてエラーや想定外の結果があれば教えてください。Sheet2（JCLジョブ仕様）も同じ要領で作れます。
