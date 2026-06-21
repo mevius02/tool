@@ -1,0 +1,1880 @@
+'変数未宣言エラー設定ON
+Option Explicit
+
+'========== グローバル変数 ==========
+'●タイムスタンプ
+Public timestamp As String
+'●Const
+Public EMP As String
+Public HYPHEN As String
+'●セル一括書込内容リスト
+Public writeContentsCol As New Collection
+'●書込行番号
+Public writeRowIdx As Long
+'●フォルダパス
+Public jclFolderPath As String
+Public pgmFolderPath As String
+Public cpyFolderPath As String
+'●ファイル種別
+Public FILETYPE_JCL As String
+Public FILETYPE_PGM As String
+Public FILETYPE_CPY As String
+'●ファイル名リスト
+Public jclFileNmList As New Collection
+Public pgmFileNmList As New Collection
+Public cpyFileNmList As New Collection
+'●Sheet名
+Public sheetNm00 As String
+Public sheetNm01 As String
+Public sheetNm02 As String
+Public sheetNm03 As String
+Public sheetNm04 As String
+Public sheetNm05 As String
+Public sheetNm06 As String
+Public sheetNm07 As String
+'------------------------------------------------------------
+'概要 : COBOLの3種ファイル[.jcl/.cob/.cpy]の情報整理マクロ
+'     : 情報まとめSheetを複数作成する
+'     : 各Sheetの作成可否はフラグで設定
+'引数 : -
+'戻値 : -
+'備考 : ※※※ 未完成(特殊パターン未対応など) ※※※
+'------------------------------------------------------------
+Public Sub CreateCobolAnalysisBook()
+    '処理中描画OFF設定
+    RenderingProcess False
+
+    '==================== ユーザー設定 ====================
+    '●Sheet作成フラグ(True:する / False:しない)
+    Dim createSheet00Flg As Boolean: createSheet00Flg = True
+    Dim createSheet01Flg As Boolean: createSheet01Flg = True
+    Dim createSheet02Flg As Boolean: createSheet02Flg = True
+    Dim createSheet03Flg As Boolean: createSheet03Flg = True
+    Dim createSheet04Flg As Boolean: createSheet04Flg = True
+    Dim createSheet05Flg As Boolean: createSheet05Flg = True
+    Dim createSheet06Flg As Boolean: createSheet06Flg = True
+    Dim createSheet07Flg As Boolean: createSheet07Flg = True
+    '●Sheet名
+    sheetNm00 = "00_README"
+    sheetNm01 = "01_JCL_STEP一覧"
+    sheetNm02 = "02_JCL_STEP_DD一覧"
+    sheetNm03 = "03_PGM一覧"
+    sheetNm04 = "04_PGM_IO一覧"
+    sheetNm05 = "05_PGM_CALL一覧"
+    sheetNm06 = "06_PGM_COPY一覧"
+    sheetNm07 = "07_CPY_項目一覧"
+    '●フォルダパス(末尾 "\" 必要)
+    jclFolderPath = ThisWorkbook.Path & "\COBOL\JCL\"
+    pgmFolderPath = ThisWorkbook.Path & "\COBOL\PGM\"
+    cpyFolderPath = ThisWorkbook.Path & "\COBOL\CPY\"
+    '======================================================
+
+    '==================== 初期化 ====================
+    '●タイムスタンプ
+    timestamp = Format(Now, "YYYYMMDDHHMMSS")
+    '●Const
+    EMP = ""
+    HYPHEN = "-"
+    '●ファイル種別
+    FILETYPE_JCL = "JCL"
+    FILETYPE_PGM = "PGM"
+    FILETYPE_CPY = "CPY"
+    '●ファイル名リスト
+    Set jclFileNmList = GetFileNmList(FILETYPE_JCL)
+    Set pgmFileNmList = GetFileNmList(FILETYPE_PGM)
+    Set cpyFileNmList = GetFileNmList(FILETYPE_CPY)
+    '================================================
+
+    'Sheet作成
+    If createSheet00Flg Then CreateSheet00 sheetNm00
+    If createSheet01Flg Then CreateSheet01 sheetNm01
+    If createSheet02Flg Then CreateSheet02 sheetNm02
+    If createSheet03Flg Then CreateSheet03 sheetNm03
+    If createSheet04Flg Then CreateSheet04 sheetNm04
+    If createSheet05Flg Then CreateSheet05 sheetNm05
+    If createSheet06Flg Then CreateSheet06 sheetNm06
+    If createSheet07Flg Then CreateSheet07 sheetNm07
+
+    'ステータスバー初期化
+    Application.StatusBar = False
+    '処理中描画ON設定
+    RenderingProcess True
+End Sub
+'------------------------------------------------------------
+'概要 : [00] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet00(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+
+    Application.StatusBar = "[" & wsNm & "] 書込中..."
+
+    '書込初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+
+    '内容
+    writeContentsCol.Add Array("【解析対象】")
+    writeContentsCol.Add Array("JCLフォルダパス", jclFolderPath)
+    writeContentsCol.Add Array("PGMフォルダパス", pgmFolderPath)
+    writeContentsCol.Add Array("CPYフォルダパス", cpyFolderPath)
+    writeContentsCol.Add Array("JCLファイル数", jclFileNmList.count)
+    writeContentsCol.Add Array("PGMファイル数", pgmFileNmList.count)
+    writeContentsCol.Add Array("CPYファイル数", cpyFileNmList.count)
+    writeContentsCol.Add Array("")
+    writeContentsCol.Add Array("【各Sheet説明】")
+    writeContentsCol.Add Array(sheetNm01, "JCL内のSTEP一覧")
+    writeContentsCol.Add Array(sheetNm02, "JCL内のSTEP-DD一覧")
+    writeContentsCol.Add Array(sheetNm03, "PGM一覧")
+    writeContentsCol.Add Array(sheetNm04, "PGM内のOPENファイル一覧")
+    writeContentsCol.Add Array(sheetNm05, "PGM内のCALL行一覧")
+    writeContentsCol.Add Array(sheetNm06, "PGM内のCOPY行一覧")
+    writeContentsCol.Add Array(sheetNm07, "CPY内の項目一覧")
+    '一括書込
+    BulkWriteCells ws, writeRowIdx, 1
+    'Sheet設定
+    ws.Activate
+    ActiveWindow.DisplayGridlines = False '目盛線
+    With ws
+        .Columns("A").ColumnWidth = 30 '列幅
+        .Columns("B").ColumnWidth = 30
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [01] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet01(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●JCL/JOB/STEP/EXEC PGM/COND/PARM/TIME/REGION/DYNAMNBR/ファイル有無
+    Dim jcl As String
+    Dim job As String
+    Dim step As String
+    Dim execPgm As String
+    Dim cond As String
+    Dim parm As String
+    Dim time As String
+    Dim region As String
+    Dim dynamnbr As String
+    Dim existsFile As String
+    '●EXEC PGM行有無
+    Dim execPgmFlg As Boolean
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("JCLファイル", "JOB", "STEP", "EXEC PGM", "COND", "PARM", "TIME", "REGION", "DYNAMNBR", "PGMファイル有無", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = jclFileNmList.count
+    For Each fileNm In jclFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        '初期化
+        execPgmFlg = False
+        job = ""
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_JCL, fileNm)
+        '拡張子除去
+        jcl = GetFileBaseNm(fileNm)
+        '全行Loop
+        For Each line In fileContents
+            'JOB取得
+            If job = "" Then
+                job = GetJob(line)
+                If job <> "" Then
+                    '行番号 取得
+                    lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_JCL, line))
+                    writeContentsCol.Add Array(jcl, job, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, lineNo, line)
+                End If
+            End If
+            'EXEC PGM行の場合
+            If IsExecPgmLine(line) Then
+                execPgmFlg = True
+                '値取得
+                step = ConvertEmpToHyphen(GetStep(line))
+                execPgm = GetExecPgm(line)
+                cond = ConvertEmpToHyphen(GPGetVal(line, "COND="))
+                parm = ConvertEmpToHyphen(GPGetVal(line, "PARM="))
+                time = ConvertEmpToHyphen(GPGetVal(line, "TIME="))
+                region = ConvertEmpToHyphen(GPGetVal(line, "REGION="))
+                dynamnbr = ConvertEmpToHyphen(GPGetVal(line, "DYNAMNBR="))
+                existsFile = ConvertFlgToMark(IsExistsFile(FILETYPE_PGM, line))
+                lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_JCL, line))
+                writeContentsCol.Add Array(jcl, job, step, execPgm, cond, parm, time, region, dynamnbr, existsFile, lineNo, line)
+            End If
+        Next
+        'EXEC PGM無しの場合
+        If Not execPgmFlg Then writeContentsCol.Add Array(jcl, job, "無し", HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 10
+        .Columns("C").ColumnWidth = 10
+        .Columns("D").ColumnWidth = 13
+        .Columns("E").ColumnWidth = 18
+        .Columns("F").ColumnWidth = 18
+        .Columns("G").ColumnWidth = 18
+        .Columns("H").ColumnWidth = 18
+        .Columns("I").ColumnWidth = 18
+        .Columns("J").ColumnWidth = 18
+        .Columns("K").ColumnWidth = 10
+        .Columns("L").ColumnWidth = 90
+        .Columns("M").ColumnWidth = 50
+        .Range("G2:I" & rowEndIdx).HorizontalAlignment = xlRight '文字揃え
+        .Range("J2:J" & rowEndIdx).HorizontalAlignment = xlCenter
+        .Range("K2:K" & rowEndIdx).HorizontalAlignment = xlRight
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [02] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet02(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●JCL/JOB/STEP/D/DSN/DISP/SYSOUT/UNIT/SPACE
+    Dim jcl As String
+    Dim job As String
+    Dim step As String
+    Dim dd As String
+    Dim dsn As String
+    Dim disp As String
+    Dim sysout As String
+    Dim unit As String
+    Dim space As String
+    '●DD行有無
+    Dim ddFlg As Boolean
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("JCLファイル", "JOB", "STEP", "DD", "DSN", "DISP", "SYSOUT", "UNIT", "SPACE", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = jclFileNmList.count
+    For Each fileNm In jclFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        '初期化
+        ddFlg = False
+        job = ""
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_JCL, fileNm)
+        '拡張子除去
+        jcl = GetFileBaseNm(fileNm)
+        '全行Loop
+        For Each line In fileContents
+            'JOB取得
+            job = GetJob(line)
+            'EXEC PGM行の場合
+            If IsExecPgmLine(line) Then
+                '値取得
+                step = ConvertEmpToHyphen(GetStep(line))
+                lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_JCL, line))
+                writeContentsCol.Add Array(jcl, job, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, lineNo, line)
+            End If
+            'DD行の場合
+            If IsDdLine(line) Then
+                ddFlg = True
+                '値取得
+                dd = ConvertEmpToHyphen(GetDd(line))
+                dsn = ConvertEmpToHyphen(GPGetVal(line, "DSN="))
+                disp = ConvertEmpToHyphen(GPGetVal(line, "DISP="))
+                sysout = ConvertEmpToHyphen(GPGetVal(line, "SYSOUT="))
+                unit = ConvertEmpToHyphen(GPGetVal(line, "UNIT="))
+                space = ConvertEmpToHyphen(GetSpace(line))
+                lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_JCL, line))
+                writeContentsCol.Add Array(jcl, job, step, dd, dsn, disp, sysout, unit, space, lineNo, line)
+            End If
+        Next
+        'DD無しの場合
+        If Not ddFlg Then writeContentsCol.Add Array(jcl, job, HYPHEN, "無し", HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN, HYPHEN)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    ApplyLineStyle02 ws, rng
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 10
+        .Columns("C").ColumnWidth = 10
+        .Columns("D").ColumnWidth = 13
+        .Columns("E").ColumnWidth = 18
+        .Columns("F").ColumnWidth = 18
+        .Columns("G").ColumnWidth = 10
+        .Columns("H").ColumnWidth = 10
+        .Columns("I").ColumnWidth = 20
+        .Columns("J").ColumnWidth = 10
+        .Columns("K").ColumnWidth = 90
+        .Columns("L").ColumnWidth = 50
+        .Range("J2:J" & rowEndIdx).HorizontalAlignment = xlRight '文字揃え
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [03] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet03(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●PGM/PROGRAM-ID
+    Dim pgm As String
+    Dim programId As String
+    '●行数(OPEN/CALL/COPY)
+    Dim openCnt As Long
+    Dim callCnt As Long
+    Dim copyCnt As Long
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("PGMファイル", "PROGRAM-ID", "OPEN件数", "CALL件数", "COPY件数", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = pgmFileNmList.count
+    For Each fileNm In pgmFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        '行特定
+        line = GetProgramIdLine(fileContents)
+        '拡張子除去
+        pgm = GetFileBaseNm(fileNm)
+        '値取得
+        programId = ConvertEmpToHyphen(GPGetVal(line, "PROGRAM-ID."))
+        openCnt = GetOpenLineList(fileContents).count
+        callCnt = GetCallLineList(fileContents).count
+        copyCnt = GetCopyLineList(fileContents).count
+        lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+        writeContentsCol.Add Array(pgm, programId, openCnt, callCnt, copyCnt, lineNo, line)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 3 'テーブル
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 15
+        .Columns("C").ColumnWidth = 12
+        .Columns("D").ColumnWidth = 12
+        .Columns("E").ColumnWidth = 10
+        .Columns("F").ColumnWidth = 12
+        .Columns("G").ColumnWidth = 90
+        .Columns("H").ColumnWidth = 50
+        .Range("C2:F" & rowEndIdx).HorizontalAlignment = xlRight '文字揃え
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [04] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet04(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●PGM/PROGRAM-ID/IO種別/OPENファイル名
+    Dim pgm As String
+    Dim programId As String
+    Dim ioType As String
+    Dim openFileNm As Variant
+    Dim openFileNmList As New Collection
+    '●OPEN行一覧
+    Dim openLineList As Collection
+    '●OPEN種別
+    Dim openType As Variant
+    Dim openTypeList As New Collection
+    openTypeList.Add "INPUT"
+    openTypeList.Add "OUTPUT"
+    openTypeList.Add "I-O"
+    openTypeList.Add "EXTEND"
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("PGMファイル", "PROGRAM-ID", "IO種別", "OPENファイル", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = pgmFileNmList.count
+    For Each fileNm In pgmFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        '行リスト取得
+        Set openLineList = GetOpenLineList(fileContents)
+        '拡張子除去
+        pgm = GetFileBaseNm(fileNm)
+        '行特定
+        line = GetProgramIdLine(fileContents)
+        '値取得
+        programId = ConvertEmpToHyphen(GPGetVal(line, "PROGRAM-ID."))
+        lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+        writeContentsCol.Add Array(pgm, programId, ioType, openFileNm, lineNo, line)
+        For Each line In openLineList
+            lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+            For Each openType In openTypeList
+                ioType = GetIoType(openType, line)
+                If ioType <> "" Then
+                    Set openFileNmList = GetOpenFileNmList(openType, line)
+                    For Each openFileNm In openFileNmList
+                        writeContentsCol.Add Array(pgm, programId, ioType, openFileNm, lineNo, line)
+                    Next
+                End If
+            Next
+        Next
+        'OPEN無しの場合
+        If openLineList.count = 0 Then writeContentsCol.Add Array(pgm, programId, "無し", HYPHEN, HYPHEN, HYPHEN)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 15
+        .Columns("C").ColumnWidth = 10
+        .Columns("D").ColumnWidth = 20
+        .Columns("E").ColumnWidth = 10
+        .Columns("F").ColumnWidth = 90
+        .Columns("G").ColumnWidth = 50
+        .Range("C2:C" & rowEndIdx).HorizontalAlignment = xlCenter '文字揃え
+        .Range("E2:E" & rowEndIdx).HorizontalAlignment = xlRight
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [05] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet05(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●PGM/PROGRAM-ID/CALL先PGM/CALL種別/ファイル有無
+    Dim pgm As String
+    Dim programId As String
+    Dim callPgm As String
+    Dim callType As String
+    Dim existsFile As String
+    '●CALL行一覧
+    Dim callLineList As Collection
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("PGMファイル", "PROGRAM-ID", "CALL先PGM", "CALL種別", "PGMファイル有無", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = pgmFileNmList.count
+    For Each fileNm In pgmFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        '行リスト取得
+        Set callLineList = GetCallLineList(fileContents)
+        '拡張子除去
+        pgm = GetFileBaseNm(fileNm)
+        '行特定
+        line = GetProgramIdLine(fileContents)
+        '値取得
+        programId = ConvertEmpToHyphen(GPGetVal(line, "PROGRAM-ID."))
+        lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+        writeContentsCol.Add Array(pgm, programId, HYPHEN, HYPHEN, HYPHEN, lineNo, line)
+        For Each line In callLineList
+            callPgm = ConvertEmpToHyphen(GPGetVal(line, " CALL "))
+            callType = GetCallPgmType(callPgm)
+            '固定PGM名の場合
+            If callType = "固定" Then
+                existsFile = ConvertFlgToMark(IsExistsFile(FILETYPE_PGM, callPgm))
+            Else
+                existsFile = HYPHEN
+            End If
+            lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+            writeContentsCol.Add Array(pgm, programId, callPgm, callType, existsFile, lineNo, line)
+        Next
+        'CALL無しの場合
+        If callLineList.count = 0 Then writeContentsCol.Add Array(pgm, programId, "無し", HYPHEN, HYPHEN, HYPHEN, HYPHEN)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 15
+        .Columns("C").ColumnWidth = 15
+        .Columns("D").ColumnWidth = 12
+        .Columns("E").ColumnWidth = 18
+        .Columns("F").ColumnWidth = 10
+        .Columns("G").ColumnWidth = 90
+        .Columns("H").ColumnWidth = 50
+        .Range("D2:E" & rowEndIdx).HorizontalAlignment = xlCenter '文字揃え
+        .Range("F2:F" & rowEndIdx).HorizontalAlignment = xlRight
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [06] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet06(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●PGM/PROGRAM-ID/COPYファイル名/ファイル有無
+    Dim pgm As String
+    Dim programId As String
+    Dim copyFileNm As String
+    Dim existsFile As String
+    '●COPY行一覧
+    Dim copyLineList As Collection
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("PGMファイル", "PROGRAM-ID", "COPY", "CPYファイル有無", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = pgmFileNmList.count
+    For Each fileNm In pgmFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        'ファイル内容 取得
+        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        '行リスト取得
+        Set copyLineList = GetCopyLineList(fileContents)
+        '拡張子除去
+        pgm = GetFileBaseNm(fileNm)
+        '行特定
+        line = GetProgramIdLine(fileContents)
+        '値取得
+        programId = ConvertEmpToHyphen(GPGetVal(line, "PROGRAM-ID."))
+        lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+        writeContentsCol.Add Array(pgm, programId, HYPHEN, HYPHEN, lineNo, line)
+        For Each line In copyLineList
+            copyFileNm = ConvertEmpToHyphen(GPGetVal(line, " COPY "))
+            existsFile = ConvertFlgToMark(IsExistsFile(FILETYPE_CPY, copyFileNm))
+            lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
+            writeContentsCol.Add Array(pgm, programId, copyFileNm, existsFile, lineNo, line)
+        Next
+        'COPY無しの場合
+        If copyLineList.count = 0 Then writeContentsCol.Add Array(pgm, programId, "無し", HYPHEN, HYPHEN, HYPHEN)
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 15
+        .Columns("C").ColumnWidth = 10
+        .Columns("D").ColumnWidth = 18
+        .Columns("E").ColumnWidth = 10
+        .Columns("F").ColumnWidth = 90
+        .Columns("G").ColumnWidth = 50
+        .Range("D2:D" & rowEndIdx).HorizontalAlignment = xlCenter '文字揃え
+        .Range("E2:E" & rowEndIdx).HorizontalAlignment = xlRight
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : [07] COBOL Sheetを作成する
+'引数 : wsNm : 作成Sheet名
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet07(ByVal wsNm As String)
+    '●Sheet
+    Dim ws As Worksheet
+    '●ファイル内容/ファイル名/行データ/行番号
+    Dim fileContents As New Collection
+    Dim fileNm As Variant
+    Dim line As Variant
+    Dim lineNo As String
+    '●COPY/Lv/項目名/PIC/USAGE/OCCURS/REDEFINES/VALUE
+    Dim copy As String
+    Dim copyLv As String
+    Dim itemNm As String
+    Dim pic As String
+    Dim usage As String
+    Dim occurs As String
+    Dim redefines As String
+    Dim copyValue As String
+
+    Dim rowEndIdx As Long  '終了行番号
+    Dim colEndIdx As Long  '終了列番号
+    Dim rng As Range       '範囲
+    Dim fileCnt As Long    'ファイル数
+    Dim allFileCnt As Long '全ファイル数
+
+    '書込 初期化
+    InitWriteContentsCol 1
+    'Sheet作成
+    Set ws = CreateNewSheet(wsNm)
+    'ヘッダー
+    writeContentsCol.Add Array("CPYファイル", "Lv", "項目名", "PIC", "USAGE", "OCCURS", "REDEFINES", "VALUE", "行番号", "元", "備考")
+    '終了列セット
+    colEndIdx = GetMaxColSize(writeContentsCol)
+
+    'データ行
+    fileCnt = 1
+    allFileCnt = pgmFileNmList.count
+    For Each fileNm In pgmFileNmList
+        Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
+        fileCnt = fileCnt + 1
+        'ファイル内容 取得 & 整形
+        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        Set fileContents = GetCpyFileLineList(fileContents)
+        '拡張子除去
+        copy = GetFileBaseNm(fileNm)
+        For Each line In fileContents
+            copyLv = ConvertEmpToHyphen(GetCopyLv(line))
+            itemNm = ConvertEmpToHyphen(GetCopyItemNm(line))
+            pic = ConvertEmpToHyphen(GetPic(line))
+            usage = ConvertEmpToHyphen(GetCopyUsage(line))
+            occurs = ConvertEmpToHyphen(GPGetVal(line, " OCCURS "))
+            redefines = ConvertEmpToHyphen(GPGetVal(line, " REDEFINES "))
+            copyValue = ConvertEmpToHyphen(GetCopyValue(line))
+            lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_CPY, line))
+            writeContentsCol.Add Array(copy, "'" & copyLv, itemNm, pic, usage, occurs, redefines, "'" & copyValue, lineNo, line)
+        Next
+        '一括書込
+        BulkWriteCells ws, writeRowIdx, 1
+        '書込 初期化
+        InitWriteContentsCol writeRowIdx + writeContentsCol.count
+        '応答なし 対策
+        DoEvents
+    Next
+
+    '終了行セット
+    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    '表範囲セット
+    Set rng = Range(ws.Cells(1, 1), ws.Cells(rowEndIdx, colEndIdx))
+
+    'Sheet共通設定/個別設定
+    CommonSheetSetting ws
+    ApplyTableStyle01 ws, rng, 5 'テーブル
+    ApplyLineStyle01 ws, rng, 1 '罫線
+    With ws
+        .Columns("A").ColumnWidth = 15 '列幅
+        .Columns("B").ColumnWidth = 6
+        .Columns("C").ColumnWidth = 15
+        .Columns("D").ColumnWidth = 15
+        .Columns("E").ColumnWidth = 10
+        .Columns("F").ColumnWidth = 10
+        .Columns("G").ColumnWidth = 15
+        .Columns("H").ColumnWidth = 20
+        .Columns("I").ColumnWidth = 10
+        .Columns("J").ColumnWidth = 90
+        .Columns("K").ColumnWidth = 50
+        .Range("B2:B" & rowEndIdx).HorizontalAlignment = xlCenter '文字揃え
+        .Range("F2:F" & rowEndIdx).HorizontalAlignment = xlRight
+        .Range("I2:I" & rowEndIdx).HorizontalAlignment = xlRight
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub RenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg
+    Application.DisplayAlerts = flg
+    Application.EnableEvents = flg
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic
+    Else
+        Application.Calculation = xlCalculationManual
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    '一時的にエラー処理OFF設定
+    On Error Resume Next
+    IsExistsSheet = Not Worksheets(wsNm) Is Nothing
+    'エラー処理ON設定
+    On Error GoTo 0
+End Function
+'------------------------------------------------------------
+'概要 : 新規Sheet作成(右端に作成)
+'引数 : wsNm : 作成Sheet名
+'戻値 : 作成Sheet
+'備考 : -
+'------------------------------------------------------------
+Private Function CreateNewSheet(ByVal wsNm As String) As Worksheet
+    Dim ws As Worksheet
+    '存在する場合、タイムスタンプ付与
+    If IsExistsSheet(wsNm) Then wsNm = wsNm & "_" & timestamp
+    Set ws = ThisWorkbook.Sheets.Add(after:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.count))
+    ws.name = wsNm
+    Set CreateNewSheet = ws
+End Function
+'------------------------------------------------------------
+'概要 : 共通Sheet設定
+'引数 : ws : Sheet
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CommonSheetSetting(ByRef ws As Worksheet)
+    ws.Activate
+    ActiveWindow.Zoom = 85 '表示倍率
+    ActiveWindow.DisplayGridlines = False '目盛線
+    With ws
+        .Cells.Font.name = "HGｺﾞｼｯｸM" 'フォント
+        .Cells.VerticalAlignment = xlTop '文字揃え
+        .Cells.HorizontalAlignment = xlLeft
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : テーブルスタイル適用
+'引数 : ws     : Sheet
+'     : rng    : 適用範囲
+'     : colIdx : ウィンドウ固定列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyTableStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByRef colIdx As Long)
+    'テーブルスタイル適用
+    Dim tbl As ListObject: Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
+    tbl.TableStyle = "TableStyleMedium4"
+    'ヘッダー
+    With ws.Range(ws.Cells(rng.row, rng.Column), ws.Cells(rng.row, rng.Columns.count))
+        .Font.Color = RGB(0, 0, 0)           '#000000 文字色
+        .Interior.Color = RGB(221, 235, 247) '#DDEBF7 背景色
+        .HorizontalAlignment = xlCenter      '文字揃え
+    End With
+    '罫線
+    rng.Borders(xlInsideHorizontal).Weight = xlHairline
+    rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+    'ウィンドウ枠の固定
+    ws.Activate
+    ActiveWindow.FreezePanes = False '既存解除
+    ws.Cells(rng.row + 1, rng.Column + colIdx + 1).Select
+    ActiveWindow.FreezePanes = True
+End Sub
+'------------------------------------------------------------
+'概要 : 罫線01(行境界線)
+'引数 : ws     : Sheet
+'     : rng    : 適用範囲
+'     : colIdx : 境界判定列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyLineStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByVal colIdx As Long)
+    Dim i As Long
+    '●名称(前/現在)
+    Dim preNm As String
+    Dim crntNm As String
+    preNm = ws.Cells(rng.row + 1, rng.Column + colIdx - 1).Value2
+    For i = rng.row + 1 To rng.Rows.count
+        crntNm = ws.Cells(i, rng.Column + colIdx - 1).Value2
+        If preNm <> crntNm Then
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).LineStyle = xlDouble
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).Weight = xlThick
+        End If
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : 罫線02(行境界線)
+'引数 : ws  : Sheet
+'     : rng : 適用範囲
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyLineStyle02(ByRef ws As Worksheet, ByRef rng As Range)
+    Dim i As Long
+    '●名称(前/現在)
+    Dim preNm1 As String
+    Dim preNm2 As String
+    Dim crntNm1 As String
+    Dim crntNm2 As String
+    preNm1 = ws.Cells(rng.row + 1, rng.Column).Value2
+    preNm2 = ws.Cells(rng.row + 1, rng.Column + 2).Value2
+    For i = rng.row + 1 To rng.row + rng.Rows.count
+        crntNm1 = ws.Cells(i, rng.Column).Value2
+        crntNm2 = ws.Cells(i, rng.Column + 2).Value2
+        If preNm1 <> crntNm1 Then
+            preNm1 = crntNm1
+            preNm2 = crntNm2
+        ElseIf preNm1 = crntNm1 And crntNm2 = "-" Then
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).LineStyle = xlContinuous
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).Weight = xlThin
+            preNm1 = crntNm1
+            preNm2 = crntNm2
+        End If
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : 書込変数を初期化する
+'引数 : writeStartIdx : 書込開始行番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub InitWriteContentsCol(ByVal writeStartIdx As Long)
+    Set writeContentsCol = New Collection
+    writeRowIdx = writeStartIdx
+End Sub
+'------------------------------------------------------------
+'概要 : セル一括書込
+'引数 : ws          : Sheet
+'     : rowStartIdx : 開始行番号
+'     : colStartIdx : 開始列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub BulkWriteCells(ByRef ws As Worksheet, ByVal rowStartIdx As Long, ByVal colStartIdx As Long)
+    '●書込内容(配列)
+    Dim writeContentsArr As Variant
+    '●リスト内の最大項目数
+    Dim maxColSize As Long: maxColSize = GetMaxColSize(writeContentsCol)
+    If 0 < maxColSize Then
+        'リストから配列に変換
+        writeContentsArr = ConvertCollectionToArray(writeContentsCol, maxColSize)
+        '書込
+        ws.Cells(rowStartIdx, colStartIdx).Resize(writeContentsCol.count, maxColSize).Value = writeContentsArr
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : リスト内の最大項目数を取得する
+'     : col(1) [AAA, BBB]
+'     : col(2) [AAA, BBB, CCC]
+'     : col(3) [AAA]
+'     :   → 2行目の項目数3を返す
+'引数 : col : リスト
+'戻値 : リスト内の最大項目数
+'備考 : -
+'------------------------------------------------------------
+Private Function GetMaxColSize(ByRef col As Collection) As Long
+    Dim i As Long
+    Dim maxColSize As Long
+    For i = 1 To col.count
+        maxColSize = Application.Max(maxColSize, UBound(col(i)) + 1)
+    Next
+    GetMaxColSize = maxColSize
+End Function
+'------------------------------------------------------------
+'概要 : Collectionから配列へ変換する
+'引数 : col        : リスト
+'     : maxColSize : リスト内の最大項目数
+'戻値 : 配列
+'備考 : -
+'------------------------------------------------------------
+Private Function ConvertCollectionToArray(ByRef col As Collection, ByVal maxColSize As Long) As Variant
+    '●配列
+    Dim arr As Variant: ReDim arr(1 To col.count, 1 To maxColSize)
+    '●行番号/列番号
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    For rowIdx = 1 To col.count
+        '配列の場合
+        If IsArray(col(rowIdx)) Then
+            For colIdx = 1 To UBound(col(rowIdx)) + 1
+                arr(rowIdx, colIdx) = col(rowIdx)(colIdx - 1)
+            Next
+        Else
+            arr(rowIdx, 1) = col(rowIdx)
+        End If
+    Next
+    ConvertCollectionToArray = arr
+End Function
+'------------------------------------------------------------
+'概要 : ファイルが存在するか判定する
+'引数 : fileType : ファイル種別(JCL/PGM/CPY)
+'     : fileNm   : ファイル名(拡張子無しの場合、ファイル種別に応じて付与する)
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsFile(ByVal fileType As String, ByVal fileNm As String) As Boolean
+    '●ファイルパス
+    Dim filePath As String
+    'シングルクォート除去
+    If 0 < InStr(fileNm, "'") Then fileNm = Replace(fileNm, "'", "")
+    '設定
+    Select Case fileType
+        Case FILETYPE_JCL
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".jcl"
+            filePath = jclFolderPath & fileNm
+        Case FILETYPE_PGM
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".cob"
+            filePath = jclFolderPath & fileNm
+        Case FILETYPE_CPY
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".cpy"
+            filePath = jclFolderPath & fileNm
+    End Select
+    '存在しない場合
+    If Dir(filePath) = "" Then
+        IsExistsFile = False
+    Else
+        IsExistsFile = True
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : ファイル名一覧を取得する(ファイル種別の拡張子ファイルのみ取得する)
+'引数 : fileType : ファイル種別(JCL/PGM/CPY)
+'戻値 : ファイル名リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetFileNmList(ByVal fileType As String) As Collection
+    Dim col As New Collection
+    '●フォルダパス/ファイル名/拡張子
+    Dim folderPath As String
+    Dim fileNm As String
+    Dim ext As String
+    '設定
+    Select Case fileType
+        Case FILETYPE_JCL
+            folderPath = jclFolderPath
+            ext = ".jcl"
+        Case FILETYPE_PGM
+            folderPath = pgmFolderPath
+            ext = ".cob"
+        Case FILETYPE_CPY
+            folderPath = cpyFolderPath
+            ext = ".cpy"
+    End Select
+    '全ファイル名 取得
+    fileNm = Dir(folderPath & "*" & ext)
+    Do While fileNm <> ""
+        col.Add fileNm
+        fileNm = Dir()
+    Loop
+    Set GetFileNmList = col
+End Function
+'------------------------------------------------------------
+'概要 : ファイル名から拡張子を除去する
+'引数 : fileNm : ファイル名
+'戻値 : 拡張子除去済みファイル名
+'備考 : -
+'------------------------------------------------------------
+Private Function GetFileBaseNm(ByVal fileNm As String) As String
+    Dim pos As Long: pos = InStr(fileNm, ".")
+    If pos = 0 Then
+        GetFileBaseNm = fileNm
+    Else
+        GetFileBaseNm = Left(fileNm, pos - 1)
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : ファイル内容を取得する(改行は全てLFに変換する)
+'引数 : fileType : ファイル種別(JCL/PGM/CPY)
+'     : fileNm   : ファイル名(拡張子無しの場合、ファイル種別に応じて付与する)
+'戻値 : ファイル内容行リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetFileContents(ByVal fileType As String, ByVal fileNm As String) As Collection
+    Dim col As Collection
+    '●フォルダパス/ファイルパス
+    Dim folderPath As String
+    Dim filePath As String
+    '●ファイル読込用
+    Dim fileNo As Long: fileNo = FreeFile
+    '●ファイル内容/全行データ/行データ
+    Dim fileContents As String
+    Dim lines As String
+    Dim line As String
+    '設定
+    Select Case fileType
+        Case FILETYPE_JCL
+            folderPath = jclFolderPath
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".jcl"
+        Case FILETYPE_PGM
+            folderPath = pgmFolderPath
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".pgm"
+        Case FILETYPE_CPY
+            folderPath = cpyFolderPath
+            If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".cpy"
+    End Select
+    '存在する場合
+    If Dir(folderPath & fileNm) <> "" Then
+        'ファイル内容 取得
+        Open folderPath & fileNm For Binary As #fileNo
+        fileContents = space(LOF(fileNo))
+        Get #fileNo, , fileContents
+        Close #fileNo
+        '改行統一(LFに統一)
+        fileContents = Replace(fileContents, vbCrLf, vbLf)
+        fileContents = Replace(fileContents, vbCr, vbLf)
+        '行分割
+        lines = Split(fileContents, vbLf)
+        '結果セット
+        For Each line In lines
+            col.Add line
+        Next
+    End If
+    Set GetFileContents = col
+End Function
+'------------------------------------------------------------
+'概要 : 文字列が空の場合、ハイフンを返す
+'引数 : str : 文字列
+'戻値 : 結果文字列
+'備考 : -
+'------------------------------------------------------------
+Private Function ConvertEmpToHyphen(ByVal str As String) As String
+    If str = "" Then
+        ConvertEmpToHyphen = "-"
+    Else
+        ConvertEmpToHyphen = str
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : 真偽値をマークに変換する
+'引数 : flg : 真偽値(True/False)
+'戻値 : マーク
+'備考 : -
+'------------------------------------------------------------
+Private Function ConvertFlgToMark(ByVal flg As Boolean) As String
+    If flg Then
+        ConvertFlgToMark = "〇"
+    Else
+        ConvertFlgToMark = "×"
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : コメント行か判定する
+'引数 : fileType : ファイル種別(JCL/PGM/CPY)
+'     : line     : 行データ
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsCmntLine(ByVal fileType As String, ByVal line As String) As Boolean
+    Dim result As Boolean: result = False
+    '判定
+    Select Case fileType
+        Case FILETYPE_JCL
+            If mid(line, 15, 3) = "//*" Then result = True
+        Case FILETYPE_PGM, FILETYPE_CPY
+            If mid(line, 7, 1) = "*" Or mid(line, 7, 1) = "/" Then result = True
+    End Select
+    IsCmntLine = result
+End Function
+'------------------------------------------------------------
+'概要 : 新しい行か判定する(簡易)
+'引数 : line : 行データ
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsNewStmt(ByVal line As String) As Boolean
+    Dim matches As New Collection
+    Dim match As Variant
+    matches.Add (" MOVE ")
+    matches.Add (" READ ")
+    matches.Add (" WRITE ")
+    matches.Add (" CALL ")
+    matches.Add (" IF ")
+    matches.Add (" PERFORM ")
+    For Each match In matches
+        If 0 < InStr(line, match) Then
+            IsNewStmt = True
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : EXEC PGM行か判定する
+'引数 : line : 行データ
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExecPgmLine(ByVal line As String) As Boolean
+    Dim match As String: match = "EXECPGM="
+    '空白除去
+    Dim str As String: str = Replace(line, " ", "")
+    'コメント行の場合
+    If IsCmntLine(FILETYPE_JCL, line) Then
+        IsExecPgmLine = False
+    '有りの場合
+    ElseIf 0 < InStr(str, match) Then
+        IsExecPgmLine = True
+    Else
+        IsExecPgmLine = False
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : DD行か判定する
+'引数 : line : 行データ
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsDdLine(ByVal line As String) As Boolean
+    Dim match As String: match = " DD "
+    'コメント行 or 無しの場合
+    If IsCmntLine(FILETYPE_JCL, line) Or InStr(str, match) = 0 Then
+        IsDdLine = False
+    Else
+        IsDdLine = True
+    End If
+End Function
+'■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+'  GET系(対象行一覧)
+'■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+'------------------------------------------------------------
+'概要 : OPEN行一覧を取得する
+'引数 : fileContents : ファイル内容行リスト
+'戻値 : 対象行リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetOpenLineList(ByRef fileContents As Collection) As Collection
+    Dim i As Long
+    Dim str As String
+    Dim line As String
+    Dim nextLine As String
+    Dim col As New Collection
+    Dim match1 As String: match1 = "OPENINPUT"
+    Dim match2 As String: match2 = "OPENOUTPUT"
+    Dim match3 As String: match3 = "OPENI-O"
+    Dim match4 As String: match4 = "OPENEXTEND"
+    '●桁
+    Dim posIn As Long
+    Dim posOut As Long
+    Dim posIo As Long
+    Dim posEx As Long
+    For i = 1 To fileContents.count
+        line = Left(CStr(fileContents(i)), 72)
+        'コメント行でない
+        If Not IsCmntLine(FILETYPE_PGM, line) Then
+            str = Replace(line, " ", "")
+            posIn = InStr(str, match1)
+            posOut = InStr(str, match2)
+            posIo = InStr(str, match3)
+            posEx = InStr(str, match4)
+            '有りの場合
+            If 0 < poin Or 0 < poout Or 0 < poio Or 0 < poex Then
+                '継続行判定
+                Do While Right(Trim(line), 1) <> "." And i < fileContents.count
+                    i = i + 1
+                    nextLine = Left(CStr(fileContents(i)), 72)
+                    'コメント行でない & 継続行でない場合
+                    If Not IsCmntLine(FILETYPE_PGM, line) And Not IsNewStmt(fileContents(i)) Then
+                        line = Trim(line) & " " & Trim(mid(nextLine, 8))
+                    Else
+                        Exit Do
+                    End If
+                Loop
+            End If
+        End If
+    Next
+    Set GetOpenLineList = col
+End Function
+'------------------------------------------------------------
+'概要 : COPY行一覧を取得する
+'引数 : fileContents : ファイル内容行リスト
+'戻値 : 対象行リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyLineList(ByRef fileContents As Collection) As Collection
+    Dim match As String: matche = " COPY "
+    Dim col As New Collection
+    Dim line As Variant
+    For Each line In fileContents
+        'コメント行でない & 有りの場合
+        If Not IsCmntLine(FILETYPE_PGM, line) And 0 < InStr(line, match) Then
+            col.Add line
+        End If
+    Next
+    GetCopyLineList = col
+End Function
+'------------------------------------------------------------
+'概要 : CALL行一覧を取得する
+'引数 : fileContents : ファイル内容行リスト
+'戻値 : 対象行リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCallLineList(ByRef fileContents As Collection) As Collection
+    Dim match As String: matche = " CALL "
+    Dim col As New Collection
+    Dim line As Variant
+    For Each line In fileContents
+        'コメント行でない & 有りの場合
+        If Not IsCmntLine(FILETYPE_PGM, line) And 0 < InStr(line, match) Then
+            col.Add line
+        End If
+    Next
+    GetCallLineList = col
+End Function
+'------------------------------------------------------------
+'概要 : CPYファイル内容を取得する(コメント行など除外)
+'引数 : fileContents : ファイル内容行リスト
+'戻値 : 対象行リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCpyFileLineList(ByRef fileContents As Collection) As Collection
+    Dim i As Long
+    Dim str As String
+    Dim line As String
+    Dim nextLine As String
+    Dim col As New Collection
+    Dim pos1 As Long
+    Dim pos2 As Long
+    Dim lv88Flg As Boolean
+    For i = 1 To fileContents.count
+        line = Left(CStr(fileContents(i)), 72)
+        '72桁までスペース埋め
+        line = line & space(72 - Len(line))
+        'コメント行でない & 空行でない場合
+        If Not IsCmntLine(FILETYPE_CPY, line) And Trim(mid(line, 8)) <> "" Then
+            'Lv88フラグ セット
+            lv88Flg = (GetCopyLv(line) = "88")
+            Do While i < fileContents.count
+                nextLine = Left(CStr(fileContents(i + 1)), 72)
+                '72桁までスペース埋め
+                nextLine = nextLine & space(72 - Len(nextLine))
+                'コメント行でない & 空行でない場合
+                If Not IsCmntLine(FILETYPE_CPY, nextLine) And Trim(mid(nextLine, 8)) <> "" Then
+                    '継続行の場合
+                    If mid(nextLine, 7, 1) = "-" Then
+                        'シングルクォートが奇数個の場合(VALUE値途中終了の場合)
+                        If UBound(Split(nextLine, "'")) Mod 2 <> 0 Then
+                            '以降 切り抜き
+                            line = line & mid(nextLine, InStr(nextLine, "'") + 1)
+                        'シングルクォート固定値のみの場合(継続VALUE値有りの場合)
+                        ElseIf Left(Trim(mid(nextLine, 8)), 1) = "'" And (Right(Trim(mid(nextLine, 8)), 1) = "'" Or Right(Trim(mid(nextLine, 8)), 1) = ".") Then
+                            pos1 = InStr(nextLine, "'") '1個目
+                            pos1 = InStr(mid(nextLine, pos1 + 1), "'") '1個目
+                            line = line & mid(nextLine, pos1 + 1, pos2)
+                        Else
+                            line = line & mid(nextLine, 8)
+                        End If
+                    'Lv88の継続行の場合
+                    ElseIf lv88Flg And GetCopyLv(nextLine) = "" Then
+                        line = line & mid(nextLine, 8)
+                    Else
+                        Exit Do
+                    End If
+                End If
+                i = i + 1
+            Loop
+            col.Add line
+        End If
+    Next
+    GetCpyFileLineList = col
+End Function
+'------------------------------------------------------------
+'概要 : PROGRAM-ID行を取得する
+'引数 : fileContents : ファイル内容行リスト
+'戻値 : 対象行
+'備考 : -
+'------------------------------------------------------------
+Private Function GetProgramIdLine(ByRef fileContents As Collection) As String
+    Dim match As String: match = "PROGRAM-ID."
+    Dim line As Variant
+    For Each line In fileContents
+        'コメント行でない & 有りの場合
+        If Not IsCmntLine(FILETYPE_PGM, line) And 0 < InStr(line, match) Then
+            GetProgramIdLine = line
+            Exit Function
+        End If
+    Next
+    GetProgramIdLine = ""
+End Function
+'■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+'  GET系(対象値)
+'■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+'------------------------------------------------------------
+'概要 : 値を取得する(汎用系)
+'引数 : line  : 行データ
+'     : match : 検索文字列
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GPGetVal(ByVal line As String, ByVal match As String) As String
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    '有りの場合
+    If 0 < pos Then
+        str = Trim(mid(line, pos + Len(match)))
+        '"'" 始まりの場合
+        If Left(str, 1) = "'" Then
+            '切り抜き
+            srt = "'" & Left(str, InStr(mid(str, 2), "'") + 1)
+        '"(" 始まりの場合
+        ElseIf Left(str, 1) = "(" Then
+            srt = Left(str, InStr(mid(str, 2), ")") + 1)
+        Else
+            '手前 切り抜き
+            pos = InStr(str, ",")
+            If 0 < pos Then str = Left(str, pos - 1)
+            pos = InStr(str, ".")
+            If 0 < pos Then str = Left(str, pos - 1)
+            pos = InStr(str, " ")
+            If 0 < pos Then str = Left(str, pos - 1)
+        End If
+    End If
+    GPGetVal = str
+End Function
+'------------------------------------------------------------
+'概要 : 行番号を取得する
+'引数 : fileType : ファイル種別(JCL/PGM/CPY)
+'     : line     : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetLineNo(ByVal fileType As String, ByVal line As String) As String
+    Dim str As String: str = ""
+    Select Case fileType
+        Case FILETYPE_JCL
+            str = Right(line, 8)
+        Case FILETYPE_PGM, FILETYPE_CPY
+            str = Left(line, 6)
+    End Select
+    If IsNumber(str) Then
+        GetLineNo = str
+    Else
+        GetLineNo = ""
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : JOB名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetJob(ByVal line As String) As String
+    Dim match As String: match = " JOB "
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < pos Then
+        '以降 切り抜き
+        str = mid(line, 17)
+        '手前 切り抜き
+        str = Left(str, InStr(str, " ") - 1)
+    End If
+    GetJob = str
+End Function
+'------------------------------------------------------------
+'概要 : STEP名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetStep(ByVal line As String) As String
+    Dim match1 As String: match1 = "EXECPGM="
+    Dim match2 As String: match2 = "//"
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < InStr(Replace(line, " ", ""), match1) Then
+        '以降 切り抜き
+        str = mid(line, InStr(ilne, match2) + Len(match2))
+        '手前 切り抜き
+        pos = InStr(str, " ")
+        str = Trim(Left(str, pos - 1))
+    End If
+    GetJob = str
+End Function
+'------------------------------------------------------------
+'概要 : EXEC PGM名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetExecPgm(ByVal line As String) As String
+    Dim match1 As String: match1 = "EXECPGM="
+    Dim match2 As String: match2 = " PGM="
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < InStr(Replace(line, " ", ""), match1) Then
+        '以降 切り抜き
+        str = mid(line, InStr(ilne, match2) + Len(match2))
+        '手前 切り抜き
+        pos = InStr(str, ",")
+        If 0 < po Then str = Trim(Left(str, pos - 1))
+        pos = InStr(str, " ")
+        If 0 < po Then str = Trim(Left(str, pos - 1))
+    End If
+    GetExecPgm = str
+End Function
+'------------------------------------------------------------
+'概要 : DD名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDd(ByVal line As String) As String
+    Dim match1 As String: match1 = " DD "
+    Dim match2 As String: match2 = "//"
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match1)
+    If 0 < pos Then
+        '以降 切り抜き
+        str = mid(line, InStr(ilne, match2) + Len(match2))
+        '手前 切り抜き
+        str = Trim(Left(str, InStr(str, match1)))
+    End If
+    GetDd = str
+End Function
+'------------------------------------------------------------
+'概要 : SPACE名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetSpace(ByVal line As String) As String
+    Dim match As String: match = "SPACE="
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    Dim pos1 As Long
+    Dim pos2 As Long
+    If 0 < pos Then
+        '以降 切り抜き
+        str = mid(line, pos + Len(match))
+        '2個目の")"まで切り抜き
+        str = Trim(Left(str, InStr(str, match1)))
+        pos1 = InStr(str, ")")
+        pos2 = InStr(mid(str, pos1 + 1), ")")
+        str = Left(str, pos1 + pos2)
+    End If
+    GetSpace = str
+End Function
+'------------------------------------------------------------
+'概要 : OPENファイル名一覧を取得する
+'引数 : openType : OPEN種別(INPUT/OUTPUT/I-O/EXTEND)
+'     : line     : 行データ
+'戻値 : リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetOpenFileNmList(ByVal openType As String, ByVal line As String) As Collection
+    Dim match1 As String: match1 = " INPUT "
+    Dim match2 As String: match2 = " OUTPUT "
+    Dim match3 As String: match3 = " I-O "
+    Dim match4 As String: match4 = " EXTEND "
+    '桁
+    Dim pos As Long
+    Dim posIn As Long: posIn = InStr(line, match1)
+    Dim posOut As Long: posOut = InStr(line, match2)
+    Dim posIo As Long: posIo = InStr(line, match3)
+    Dim posEx As Long: posEx = InStr(line, match4)
+
+    Dim col As New Collection
+    Dim str As String
+    Dim arr As Variant
+    Dim fileNm As String
+    '有りの場合
+    If 0 < posIn Or 0 < posOut Or 0 < posIo Or 0 < posEx Then
+        Select Case openType
+            Case Trim(match1)
+                If 0 < posIn Then
+                    '以降 切り抜き
+                    str = Trim(mid(line, InStr(line, match1) + Len(match1)))
+                    '手前 切り抜き
+                    posOut = InStr(str, match2)
+                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    posIo = InStr(str, match3)
+                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                    posEx = InStr(str, match4)
+                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                End If
+            Case Trim(match2)
+                If 0 < posOut Then
+                    str = Trim(mid(line, InStr(line, match2) + Len(match2)))
+                    posIn = InStr(str, match1)
+                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    posIo = InStr(str, match3)
+                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                    posEx = InStr(str, match4)
+                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                End If
+            Case Trim(match3)
+                If 0 < posIo Then
+                    str = Trim(mid(line, InStr(line, match3) + Len(match3)))
+                    posIn = InStr(str, match1)
+                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    posOut = InStr(str, match2)
+                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    posEx = InStr(str, match4)
+                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                End If
+            Case Trim(match4)
+                If 0 < posEx Then
+                    str = Trim(mid(line, InStr(line, match4) + Len(match4)))
+                    posIn = InStr(str, match1)
+                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    posOut = InStr(str, match2)
+                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    posIo = InStr(str, match3)
+                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                End If
+        End Select
+        '手前 切り抜き
+        pos = InStr(str, ".")
+        If 0 < pos Then str = Left(str, pos - 1)
+        '分割
+        arr = Split(str, " ")
+        'ファイル名セット
+        For i = LBound(arr) To UBound(arr)
+            fileNm = Trim(arr(i))
+            If fileNm <> "" Then co.Add fileNm
+        Next
+    End If
+    GetOpenFileNmList = col
+End Function
+'------------------------------------------------------------
+'概要 : IO種別を取得する
+'引数 : openType : OPEN種別(INPUT/OUTPUT/I-O/EXTEND)
+'     : line     : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetIoType(ByVal openType As String, ByVal line As String) As String
+    Dim match1 As String: match1 = "OPEN"
+    Dim match2 As String: match2 = " INPUT "
+    Dim match3 As String: match3 = " OUTPUT "
+    Dim match4 As String: match4 = " I-O "
+    Dim match5 As String: match5 = " EXTEND "
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < InStr(Left(Trim(mid(line, 7)), 4), match1) Then
+        Select Case openType
+            Case Trim(match2)
+                If 0 < InStr(line, match2) Then str = Trim(match2)
+            Case Trim(match3)
+                If 0 < InStr(line, match3) Then str = Trim(match3)
+            Case Trim(match4)
+                If 0 < InStr(line, match4) Then str = Trim(match4)
+            Case Trim(match5)
+                If 0 < InStr(line, match5) Then str = Trim(match5)
+        End Select
+    End If
+    GetIoType = str
+End Function
+'------------------------------------------------------------
+'概要 : CALL先PGM名が固定値か、変数か判定する
+'引数 : callPgm : CALL先PGM名
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCallPgmType(ByVal callPgm As String) As String
+    If Left(callPgm, 1) = "'" Then
+        GetCallPgmType = "固定"
+    Else
+        GetCallPgmType = "変数"
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : COPYファイル名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyFileNm(ByVal line As String) As String
+    Dim match As String: match = " COPY "
+    Dim str As String: str = ""
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < pos Then
+        '以降 切り抜き & 空白除去
+        str = Replace(Trim(mid(line, InStr(line, match) + Len(match))), " ", "")
+        '手前 切り抜き
+        If 0 < InStr(str, ".") Then str = Left(str, InStr(str, ".") - 1)
+    End If
+    GetCopyFileNm = Trim(str)
+End Function
+'------------------------------------------------------------
+'概要 : COPYレベルを取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyLv(ByVal line As String) As String
+    Dim str As String: str = Trim(mid(line, 8))
+    Dim pos As Long: pos = InStr(str, " ")
+    If 0 < pos Then str = Left(str, pos - 1)
+    If IsNumber(str) Then
+        GetCopyLv = str
+    Else
+        GetCopyLv = ""
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : COPY項目名を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyItemNm(ByVal line As String) As String
+    Dim str As String: str = Trim(mid(line, 8))
+    'Lv除去
+    Dim pos As Long: pos = InStr(str, " ")
+    If 0 < pos Then str = Trim(mid(str, pos + 1))
+    '項目名 抽出
+    pos = InStr(str, " ")
+    If 0 < pos Then str = Trim(Left(str, pos - 1))
+    pos = InStr(str, ".")
+    If 0 < pos Then str = Trim(Left(str, pos - 1))
+    GetCopyItemNm = str
+End Function
+'------------------------------------------------------------
+'概要 : PICを取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetPic(ByVal line As String) As String
+    Dim match As String: match = " PIC "
+    Dim str As String: str = ""
+    If 0 < InStr(line, match) Then
+        '以降 切り抜き
+        str = Trim(mid(line, InStr(line, match) + Len(match)))
+        '手前 切り抜き
+        If 0 < InStr(str, " ") Then str = Left(str, InStr(str, " ") - 1)
+        If Right(srt, 1) = "." Then str = Left(str, Len(str) - 1)
+    End If
+    GetPic = str
+End Function
+'------------------------------------------------------------
+'概要 : COPY項目の使用方法を取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyUsage(ByVal line As String) As String
+    Dim match1 As String: match1 = " COMP-3"
+    Dim match2 As String: match2 = " COMP-5"
+    Dim match3 As String: match3 = " COMP"
+    Dim match4 As String: match4 = " BINARY"
+    Dim match5 As String: match5 = " DISPLAY"
+    Dim str As String: str = ""
+    If 0 < InStr(line, match1 & " ") Or 0 < InStr(line, match1 & ".") Then
+        str = Trim(match1)
+    ElseIf 0 < InStr(line, match2 & " ") Or 0 < InStr(line, match2 & ".") Then
+        str = Trim(match2)
+    ElseIf 0 < InStr(line, match3 & " ") Or 0 < InStr(line, match3 & ".") Then
+        str = Trim(match3)
+    ElseIf 0 < InStr(line, match4 & " ") Or 0 < InStr(line, match4 & ".") Then
+        str = Trim(match4)
+    ElseIf 0 < InStr(line, match5 & " ") Or 0 < InStr(line, match5 & ".") Then
+        str = Trim(match5)
+    End If
+    GetCopyUsage = str
+End Function
+'------------------------------------------------------------
+'概要 : COPY項目のVALUEを取得する
+'引数 : line : 行データ
+'戻値 : 値
+'備考 : -
+'------------------------------------------------------------
+Private Function GetCopyValue(ByVal line As String) As String
+    Dim match As String: match = " VALUE "
+    Dim str As String: str = ""
+    Dim vals As String: vals = ""
+    Dim result As String: result = ""
+    Dim col As New Collection
+    Dim colStr As Variant
+    Dim pos As Long: pos = InStr(line, match)
+    If 0 < pos Then
+        '以降 切り抜き
+        vals = Trim(mid(line, pos + Len(match)))
+        If vals <> "" Then
+            '除去
+            If Right(vals, 1) = "." Then vals = Left(vals, Len(vals) - 1)
+            '固定値の場合
+            If Left(vals, 1) = "'" Then
+                Do While vals <> ""
+                    '終了シングルクォートまで切り抜き
+                    str = Left(vals.InStr(mid(vals, 2), "'") + 1)
+                    pos = InStr(vals, str)
+                    vals = Trim(mid(vals, pos + Len(str)))
+                    col.Add str
+                Loop
+            Else
+                If 0 < InStr(vals, " ") Then vals = Left(vals, InStr(vals, " "))
+                col.Add vals
+            End If
+        End If
+    End If
+    '1行文字列に変換
+    For Each colStr In col
+        result = result & colStr & " "
+    Next
+    '末尾空白除去
+    If result <> "" Then result = Left(result, Len(result) - 1)
+    GetCopyValue = result
+End Function
