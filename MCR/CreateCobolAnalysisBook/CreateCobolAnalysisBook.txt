@@ -222,7 +222,7 @@ Private Sub CreateSheet01(ByVal wsNm As String)
                 time = ConvertEmpToHyphen(GPGetVal(line, "TIME="))
                 region = ConvertEmpToHyphen(GPGetVal(line, "REGION="))
                 dynamnbr = ConvertEmpToHyphen(GPGetVal(line, "DYNAMNBR="))
-                existsFile = ConvertFlgToMark(IsExistsFile(FILETYPE_PGM, line))
+                existsFile = ConvertFlgToMark(IsExistsFile(FILETYPE_PGM, execPgm))
                 lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_JCL, line))
                 writeContentsCol.Add Array(jcl, job, step, execPgm, cond, parm, time, region, dynamnbr, existsFile, lineNo, line)
             End If
@@ -323,7 +323,7 @@ Private Sub CreateSheet02(ByVal wsNm As String)
         '全行Loop
         For Each line In fileContents
             'JOB取得
-            job = GetJob(line)
+            If job = "" Then job = GetJob(line)
             'EXEC PGM行の場合
             If IsExecPgmLine(line) Then
                 '値取得
@@ -527,7 +527,7 @@ Private Sub CreateSheet04(ByVal wsNm As String)
         '値取得
         programId = ConvertEmpToHyphen(GPGetVal(line, "PROGRAM-ID."))
         lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
-        writeContentsCol.Add Array(pgm, programId, ioType, openFileNm, lineNo, line)
+        writeContentsCol.Add Array(pgm, programId, HYPHEN, HYPHEN, lineNo, line)
         For Each line In openLineList
             lineNo = ConvertEmpToHyphen(GetLineNo(FILETYPE_PGM, line))
             For Each openType In openTypeList
@@ -804,12 +804,12 @@ Private Sub CreateSheet07(ByVal wsNm As String)
 
     'データ行
     fileCnt = 1
-    allFileCnt = pgmFileNmList.count
-    For Each fileNm In pgmFileNmList
+    allFileCnt = cpyFileNmList.count
+    For Each fileNm In cpyFileNmList
         Application.StatusBar = "[" & wsNm & "] 書込中...(" & fileCnt & "/" & allFileCnt & ")"
         fileCnt = fileCnt + 1
         'ファイル内容 取得 & 整形
-        Set fileContents = GetFileContents(FILETYPE_PGM, fileNm)
+        Set fileContents = GetFileContents(FILETYPE_CPY, fileNm)
         Set fileContents = GetCpyFileLineList(fileContents)
         '拡張子除去
         copy = GetFileBaseNm(fileNm)
@@ -941,7 +941,7 @@ Private Sub ApplyTableStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByRef c
     'ウィンドウ枠の固定
     ws.Activate
     ActiveWindow.FreezePanes = False '既存解除
-    ws.Cells(rng.row + 1, rng.Column + colIdx + 1).Select
+    ws.Cells(rng.row + 1, rng.Column + colIdx - 1).Select
     ActiveWindow.FreezePanes = True
 End Sub
 '------------------------------------------------------------
@@ -958,11 +958,12 @@ Private Sub ApplyLineStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByVal co
     Dim preNm As String
     Dim crntNm As String
     preNm = ws.Cells(rng.row + 1, rng.Column + colIdx - 1).Value2
-    For i = rng.row + 1 To rng.Rows.count
+    For i = rng.row + 1 To rng.row + rng.Rows.count
         crntNm = ws.Cells(i, rng.Column + colIdx - 1).Value2
         If preNm <> crntNm Then
             ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).LineStyle = xlDouble
             ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).Weight = xlThick
+            preNm = crntNm
         End If
     Next
 End Sub
@@ -1088,10 +1089,10 @@ Private Function IsExistsFile(ByVal fileType As String, ByVal fileNm As String) 
             filePath = jclFolderPath & fileNm
         Case FILETYPE_PGM
             If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".cob"
-            filePath = jclFolderPath & fileNm
+            filePath = pgmFolderPath & fileNm
         Case FILETYPE_CPY
             If InStr(fileNm, ".") = 0 Then fileNm = fileNm & ".cpy"
-            filePath = jclFolderPath & fileNm
+            filePath = cpyFolderPath & fileNm
     End Select
     '存在しない場合
     If Dir(filePath) = "" Then
@@ -1154,7 +1155,7 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function GetFileContents(ByVal fileType As String, ByVal fileNm As String) As Collection
-    Dim col As Collection
+    Dim col As New Collection
     '●フォルダパス/ファイルパス
     Dim folderPath As String
     Dim filePath As String
@@ -1162,8 +1163,8 @@ Private Function GetFileContents(ByVal fileType As String, ByVal fileNm As Strin
     Dim fileNo As Long: fileNo = FreeFile
     '●ファイル内容/全行データ/行データ
     Dim fileContents As String
-    Dim lines As String
-    Dim line As String
+    Dim lines As Variant
+    Dim line As Variant
     '設定
     Select Case fileType
         Case FILETYPE_JCL
@@ -1290,7 +1291,7 @@ End Function
 Private Function IsDdLine(ByVal line As String) As Boolean
     Dim match As String: match = " DD "
     'コメント行 or 無しの場合
-    If IsCmntLine(FILETYPE_JCL, line) Or InStr(str, match) = 0 Then
+    If IsCmntLine(FILETYPE_JCL, line) Or InStr(line, match) = 0 Then
         IsDdLine = False
     Else
         IsDdLine = True
@@ -1330,7 +1331,7 @@ Private Function GetOpenLineList(ByRef fileContents As Collection) As Collection
             posIo = InStr(str, match3)
             posEx = InStr(str, match4)
             '有りの場合
-            If 0 < poin Or 0 < poout Or 0 < poio Or 0 < poex Then
+            If 0 < posIn Or 0 < posOut Or 0 < posIo Or 0 < posEx Then
                 '継続行判定
                 Do While Right(Trim(line), 1) <> "." And i < fileContents.count
                     i = i + 1
@@ -1342,6 +1343,7 @@ Private Function GetOpenLineList(ByRef fileContents As Collection) As Collection
                         Exit Do
                     End If
                 Loop
+                col.Add line
             End If
         End If
     Next
@@ -1354,7 +1356,7 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function GetCopyLineList(ByRef fileContents As Collection) As Collection
-    Dim match As String: matche = " COPY "
+    Dim match As String: match = " COPY "
     Dim col As New Collection
     Dim line As Variant
     For Each line In fileContents
@@ -1363,7 +1365,7 @@ Private Function GetCopyLineList(ByRef fileContents As Collection) As Collection
             col.Add line
         End If
     Next
-    GetCopyLineList = col
+    Set GetCopyLineList = col
 End Function
 '------------------------------------------------------------
 '概要 : CALL行一覧を取得する
@@ -1372,7 +1374,7 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function GetCallLineList(ByRef fileContents As Collection) As Collection
-    Dim match As String: matche = " CALL "
+    Dim match As String: match = " CALL "
     Dim col As New Collection
     Dim line As Variant
     For Each line In fileContents
@@ -1381,7 +1383,7 @@ Private Function GetCallLineList(ByRef fileContents As Collection) As Collection
             col.Add line
         End If
     Next
-    GetCallLineList = col
+    Set GetCallLineList = col
 End Function
 '------------------------------------------------------------
 '概要 : CPYファイル内容を取得する(コメント行など除外)
@@ -1421,7 +1423,7 @@ Private Function GetCpyFileLineList(ByRef fileContents As Collection) As Collect
                         'シングルクォート固定値のみの場合(継続VALUE値有りの場合)
                         ElseIf Left(Trim(mid(nextLine, 8)), 1) = "'" And (Right(Trim(mid(nextLine, 8)), 1) = "'" Or Right(Trim(mid(nextLine, 8)), 1) = ".") Then
                             pos1 = InStr(nextLine, "'") '1個目
-                            pos1 = InStr(mid(nextLine, pos1 + 1), "'") '1個目
+                            pos2 = InStr(mid(nextLine, pos1 + 1), "'") '2個目
                             line = line & mid(nextLine, pos1 + 1, pos2)
                         Else
                             line = line & mid(nextLine, 8)
@@ -1438,7 +1440,7 @@ Private Function GetCpyFileLineList(ByRef fileContents As Collection) As Collect
             col.Add line
         End If
     Next
-    GetCpyFileLineList = col
+    Set GetCpyFileLineList = col
 End Function
 '------------------------------------------------------------
 '概要 : PROGRAM-ID行を取得する
@@ -1477,10 +1479,10 @@ Private Function GPGetVal(ByVal line As String, ByVal match As String) As String
         '"'" 始まりの場合
         If Left(str, 1) = "'" Then
             '切り抜き
-            srt = "'" & Left(str, InStr(mid(str, 2), "'") + 1)
+            str = "'" & Left(str, InStr(mid(str, 2), "'") + 1)
         '"(" 始まりの場合
         ElseIf Left(str, 1) = "(" Then
-            srt = Left(str, InStr(mid(str, 2), ")") + 1)
+            str = Left(str, InStr(mid(str, 2), ")") + 1)
         Else
             '手前 切り抜き
             pos = InStr(str, ",")
@@ -1508,7 +1510,7 @@ Private Function GetLineNo(ByVal fileType As String, ByVal line As String) As St
         Case FILETYPE_PGM, FILETYPE_CPY
             str = Left(line, 6)
     End Select
-    If IsNumber(str) Then
+    If IsNumeric(str) Then
         GetLineNo = str
     Else
         GetLineNo = ""
@@ -1542,15 +1544,15 @@ Private Function GetStep(ByVal line As String) As String
     Dim match1 As String: match1 = "EXECPGM="
     Dim match2 As String: match2 = "//"
     Dim str As String: str = ""
-    Dim pos As Long: pos = InStr(line, match)
+    Dim pos As Long
     If 0 < InStr(Replace(line, " ", ""), match1) Then
         '以降 切り抜き
-        str = mid(line, InStr(ilne, match2) + Len(match2))
+        str = mid(line, InStr(line, match2) + Len(match2))
         '手前 切り抜き
         pos = InStr(str, " ")
         str = Trim(Left(str, pos - 1))
     End If
-    GetJob = str
+    GetStep = str
 End Function
 '------------------------------------------------------------
 '概要 : EXEC PGM名を取得する
@@ -1562,15 +1564,15 @@ Private Function GetExecPgm(ByVal line As String) As String
     Dim match1 As String: match1 = "EXECPGM="
     Dim match2 As String: match2 = " PGM="
     Dim str As String: str = ""
-    Dim pos As Long: pos = InStr(line, match)
+    Dim pos As Long: pos = InStr(Replace(line, " ", ""), match1)
     If 0 < InStr(Replace(line, " ", ""), match1) Then
         '以降 切り抜き
-        str = mid(line, InStr(ilne, match2) + Len(match2))
+        str = mid(line, InStr(line, match2) + Len(match2))
         '手前 切り抜き
         pos = InStr(str, ",")
-        If 0 < po Then str = Trim(Left(str, pos - 1))
+        If 0 < pos Then str = Trim(Left(str, pos - 1))
         pos = InStr(str, " ")
-        If 0 < po Then str = Trim(Left(str, pos - 1))
+        If 0 < pos Then str = Trim(Left(str, pos - 1))
     End If
     GetExecPgm = str
 End Function
@@ -1587,7 +1589,7 @@ Private Function GetDd(ByVal line As String) As String
     Dim pos As Long: pos = InStr(line, match1)
     If 0 < pos Then
         '以降 切り抜き
-        str = mid(line, InStr(ilne, match2) + Len(match2))
+        str = mid(line, InStr(line, match2) + Len(match2))
         '手前 切り抜き
         str = Trim(Left(str, InStr(str, match1)))
     End If
@@ -1609,7 +1611,6 @@ Private Function GetSpace(ByVal line As String) As String
         '以降 切り抜き
         str = mid(line, pos + Len(match))
         '2個目の")"まで切り抜き
-        str = Trim(Left(str, InStr(str, match1)))
         pos1 = InStr(str, ")")
         pos2 = InStr(mid(str, pos1 + 1), ")")
         str = Left(str, pos1 + pos2)
@@ -1635,6 +1636,7 @@ Private Function GetOpenFileNmList(ByVal openType As String, ByVal line As Strin
     Dim posIo As Long: posIo = InStr(line, match3)
     Dim posEx As Long: posEx = InStr(line, match4)
 
+    Dim i As Long
     Dim col As New Collection
     Dim str As String
     Dim arr As Variant
@@ -1648,41 +1650,41 @@ Private Function GetOpenFileNmList(ByVal openType As String, ByVal line As Strin
                     str = Trim(mid(line, InStr(line, match1) + Len(match1)))
                     '手前 切り抜き
                     posOut = InStr(str, match2)
-                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    If 0 < posOut Then str = Left(str, posOut - 1)
                     posIo = InStr(str, match3)
-                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                    If 0 < posIo Then str = Left(str, posIo - 1)
                     posEx = InStr(str, match4)
-                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                    If 0 < posEx Then str = Left(str, posEx - 1)
                 End If
             Case Trim(match2)
                 If 0 < posOut Then
                     str = Trim(mid(line, InStr(line, match2) + Len(match2)))
                     posIn = InStr(str, match1)
-                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    If 0 < posIn Then str = Left(str, posIn - 1)
                     posIo = InStr(str, match3)
-                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                    If 0 < posIo Then str = Left(str, posIo - 1)
                     posEx = InStr(str, match4)
-                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                    If 0 < posEx Then str = Left(str, posEx - 1)
                 End If
             Case Trim(match3)
                 If 0 < posIo Then
                     str = Trim(mid(line, InStr(line, match3) + Len(match3)))
                     posIn = InStr(str, match1)
-                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    If 0 < posIn Then str = Left(str, posIn - 1)
                     posOut = InStr(str, match2)
-                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    If 0 < posOut Then str = Left(str, posOut - 1)
                     posEx = InStr(str, match4)
-                    If 0 < posEx Then srt = Left(str, posEx - 1)
+                    If 0 < posEx Then str = Left(str, posEx - 1)
                 End If
             Case Trim(match4)
                 If 0 < posEx Then
                     str = Trim(mid(line, InStr(line, match4) + Len(match4)))
                     posIn = InStr(str, match1)
-                    If 0 < posIn Then srt = Left(str, posIn - 1)
+                    If 0 < posIn Then str = Left(str, posIn - 1)
                     posOut = InStr(str, match2)
-                    If 0 < posOut Then srt = Left(str, posOut - 1)
+                    If 0 < posOut Then str = Left(str, posOut - 1)
                     posIo = InStr(str, match3)
-                    If 0 < posIo Then srt = Left(str, posIo - 1)
+                    If 0 < posIo Then str = Left(str, posIo - 1)
                 End If
         End Select
         '手前 切り抜き
@@ -1693,10 +1695,10 @@ Private Function GetOpenFileNmList(ByVal openType As String, ByVal line As Strin
         'ファイル名セット
         For i = LBound(arr) To UBound(arr)
             fileNm = Trim(arr(i))
-            If fileNm <> "" Then co.Add fileNm
+            If fileNm <> "" Then col.Add fileNm
         Next
     End If
-    GetOpenFileNmList = col
+    Set GetOpenFileNmList = col
 End Function
 '------------------------------------------------------------
 '概要 : IO種別を取得する
@@ -1711,7 +1713,7 @@ Private Function GetIoType(ByVal openType As String, ByVal line As String) As St
     Dim match3 As String: match3 = " OUTPUT "
     Dim match4 As String: match4 = " I-O "
     Dim match5 As String: match5 = " EXTEND "
-    Dim pos As Long: pos = InStr(line, match)
+    Dim str As String: str = ""
     If 0 < InStr(Left(Trim(mid(line, 7)), 4), match1) Then
         Select Case openType
             Case Trim(match2)
@@ -1767,7 +1769,7 @@ Private Function GetCopyLv(ByVal line As String) As String
     Dim str As String: str = Trim(mid(line, 8))
     Dim pos As Long: pos = InStr(str, " ")
     If 0 < pos Then str = Left(str, pos - 1)
-    If IsNumber(str) Then
+    If IsNumeric(str) Then
         GetCopyLv = str
     Else
         GetCopyLv = ""
@@ -1805,7 +1807,7 @@ Private Function GetPic(ByVal line As String) As String
         str = Trim(mid(line, InStr(line, match) + Len(match)))
         '手前 切り抜き
         If 0 < InStr(str, " ") Then str = Left(str, InStr(str, " ") - 1)
-        If Right(srt, 1) = "." Then str = Left(str, Len(str) - 1)
+        If Right(str, 1) = "." Then str = Left(str, Len(str) - 1)
     End If
     GetPic = str
 End Function
@@ -1859,7 +1861,7 @@ Private Function GetCopyValue(ByVal line As String) As String
             If Left(vals, 1) = "'" Then
                 Do While vals <> ""
                     '終了シングルクォートまで切り抜き
-                    str = Left(vals.InStr(mid(vals, 2), "'") + 1)
+                    str = Left(vals, InStr(mid(vals, 2), "'") + 1)
                     pos = InStr(vals, str)
                     vals = Trim(mid(vals, pos + Len(str)))
                     col.Add str
