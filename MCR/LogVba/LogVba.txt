@@ -2,21 +2,22 @@
 Option Explicit
 
 '========== グローバル変数 ==========
-'●Log出力フラグ(True:出力する / False:出力しない)
+'●ログ出力フラグ(True:出力する / False:出力しない)
 Public writeLogFlg As Boolean
-'●LogSheet
-Public logSheet As Worksheet
-'●Log種別
+'●ログSheet
+Public logWs As Worksheet
+'●ログ種別
 Public LOG_INFO As String
 Public LOG_WARN As String
 Public LOG_ERROR As String
 Public LOG_DEBUG As String
 Public LOG_DETAIL As String
-'●Log出力行番号
+'●ログ書込行番号
 Public logWriteIdx As Long
 Public Sub Main()
     '処理中描画OFF設定
     RenderingProcess False
+
     'ログ出力設定
     writeLogFlg = True
     'ログSheet準備
@@ -24,15 +25,15 @@ Public Sub Main()
     'Proc/Cat設定
     Dim proc As String: proc = "Main"
     Dim cat1 As String: cat1 = ""
+
     'ログ出力
     WriteLog LOG_INFO, proc, cat1, "START"
-
     Dim i As Long
     For i = 1 To 100
         WriteLog LOG_INFO, proc, cat1, "処理" & i & "：出力メッセージ" & i
     Next
-
     WriteLog LOG_INFO, proc, cat1, "END"
+
     '処理中描画ON設定
     RenderingProcess True
 End Sub
@@ -55,10 +56,10 @@ End Sub
 '------------------------------------------------------------
 '概要 : Sheet名のSheetが存在するか判定する
 '引数 : wsNm : Sheet名
-'戻値 : 判定結果(True:存在する / False:存在しない)
+'戻値 : 判定結果(True:する / False:しない)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsExistsSheet(wsNm As String) As Boolean
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     '一時的にエラー処理OFF設定
     On Error Resume Next
     IsExistsSheet = Not Worksheets(wsNm) Is Nothing
@@ -67,7 +68,7 @@ Private Function IsExistsSheet(wsNm As String) As Boolean
 End Function
 '------------------------------------------------------------
 '概要 : ログSheetを準備する
-'引数 : newWsFlg : ログSheetを新しく作成するか(True:作成する / False:作成しない)
+'引数 : newWsFlg : ログSheetを新しく作成するか(True:する / False:しない)
 '     : (False & ログSheetが存在しない場合、作成する)
 '引数 : wsNm     : 作成するSheet名
 '戻値 : -
@@ -75,45 +76,41 @@ End Function
 '------------------------------------------------------------
 Private Sub PrepareLog(ByVal newWsFlg As Boolean, ByVal wsNm As String)
     If writeLogFlg Then
-        '●タイムスタンプ
-        Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
-        '●Sheet存在フラグ
-        Dim existsWsFlg As Boolean: existsWsFlg = IsExistsSheet(wsNm)
         '==================== 初期化 ====================
-        '●LOG種別
+        '●ログ種別
         LOG_INFO = "INFO"
         LOG_WARN = "WARN"
         LOG_ERROR = "ERROR"
         LOG_DEBUG = "DEBUG"
         LOG_DETAIL = "DETAIL"
         'Sheet作成OFF & Sheet存在する場合
-        If Not newWsFlg And existsWsFlg Then
+        If Not newWsFlg And IsExistsSheet(wsNm) Then
             '既存Sheetセット
-            Set logSheet = ThisWorkbook.Sheets(wsNm)
+            Set logWs = ThisWorkbook.Sheets(wsNm)
             '書込初期位置セット(最下行 + 1)
-            logWriteIdx = logSheet.Cells(logSheet.Rows.count, "A").End(xlUp).row + 1
+            logWriteIdx = logWs.Cells(logWs.Rows.count, "A").End(xlUp).row + 1
         Else
             newWsFlg = True
             '作成
-            Set logSheet = ThisWorkbook.Sheets.Add(before:=ThisWorkbook.Worksheets(1))
+            Set logWs = ThisWorkbook.Sheets.Add(before:=ThisWorkbook.Worksheets(1))
             'Sheet名セット
-            If existsWsFlg Then wsNm = wsNm & "_" & timestamp
-            logSheet.name = wsNm
+            If IsExistsSheet(wsNm) Then wsNm = wsNm & "_" & Format(Now, "YYYYMMDDHHMMSS")
+            logWs.name = wsNm
             '書込初期位置セット
             logWriteIdx = 1
         End If
         '================================================
         'Sheet詳細設定
         If newWsFlg Then
-            logSheet.Activate
+            logWs.Activate
             ActiveWindow.Zoom = 85 '表示倍率
             ActiveWindow.DisplayGridlines = False '目盛線
-            With logSheet
-                .Tab.Color = RGB(128, 128, 128) 'Tab色 #808080
-                .Cells.Font.name = "HGｺﾞｼｯｸM"
-                .Cells.VerticalAlignment = xlTop '文字揃え
+            With logWs
+                .Tab.Color = RGB(128, 128, 128)     'Tab色 #808080
+                .Cells.Font.name = "HGｺﾞｼｯｸM"       'フォント
+                .Cells.VerticalAlignment = xlTop    '文字揃え
                 .Cells.HorizontalAlignment = xlLeft
-                .Columns("A").ColumnWidth = 7 '列幅
+                .Columns("A").ColumnWidth = 7       '列幅
                 .Range("B:D").ColumnWidth = 20
                 .Columns("E").ColumnWidth = 100
                 .Columns("B").NumberFormatLocal = "yyyy/mm/dd hh:mm:ss" '表示形式
@@ -132,11 +129,11 @@ End Sub
 '------------------------------------------------------------
 Private Sub WriteLog(ByVal lvl As String, ByVal proc As String, ByVal cat1 As String, ByVal msg As String)
     If writeLogFlg Then
-        logSheet.Cells(logWriteIdx, 1) = lvl
-        logSheet.Cells(logWriteIdx, 2) = Format(Now, "yyyy/mm/dd hh/mm:ss")
-        logSheet.Cells(logWriteIdx, 3) = proc
-        logSheet.Cells(logWriteIdx, 4) = cat1
-        logSheet.Cells(logWriteIdx, 5) = msg
+        logWs.Cells(logWriteIdx, 1) = lvl
+        logWs.Cells(logWriteIdx, 2) = Format(Now, "yyyy/mm/dd hh/mm:ss")
+        logWs.Cells(logWriteIdx, 3) = proc
+        logWs.Cells(logWriteIdx, 4) = cat1
+        logWs.Cells(logWriteIdx, 5) = msg
         logWriteIdx = logWriteIdx + 1
     End If
 End Sub
