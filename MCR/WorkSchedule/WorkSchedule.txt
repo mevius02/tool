@@ -8,15 +8,15 @@ Option Explicit
 '------------------------------------------------------------
 Public Sub CreateSheet_WorkSchedule()
     '処理中描画OFF設定
-    RenderingProcess False
+    Call SettingRenderingProcess(False)
 
     '●Loopカウンタ [i/j/k]
     Dim i As Long, j As Long, k As Long
     '●開始行/開始列/終了行/終了列
-    Dim rowStartIdx As Long
-    Dim colStartIdx As Long
-    Dim rowEndIdx As Long
-    Dim colEndIdx As Long
+    Dim startRowIdx As Long
+    Dim startColIdx As Long
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
     '●範囲
     Dim rng As Range
 
@@ -38,14 +38,14 @@ Public Sub CreateSheet_WorkSchedule()
     Dim minYear As Double: minYear = Year(Now) - 1
     Dim maxYear As Double: maxYear = Year(Now) + 10
     '●入力勤務時間/初期値/入力休憩時間/入力可能勤務時間範囲(0h～24h)
-    Dim inputStartTime1 As String
-    Dim inputEndTime1 As String
-    Dim inputStartTime2 As String
-    Dim inputEndTime2 As String
-    Dim initStartTime1 As String: initStartTime1 = "9:00"
-    Dim initEndTime1 As String: initEndTime1 = "18:00"
-    Dim initStartTime2 As String: initStartTime2 = "12:00"
-    Dim initEndTime2 As String: initEndTime2 = "13:00"
+    Dim inputWhStartTime As String
+    Dim inputWhEndTime As String
+    Dim inputBtStartTime As String
+    Dim inputBtEndTime As String
+    Dim initWhStartTime As String: initWhStartTime = "9:00"
+    Dim initWhEndTime As String: initWhEndTime = "18:00"
+    Dim initBtStartTime As String: initBtStartTime = "12:00"
+    Dim initBtEndTime As String: initBtEndTime = "13:00"
     Dim minTime As String: minTime = "0:00"
     Dim maxTime As String: maxTime = "23:59"
     '●入力勤務時間数/初期値/入力可能勤務時間数範囲(0h～24h)
@@ -76,18 +76,18 @@ Public Sub CreateSheet_WorkSchedule()
             '▼入力受付[勤務時間(開始/終了)]
             title = "勤務 [開始] 時間を入力して下さい"
             msg = "入力可能範囲（" & minTime & "～" & maxTime & "）"
-            inputStartTime1 = InputForm_Time(title, msg, initStartTime1, minTime, maxTime)
-            If inputStartTime1 = "-1" Then Exit Sub
+            inputWhStartTime = InputForm_Time(title, msg, initWhStartTime, minTime, maxTime)
+            If inputWhStartTime = "-1" Then Exit Sub
             title = "勤務 [終了] 時間を入力して下さい"
-            inputEndTime1 = InputForm_Time(title, msg, initEndTime1, minTime, maxTime)
-            If inputEndTime1 = "-1" Then Exit Sub
+            inputWhEndTime = InputForm_Time(title, msg, initWhEndTime, minTime, maxTime)
+            If inputWhEndTime = "-1" Then Exit Sub
             '▼入力受付[休憩時間(開始/終了)]
             title = "休憩 [開始] 時間を入力して下さい"
-            inputStartTime2 = InputForm_Time(title, msg, initStartTime2, minTime, maxTime)
-            If inputStartTime2 = "-1" Then Exit Sub
+            inputBtStartTime = InputForm_Time(title, msg, initBtStartTime, minTime, maxTime)
+            If inputBtStartTime = "-1" Then Exit Sub
             title = "休憩 [終了] 時間を入力して下さい"
-            inputEndTime2 = InputForm_Time(title, msg, initEndTime2, minTime, maxTime)
-            If inputEndTime2 = "-1" Then Exit Sub
+            inputBtEndTime = InputForm_Time(title, msg, initBtEndTime, minTime, maxTime)
+            If inputBtEndTime = "-1" Then Exit Sub
         '===== 時間数タイプの場合 =====
         Case "2"
             '▼入力受付[勤務時間数]
@@ -98,30 +98,30 @@ Public Sub CreateSheet_WorkSchedule()
     End Select
 
     '========== Sheet[祝日]作成 ==========
-    newSheetNm = "祝日"
     '存在する場合、既存セット
+    newSheetNm = "祝日"
     If IsExistsSheet(newSheetNm) Then
         Set newSheet = Sheets(newSheetNm)
     Else
-        Set newSheet = CreateHolidaySheet(newSheetNm, minYear, maxYear)
+        Set newSheet = CreateSheet_Holiday(newSheetNm, minYear, maxYear)
     End If
 
     '========== 祝日辞書 作成 ==========
-    rowEndIdx = newSheet.Cells(newSheet.Rows.count, "B").End(xlUp).row
-    For Each rng In newSheet.Range("B2:B" & rowEndIdx)
+    endRowIdx = newSheet.Cells(newSheet.Rows.count, "B").End(xlUp).row
+    For Each rng In newSheet.Range("B2:B" & endRowIdx)
         If IsDate(rng.Value) Then holidayDict(CLng(CDate(rng.Value))) = True
     Next
 
     '========== Sheet[勤務表]作成 ==========
     Select Case inputSheetType
         Case "1"
-            CreateWorkScheduleSheet01 holidayDict, inputYear, inputStartTime1, inputEndTime1, inputStartTime2, inputEndTime2
+            Call CreateSheet_WorkSchedule01(holidayDict, inputYear, inputWhStartTime, inputWhEndTime, inputBtStartTime, inputBtEndTime)
         Case "2"
-            CreateWorkScheduleSheet02 holidayDict, inputYear, inputWorkHr
+            Call CreateSheet_WorkSchedule02(holidayDict, inputYear, inputWorkHr)
     End Select
 
     '処理中描画ON設定
-    RenderingProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
 '概要 : 処理中の画面描画を設定する
@@ -129,14 +129,15 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub RenderingProcess(ByVal flg As Boolean)
-    Application.ScreenUpdating = flg
-    Application.DisplayAlerts = flg
-    Application.EnableEvents = flg
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
     If flg Then
-        Application.Calculation = xlCalculationAutomatic
+        Application.Calculation = xlCalculationAutomatic '自動
     Else
-        Application.Calculation = xlCalculationManual
+        Application.Calculation = xlCalculationManual '手動
     End If
 End Sub
 '------------------------------------------------------------
@@ -145,7 +146,7 @@ End Sub
 '戻値 : 判定結果(True:する / False:しない)
 '備考 : -
 '------------------------------------------------------------
-Function IsExistsSheet(ByVal wsNm As String) As Boolean
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
         If ws.name = wsNm Then
@@ -155,15 +156,15 @@ Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Next
 End Function
 '------------------------------------------------------------
-'概要 : Sheet名を重複しない名前に変換する
+'概要 : Sheet名が重複しないよう、末尾に連番を付与する
 '     : (同じ名前のSheetが存在しない場合、そのまま返す)
 '     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
-'     : "AAA" → "AAA (2)"
+'     : "AAA" → "AAA (2)" → "AAA (3)"
 '引数 : wsNm : Sheet名
 '戻値 : Sheet名
 '備考 : -
 '------------------------------------------------------------
-Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
+Private Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
     Dim i As Long
     Dim uniqueNo As String
     '存在しない場合
@@ -192,6 +193,7 @@ End Function
 Private Function GetColNm(ByVal colIdx As Long) As String
     Dim result As String
     Dim n As Long
+    '範囲外の場合
     If colIdx < 1 Or Application.Columns.count < colIdx Then
         GetColNm = ""
         Exit Function
@@ -207,42 +209,42 @@ End Function
 '------------------------------------------------------------
 '概要 : 列名(アルファベット)から列番号を取得する
 '     : (範囲外の列名の場合、0を返す)
-'引数 : colNm : 列名
+'引数 : colNm : 列名(アルファベット)
 '戻値 : 列番号
 '備考 : -
 '------------------------------------------------------------
 Private Function GetColIdx(ByVal colNm As String) As Long
     Dim i As Long
-    Dim ch As Long
     Dim result As Long
     Dim baseA As Long
     Dim length As Long
+    Dim ch As Long
+    baseA = Asc("A") - 1
     colNm = Trim$(UCase$(colNm))
     length = Len(colNm)
-    baseA = Asc("A") - 1
-    result = 0
     For i = 1 To length
         ch = Asc(mid$(colNm, i, 1)) - baseA
+        '範囲外の場合
         If ch < 1 Or 26 < ch Then
             GetColIdx = 0
             Exit Function
         End If
         result = result * 26 + ch
-    Next i
+    Next
     GetColIdx = result
 End Function
 '------------------------------------------------------------
 '概要 : テーブルスタイル適用
 '引数 : ws     : Sheet
 '     : rng    : 適用範囲
-'     : colIdx : ウィンドウ固定列番号
+'     : colIdx : ウィンドウ枠の固定列番号
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub ApplyTableStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByRef colIdx As Long)
+Private Sub ApplyTableStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByVal colIdx As Long)
     'テーブルスタイル適用
     Dim tbl As ListObject: Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
-    tbl.TableStyle = "TableStyleMedium4"
+    tbl.TableStyle = "TableStyleMedium1"
     'ヘッダー
     With ws.Range(ws.Cells(rng.row, rng.Column), ws.Cells(rng.row, rng.Columns.count))
         .Font.Color = RGB(0, 0, 0)           '#000000 文字色
@@ -260,6 +262,7 @@ Private Sub ApplyTableStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByRef c
 End Sub
 '------------------------------------------------------------
 '概要 : 罫線01(行境界線)
+'     : 境界判定列のセル値が変わる境界に罫線を引く
 '引数 : ws     : Sheet
 '     : rng    : 適用範囲
 '     : colIdx : 境界判定列番号
@@ -274,6 +277,7 @@ Private Sub ApplyLineStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByVal co
     preNm = Left(CStr(ws.Cells(rng.row + 1, rng.Column + colIdx - 1)), 4)
     For i = rng.row + 1 To rng.row + rng.Rows.count
         crntNm = Left(CStr(ws.Cells(i, rng.Column + colIdx - 1)), 4)
+        '値が異なる場合
         If preNm <> crntNm Then
             ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).LineStyle = xlDouble
             ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.count)).Borders(xlEdgeTop).Weight = xlThick
@@ -282,14 +286,15 @@ Private Sub ApplyLineStyle01(ByRef ws As Worksheet, ByRef rng As Range, ByVal co
     Next
 End Sub
 '------------------------------------------------------------
-'概要 : 入力Form表示(数値)
+'概要 : 入力受付Form(数値)
+'     : (キャンセル選択 or 範囲外エラーの場合 -1を返す)
 '引数 : title   : タイトル文
 '     : msg     : 説明文
 '     : initVal : 初期値
 '     : minVal  : 有効範囲(最小)
 '     : maxVal  : 有効範囲(最大)
 '戻値 : 入力値
-'備考 : キャンセル選択 or 範囲外エラーの場合 -1を返す
+'備考 : -
 '------------------------------------------------------------
 Public Function InputForm_Num(ByVal title As String, ByVal msg As String, ByVal initVal As String, ByVal minVal As Double, ByVal maxVal As Double) As Double
     '●入力値
@@ -302,7 +307,7 @@ Public Function InputForm_Num(ByVal title As String, ByVal msg As String, ByVal 
         InputForm_Num = -1
         Exit Function
     End If
-    '小数点以下有りで受付
+    '小数点以下有りとして受付
     inputValDbl = CDbl(inputVal)
     '範囲チェック
     If inputValDbl < minVal Or maxVal < inputValDbl Then
@@ -313,14 +318,15 @@ Public Function InputForm_Num(ByVal title As String, ByVal msg As String, ByVal 
     InputForm_Num = inputValDbl
 End Function
 '------------------------------------------------------------
-'概要 : 入力Form表示(時間)
+'概要 : 入力受付Form(時間)
+'     : (キャンセル選択 or 範囲外エラーの場合 -1を返す)
 '引数 : title   : タイトル文
 '     : msg     : 説明文
 '     : initVal : 初期値
 '     : minVal  : 有効範囲(最小)
 '     : maxVal  : 有効範囲(最大)
 '戻値 : 入力値
-'備考 : キャンセル選択 or 範囲外エラーの場合 -1を返す
+'備考 : -
 '------------------------------------------------------------
 Public Function InputForm_Time(ByVal title As String, ByVal msg As String, ByVal initVal As String, ByVal minVal As String, ByVal maxVal As String) As String
     '●入力値
@@ -350,23 +356,23 @@ End Function
 '------------------------------------------------------------
 '概要 : Sheet[祝日]を作成する
 '引数 : wsNm    : 作成Sheet名
-'     : minYear : 祝日作成年(開始)
-'     : maxYear : 祝日作成年(終了)
+'     : minYear : 作成年(開始)
+'     : maxYear : 作成年(終了)
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Function CreateHolidaySheet(ByVal wsNm As String, ByVal minYear As Long, ByVal maxYear As Long) As Worksheet
+Private Function CreateSheet_Holiday(ByVal wsNm As String, ByVal minYear As Long, ByVal maxYear As Long) As Worksheet
     Dim i As Long
     Dim ws As Worksheet    'Sheet
-    Dim rowEndIdx As Long  '終了行番号
-    Dim colEndIdx As Long  '終了列番号
+    Dim endRowIdx As Long  '終了行
+    Dim endColIdx As Long  '終了列
     Dim rng As Range       '範囲
     '●祝日Map(日付/祝日名)/行
     Dim holidayMap As New Collection
     Dim holidayArr As Variant
     '●日数
     Dim dateCnt As Integer: dateCnt = 1
-    '●前年/今年(罫線用)
+    '●前年/今年
     Dim preYear As Long
     Dim crntYear As Long
 
@@ -393,9 +399,9 @@ Private Function CreateHolidaySheet(ByVal wsNm As String, ByVal minYear As Long,
             dateCnt = 2
         End If
     Next
-    'A列 書込
+    '年 書込
     ws.Range("A2:A" & holidayMap.count + 1).FormulaR1C1 = "=RC[1]"
-    'その他 書込
+    'ヘッダー 書込
     With ws
         .Cells(1, "A").Value = "年"
         .Cells(1, "B").Value = "月日"
@@ -407,35 +413,35 @@ Private Function CreateHolidaySheet(ByVal wsNm As String, ByVal minYear As Long,
     ws.Range("B2:B" & holidayMap.count + 1).NumberFormatLocal = "m/d"
 
     '終了行セット
-    rowEndIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
+    endRowIdx = ws.Cells(ws.Rows.count, "A").End(xlUp).row
     '表範囲セット
-    Set rng = Range(ws.Cells(1, "A"), ws.Cells(rowEndIdx, "D"))
+    Set rng = Range(ws.Cells(1, "A"), ws.Cells(endRowIdx, "D"))
 
     'Sheet設定
     ws.Activate
-    ActiveWindow.DisplayGridlines = False '目盛線
-    ws.Cells(2, "A").Select               'ウィンドウ枠の固定
+    ActiveWindow.DisplayGridlines = False  '目盛線
+    ws.Cells(2, "A").Select                'ウィンドウ枠の固定
     ActiveWindow.FreezePanes = True
-    ApplyTableStyle01 ws, rng, 1          'テーブル
-    ApplyLineStyle01 ws, rng, 1           '罫線
+    Call ApplyTableStyle01(ws, rng, 1)     'テーブルスタイル
+    Call ApplyLineStyle01(ws, rng, 1)      '罫線
     With ws
-        .Tab.Color = RGB(&HF0, &H90, &H90)                     '#F09090 Tab色
-        .Columns("A:B").ColumnWidth = 8                        '列幅
+        .Tab.Color = RGB(&HF0, &H90, &H90) '#F09090 Tab色
+        .Columns("A:B").ColumnWidth = 8    '列幅
         .Columns("C").ColumnWidth = 12
         .Columns("D").ColumnWidth = 8
-        .Cells.VerticalAlignment = xlTop                       '文字揃え
+        .Cells.VerticalAlignment = xlTop   '文字揃え
         .Cells.HorizontalAlignment = xlLeft
         .Columns("A:B").HorizontalAlignment = xlCenter
         .Cells(1, "C").HorizontalAlignment = xlCenter
         .Columns("D").HorizontalAlignment = xlCenter
     End With
-    Set CreateHolidaySheet = ws
+    Set CreateSheet_Holiday = ws
 End Function
 '------------------------------------------------------------
 '概要 : 祝日Mapを作成する
-'引数 : minYear    : 祝日作成年(開始)
-'     : maxYear    : 祝日作成年(終了)
-'戻値 : -
+'引数 : minYear : 作成年(開始)
+'     : maxYear : 作成年(終了)
+'戻値 : 祝日Map
 '備考 : -
 '------------------------------------------------------------
 Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) As Collection
@@ -443,7 +449,7 @@ Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) 
     '●祝日Map/行
     Dim holidayMap As New Collection
     Dim holidayArr As Variant
-    '●祝日作成日付(開始/終了)
+    '●作成日付(開始/終了)
     Dim startDate As Date: startDate = DateSerial(minYear, 1, 1)
     Dim endDate As Date: endDate = DateSerial(maxYear, 12, 31)
     '●年/日
@@ -451,22 +457,22 @@ Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) 
     Dim d As Date
     '========== 法定祝日 追加 ==========
     For y = Year(startDate) To Year(endDate)
-        AddHolidayMap holidayMap, DateSerial(y, 1, 1), "元日"
-        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 1, 2, vbMonday), "成人の日"
-        AddHolidayMap holidayMap, DateSerial(y, 2, 11), "建国記念の日"
-        AddHolidayMap holidayMap, DateSerial(y, 2, 23), "天皇誕生日"
-        AddHolidayMap holidayMap, GetDateOfVernalEquinox(y), "春分の日"
-        AddHolidayMap holidayMap, DateSerial(y, 4, 29), "昭和の日"
-        AddHolidayMap holidayMap, DateSerial(y, 5, 3), "憲法記念日"
-        AddHolidayMap holidayMap, DateSerial(y, 5, 4), "みどりの日"
-        AddHolidayMap holidayMap, DateSerial(y, 5, 5), "こどもの日"
-        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 7, 3, vbMonday), "海の日"
-        AddHolidayMap holidayMap, DateSerial(y, 8, 11), "山の日"
-        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 9, 3, vbMonday), "敬老の日"
-        AddHolidayMap holidayMap, GetDateOfAutumnalEquinox(y), "秋分の日"
-        AddHolidayMap holidayMap, GetDateOfWeekForMonth(y, 10, 2, vbMonday), "スポーツの日"
-        AddHolidayMap holidayMap, DateSerial(y, 11, 3), "文化の日"
-        AddHolidayMap holidayMap, DateSerial(y, 11, 23), "勤労感謝の日"
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 1, 1), "元日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfWeekForMonth(y, 1, 2, vbMonday), "成人の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 2, 11), "建国記念の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 2, 23), "天皇誕生日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfVernalEquinox(y), "春分の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 4, 29), "昭和の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 5, 3), "憲法記念日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 5, 4), "みどりの日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 5, 5), "こどもの日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfWeekForMonth(y, 7, 3, vbMonday), "海の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 8, 11), "山の日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfWeekForMonth(y, 9, 3, vbMonday), "敬老の日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfAutumnalEquinox(y), "秋分の日")
+        Call AddRowToHolidayMap(holidayMap, GetDateOfWeekForMonth(y, 10, 2, vbMonday), "スポーツの日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 11, 3), "文化の日")
+        Call AddRowToHolidayMap(holidayMap, DateSerial(y, 11, 23), "勤労感謝の日")
     Next
     '========== 振替休日 追加 ==========
     '(祝日が日曜日の場合、翌平日を休日とする)
@@ -477,10 +483,10 @@ Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) 
         If weekday(d, vbSunday) = vbSunday Then
             d = d + 1
             '翌日も祝日の場合、翌平日セット
-            Do While IsExistsHoliday(holidayMap, d)
+            Do While IsExistsHolidayOnHolidayMap(holidayMap, d)
                 d = d + 1
             Loop
-            AddHolidayMap holidayMap, d, "振替休日"
+            Call AddRowToHolidayMap(holidayMap, d, "振替休日")
         End If
     Next
     '========== 国民の祝日 追加 ==========
@@ -493,7 +499,7 @@ Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) 
         holidayArr2 = holidayMap(i + 1)
         '1日だけ間が空いている場合
         If holidayArr2(0) - holidayArr1(0) = 2 Then
-            AddHolidayMap holidayMap, holidayArr1(0) + 1, "国民の祝日"
+            Call AddRowToHolidayMap(holidayMap, holidayArr1(0) + 1, "国民の祝日")
         End If
     Next
     '昇順ソート(再)
@@ -501,29 +507,29 @@ Private Function CreateHolidayMap(ByVal minYear As Long, ByVal maxYear As Long) 
     Set CreateHolidayMap = holidayMap
 End Function
 '------------------------------------------------------------
-'概要 : 祝日Mapに行を追加する
+'概要 : 祝日Mapに行を追加する(重複しない場合)
 '引数 : holidayMap : 祝日Map
 '     : dt         : 祝日
 '     : nm         : 祝日名
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub AddHolidayMap(ByRef holidayMap As Collection, ByVal dt As Date, ByVal nm As String)
+Private Sub AddRowToHolidayMap(ByRef holidayMap As Collection, ByVal dt As Date, ByVal nm As String)
     '重複しない日付の場合
-    If Not IsExistsHoliday(holidayMap, dt) Then holidayMap.Add Array(dt, nm)
+    If Not IsExistsHolidayOnHolidayMap(holidayMap, dt) Then holidayMap.Add Array(dt, nm)
 End Sub
 '------------------------------------------------------------
 '概要 : 祝日Mapに存在する日付か判定する
 '引数 : holidayMap : 祝日Map
-'     : checkDate  : チェック日付
+'     : dt         : 日付
 '戻値 : 判定結果(True=する / False=しない)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsExistsHoliday(ByRef holidayMap As Collection, ByVal checkDate As Date) As Boolean
+Private Function IsExistsHolidayOnHolidayMap(ByRef holidayMap As Collection, ByVal dt As Date) As Boolean
     Dim i As Long
     For i = 1 To holidayMap.count
-        If holidayMap(i)(0) = checkDate Then
-            IsExistsHoliday = True
+        If holidayMap(i)(0) = dt Then
+            IsExistsHolidayOnHolidayMap = True
             Exit Function
         End If
     Next
@@ -553,9 +559,7 @@ End Function
 Private Function GetDateOfVernalEquinox(ByVal y As Long) As Date
     Dim d As Integer
     Select Case y
-        Case 1900 To 1979
-            d = Int(20.8357 + 0.242194 * (y - 1980) - Int((y - 1983) / 4))
-        Case 1980 To 2099
+        Case 2000 To 2099
             d = Int(20.8431 + 0.242194 * (y - 1980) - Int((y - 1980) / 4))
         Case Else
             d = 20
@@ -571,9 +575,7 @@ End Function
 Private Function GetDateOfAutumnalEquinox(ByVal y As Long) As Date
     Dim d As Integer
     Select Case y
-        Case 1900 To 1979
-            d = Int(23.2588 + 0.242194 * (y - 1980) - Int((y - 1983) / 4))
-        Case 1980 To 2099
+        Case 2000 To 2099
             d = Int(23.2488 + 0.242194 * (y - 1980) - Int((y - 1980) / 4))
         Case Else
             d = 23
@@ -616,104 +618,100 @@ Private Sub SortHolidayMap(ByRef holidayMap As Collection)
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[勤務表(時間タイプ)]を作成する
-'引数 : holidayDict     : 祝日辞書
-'     : inputYear       : 入力年
-'     : inputStartTime1 : 入力勤務時間(開始)
-'     : inputEndTime1   : 入力勤務時間(終了)
-'     : inputStartTime2 : 入力休憩時間(開始)
-'     : inputEndTime2   : 入力休憩時間(終了)
+'引数 : holidayDict      : 祝日辞書
+'     : inputYear        : 入力年
+'     : inputWhStartTime : 入力勤務時間(開始)
+'     : inputWhEndTime   : 入力勤務時間(終了)
+'     : inputBtStartTime : 入力休憩時間(開始)
+'     : inputBtEndTime   : 入力休憩時間(終了)
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub CreateWorkScheduleSheet01(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputStartTime1 As String, ByVal inputEndTime1 As String, ByVal inputStartTime2 As String, ByVal inputEndTime2 As String)
+Private Sub CreateSheet_WorkSchedule01(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWhStartTime As String, ByVal inputWhEndTime As String, ByVal inputBtStartTime As String, ByVal inputBtEndTime As String)
     Dim ws As Worksheet      'Sheet
     Dim wsNm As String       'Sheet名
     Dim i As Long, j As Long 'Loopカウンタ
-    Dim rowStartIdx As Long  '開始行番号
-    Dim colStartIdx As Long  '開始列番号
+    Dim startRowIdx As Long  '開始行
+    Dim startColIdx As Long  '開始列
     Dim rng As Range         '範囲
-    Dim addr1 As String
-    Dim addr2 As String
     Dim tmpDate1 As Date
     Dim tmpDate2 As String
     Dim borderType As Variant
     '●年末年始
     Dim newYearSeasonDict As Object: Set newYearSeasonDict = CreateObject("Scripting.Dictionary")
-    newYearSeasonDict("12-29") = True
-    newYearSeasonDict("12-30") = True
-    newYearSeasonDict("12-31") = True
     newYearSeasonDict("1-1") = True
     newYearSeasonDict("1-2") = True
     newYearSeasonDict("1-3") = True
+    newYearSeasonDict("12-29") = True
+    newYearSeasonDict("12-30") = True
+    newYearSeasonDict("12-31") = True
     '●一括セット用
     Dim balkSetType(1 To 31, 1 To 1) As Variant        '出リ
-    Dim balkSetActStart1(1 To 31, 1 To 1) As Variant   '実績(勤務[開始])
-    Dim balkSetActEnd1(1 To 31, 1 To 1) As Variant     '実績(勤務[終了])
-    Dim balkSetActStart2(1 To 31, 1 To 1) As Variant   '実績(休憩[開始])
-    Dim balkSetActEnd2(1 To 31, 1 To 1) As Variant     '実績(休憩[終了])
-    Dim balkSetPlanStart1(1 To 31, 1 To 1) As Variant  '予定(勤務[開始])
-    Dim balkSetPlanEnd1(1 To 31, 1 To 1) As Variant    '予定(勤務[終了])
-    Dim balkSetPlanStart2(1 To 31, 1 To 1) As Variant  '予定(休憩[開始])
-    Dim balkSetPlanEnd2(1 To 31, 1 To 1) As Variant    '予定(休憩[終了])
+    Dim balkSetActWhStart(1 To 31, 1 To 1) As Variant  '実績(勤務[開始])
+    Dim balkSetActWhEnd(1 To 31, 1 To 1) As Variant    '実績(勤務[終了])
+    Dim balkSetActBtStart(1 To 31, 1 To 1) As Variant  '実績(休憩[開始])
+    Dim balkSetActBtEnd(1 To 31, 1 To 1) As Variant    '実績(休憩[終了])
+    Dim balkSetPlanWhStart(1 To 31, 1 To 1) As Variant '予定(勤務[開始])
+    Dim balkSetPlanWhEnd(1 To 31, 1 To 1) As Variant   '予定(勤務[終了])
+    Dim balkSetPlanBtStart(1 To 31, 1 To 1) As Variant '予定(休憩[開始])
+    Dim balkSetPlanBtEnd(1 To 31, 1 To 1) As Variant   '予定(休憩[終了])
 
     'Sheet名 作成
     wsNm = ChangeToUniqueSheetNm(CStr(inputYear))
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
     ws.name = wsNm
-    '12か月分Loop(書込)
+    '12か月分Loop 書込
     For i = 1 To 12
-        colStartIdx = i * 18
+        startColIdx = i * 18
         With ws
-            .Cells(1, colStartIdx + GetColIdx("B")).Value = DateSerial(inputYear, i, 1)
-            .Cells(3, colStartIdx + GetColIdx("B")).Value = "出社日数"
-            .Cells(3, colStartIdx + GetColIdx("E")).Formula = "=COUNTIF(" & GetColNm(colStartIdx + GetColIdx("D")) & 10 & ":" & GetColNm(colStartIdx + GetColIdx("D")) & 40 & ",""出"")"
-            .Cells(3, colStartIdx + GetColIdx("G")).Value = "実績(合計)"
-            .Cells(3, colStartIdx + GetColIdx("J")).Value = "予定(合計)"
-            .Cells(4, colStartIdx + GetColIdx("B")).Value = "リモ日数"
-            .Cells(4, colStartIdx + GetColIdx("E")).Formula = "=COUNTIF(" & GetColNm(colStartIdx + GetColIdx("D")) & 10 & ":" & GetColNm(colStartIdx + GetColIdx("D")) & 40 & ",""リ"")"
-            .Cells(4, colStartIdx + GetColIdx("G")).Value = "日数"
-            .Cells(4, colStartIdx + GetColIdx("H")).Value = "時間数"
-            .Cells(4, colStartIdx + GetColIdx("J")).Value = "日数"
-            .Cells(4, colStartIdx + GetColIdx("K")).Value = "時間数"
-            .Cells(5, colStartIdx + GetColIdx("B")).Value = "出社率"
-            .Cells(5, colStartIdx + GetColIdx("E")).Formula = "=" & GetColNm(colStartIdx + GetColIdx("E")) & 3 & "/(" & GetColNm(colStartIdx + GetColIdx("E")) & 3 & "+" & GetColNm(colStartIdx + GetColIdx("E")) & 4 & ")"
-            .Cells(5, colStartIdx + GetColIdx("G")).Formula = "=COUNT(" & GetColNm(colStartIdx + GetColIdx("E")) & 10 & ":" & GetColNm(colStartIdx + GetColIdx("E")) & 40 & ")"
-            .Cells(5, colStartIdx + GetColIdx("H")).Formula2 = "=LET(r," & GetColNm(colStartIdx + GetColIdx("I")) & "10:" & GetColNm(colStartIdx + GetColIdx("I")) & "40, v, SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(r&"""") ,"" "",""""),""h"","""")),0)), IF(v=INT(v), TEXT(v,""0"") & "" h"", TEXT(v,""0.###"") & "" h""))"
-            .Cells(5, colStartIdx + GetColIdx("J")).Formula = "=COUNT(" & GetColNm(colStartIdx + GetColIdx("J")) & 10 & ":" & GetColNm(colStartIdx + GetColIdx("J")) & 40 & ")"
-            .Cells(5, colStartIdx + GetColIdx("K")).Formula2 = "=LET(r," & GetColNm(colStartIdx + GetColIdx("N")) & "10:" & GetColNm(colStartIdx + GetColIdx("N")) & "40, v, SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(r&"""") ,"" "",""""),""h"","""")),0)), IF(v=INT(v), TEXT(v,""0"") & "" h"", TEXT(v,""0.###"") & "" h""))"
-            .Cells(8, colStartIdx + GetColIdx("A")).Value = DateSerial(inputYear, i, 1)
-            .Cells(8, colStartIdx + GetColIdx("E")).Value = "実績"
-            .Cells(8, colStartIdx + GetColIdx("G")).Value = "休憩"
-            .Cells(8, colStartIdx + GetColIdx("J")).Value = "予定"
-            .Cells(8, colStartIdx + GetColIdx("L")).Value = "休憩"
-            .Cells(9, colStartIdx + GetColIdx("D")).Value = "出リ"
-            .Cells(9, colStartIdx + GetColIdx("E")).Value = "開始"
-            .Cells(9, colStartIdx + GetColIdx("F")).Value = "終了"
-            .Cells(9, colStartIdx + GetColIdx("G")).Value = "開始"
-            .Cells(9, colStartIdx + GetColIdx("H")).Value = "終了"
-            .Cells(9, colStartIdx + GetColIdx("I")).Value = "時間数"
-            .Cells(9, colStartIdx + GetColIdx("J")).Value = "開始"
-            .Cells(9, colStartIdx + GetColIdx("K")).Value = "終了"
-            .Cells(9, colStartIdx + GetColIdx("L")).Value = "開始"
-            .Cells(9, colStartIdx + GetColIdx("M")).Value = "終了"
-            .Cells(9, colStartIdx + GetColIdx("N")).Value = "時間数"
-            .Cells(9, colStartIdx + GetColIdx("O")).Value = "備考"
-            .Cells(10, colStartIdx + GetColIdx("B")).Formula = "=" & GetColNm(colStartIdx + GetColIdx("A")) & 8
-            '1月だけ
-            If i = 1 Then .Cells(10, colStartIdx + GetColIdx("A")).Formula = "=" & GetColNm(colStartIdx) & 10
-            '31日分Loop
+            .Cells(1, startColIdx + GetColIdx("B")).Value = DateSerial(inputYear, i, 1)
+            .Cells(3, startColIdx + GetColIdx("B")).Value = "出社日数"
+            .Cells(3, startColIdx + GetColIdx("E")).Formula2R1C1 = "=COUNTIF(R[7]C[-1]:R[37]C[-1],""出"")"
+            .Cells(3, startColIdx + GetColIdx("G")).Value = "実績(合計)"
+            .Cells(3, startColIdx + GetColIdx("J")).Value = "予定(合計)"
+            .Cells(4, startColIdx + GetColIdx("B")).Value = "リモ日数"
+            .Cells(4, startColIdx + GetColIdx("E")).Formula2R1C1 = "=COUNTIF(R[6]C[-1]:R[36]C[-1],""リ"")"
+            .Cells(4, startColIdx + GetColIdx("G")).Value = "日数"
+            .Cells(4, startColIdx + GetColIdx("H")).Value = "時間数"
+            .Cells(4, startColIdx + GetColIdx("J")).Value = "日数"
+            .Cells(4, startColIdx + GetColIdx("K")).Value = "時間数"
+            .Cells(5, startColIdx + GetColIdx("B")).Value = "出社率"
+            .Cells(5, startColIdx + GetColIdx("E")).Formula2R1C1 = "=R[-2]C/(R[-2]C+R[-1]C)"
+            .Cells(5, startColIdx + GetColIdx("G")).Formula2R1C1 = "=COUNT(R[5]C[-1]:R[35]C[-1])"
+            .Cells(5, startColIdx + GetColIdx("H")).Formula2R1C1 = "=LET(a,R[5]C[1]:R[35]C[1],b,SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(a&"""") ,"" "",""""),""h"","""")),0)),IF(b=INT(b),TEXT(b,""0"")&"" h"",TEXT(b,""0.###"")&"" h""))"
+            .Cells(5, startColIdx + GetColIdx("J")).Formula2R1C1 = "=COUNT(R[5]C:R[35]C)"
+            .Cells(5, startColIdx + GetColIdx("K")).Formula2R1C1 = "=LET(a,R[5]C[3]:R[35]C[3],b,SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(a&"""") ,"" "",""""),""h"","""")),0)),IF(b=INT(b),TEXT(b,""0"")&"" h"",TEXT(b,""0.###"")&"" h""))"
+            .Cells(8, startColIdx + GetColIdx("A")).Value = DateSerial(inputYear, i, 1)
+            .Cells(8, startColIdx + GetColIdx("E")).Value = "実績"
+            .Cells(8, startColIdx + GetColIdx("G")).Value = "休憩"
+            .Cells(8, startColIdx + GetColIdx("J")).Value = "予定"
+            .Cells(8, startColIdx + GetColIdx("L")).Value = "休憩"
+            .Cells(9, startColIdx + GetColIdx("D")).Value = "出リ"
+            .Cells(9, startColIdx + GetColIdx("E")).Value = "開始"
+            .Cells(9, startColIdx + GetColIdx("F")).Value = "終了"
+            .Cells(9, startColIdx + GetColIdx("G")).Value = "開始"
+            .Cells(9, startColIdx + GetColIdx("H")).Value = "終了"
+            .Cells(9, startColIdx + GetColIdx("I")).Value = "時間数"
+            .Cells(9, startColIdx + GetColIdx("J")).Value = "開始"
+            .Cells(9, startColIdx + GetColIdx("K")).Value = "終了"
+            .Cells(9, startColIdx + GetColIdx("L")).Value = "開始"
+            .Cells(9, startColIdx + GetColIdx("M")).Value = "終了"
+            .Cells(9, startColIdx + GetColIdx("N")).Value = "時間数"
+            .Cells(9, startColIdx + GetColIdx("O")).Value = "備考"
+            .Cells(10, startColIdx + GetColIdx("B")).Formula2R1C1 = "=R[-2]C[-1]"
+            '31日分Loop 書込
             For j = 1 To 31
                 '初期化
                 balkSetType(j, 1) = ""
-                balkSetActStart1(j, 1) = ""
-                balkSetActEnd1(j, 1) = ""
-                balkSetActStart2(j, 1) = ""
-                balkSetActEnd2(j, 1) = ""
-                balkSetPlanStart1(j, 1) = ""
-                balkSetPlanEnd1(j, 1) = ""
-                balkSetPlanStart2(j, 1) = ""
-                balkSetPlanEnd2(j, 1) = ""
+                balkSetActWhStart(j, 1) = ""
+                balkSetActWhEnd(j, 1) = ""
+                balkSetActBtStart(j, 1) = ""
+                balkSetActBtEnd(j, 1) = ""
+                balkSetPlanWhStart(j, 1) = ""
+                balkSetPlanWhEnd(j, 1) = ""
+                balkSetPlanBtStart(j, 1) = ""
+                balkSetPlanBtEnd(j, 1) = ""
                 '平日の場合
                 tmpDate1 = DateSerial(inputYear, i, j)
                 If Month(tmpDate1) = i And weekday(tmpDate1, vbMonday) <= 5 Then
@@ -723,150 +721,150 @@ Private Sub CreateWorkScheduleSheet01(ByVal holidayDict As Object, ByVal inputYe
                         '祝日でない場合
                         If Not holidayDict.exists(tmpDate1) Then
                             balkSetType(j, 1) = "リ"
-                            balkSetActStart1(j, 1) = inputStartTime1
-                            balkSetActEnd1(j, 1) = inputEndTime1
-                            balkSetActStart2(j, 1) = inputStartTime2
-                            balkSetActEnd2(j, 1) = inputEndTime2
-                            balkSetPlanStart1(j, 1) = inputStartTime1
-                            balkSetPlanEnd1(j, 1) = inputEndTime1
-                            balkSetPlanStart2(j, 1) = inputStartTime2
-                            balkSetPlanEnd2(j, 1) = inputEndTime2
+                            balkSetActWhStart(j, 1) = inputWhStartTime
+                            balkSetActWhEnd(j, 1) = inputWhEndTime
+                            balkSetActBtStart(j, 1) = inputBtStartTime
+                            balkSetActBtEnd(j, 1) = inputBtEndTime
+                            balkSetPlanWhStart(j, 1) = inputWhStartTime
+                            balkSetPlanWhEnd(j, 1) = inputWhEndTime
+                            balkSetPlanBtStart(j, 1) = inputBtStartTime
+                            balkSetPlanBtEnd(j, 1) = inputBtEndTime
                         End If
                     End If
                 End If
             Next
             '書込
-            .Cells(11, colStartIdx + GetColIdx("B")).Resize(30, 1).FormulaR1C1 = "=IF(R[-1]C="""","""",IF(R[-1]C+1<=EOMONTH(R8C" & colStartIdx + GetColIdx("A") & ",0),R[-1]C+1,""""))"
-            .Cells(10, colStartIdx + GetColIdx("C")).Resize(31, 1).FormulaR1C1 = "=TEXT(RC[-1],""aaa"")"
-            .Cells(10, colStartIdx + GetColIdx("D")).Resize(31, 1).Value = balkSetType
-            .Cells(10, colStartIdx + GetColIdx("E")).Resize(31, 1).Value = balkSetActStart1
-            .Cells(10, colStartIdx + GetColIdx("F")).Resize(31, 1).Value = balkSetActEnd1
-            .Cells(10, colStartIdx + GetColIdx("G")).Resize(31, 1).Value = balkSetActStart2
-            .Cells(10, colStartIdx + GetColIdx("H")).Resize(31, 1).Value = balkSetActEnd2
-            .Cells(10, colStartIdx + GetColIdx("I")).Resize(31, 1).FormulaR1C1 = "=LET(s,RC[-4],e,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(e-s-bt)*24,IF(OR(s="""",e=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
-            .Cells(10, colStartIdx + GetColIdx("J")).Resize(31, 1).Value = balkSetPlanStart1
-            .Cells(10, colStartIdx + GetColIdx("K")).Resize(31, 1).Value = balkSetPlanEnd1
-            .Cells(10, colStartIdx + GetColIdx("L")).Resize(31, 1).Value = balkSetPlanStart2
-            .Cells(10, colStartIdx + GetColIdx("M")).Resize(31, 1).Value = balkSetPlanEnd2
-            .Cells(10, colStartIdx + GetColIdx("N")).Resize(31, 1).FormulaR1C1 = "=LET(s,RC[-4],e,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(e-s-bt)*24,IF(OR(s="""",e=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
+            .Cells(10, startColIdx + GetColIdx("C")).Resize(31, 1).Formula2R1C1 = "=TEXT(RC[-1],""aaa"")"
+            .Cells(10, startColIdx + GetColIdx("D")).Resize(31, 1).Value = balkSetType
+            .Cells(10, startColIdx + GetColIdx("E")).Resize(31, 1).Value = balkSetActWhStart
+            .Cells(10, startColIdx + GetColIdx("F")).Resize(31, 1).Value = balkSetActWhEnd
+            .Cells(10, startColIdx + GetColIdx("G")).Resize(31, 1).Value = balkSetActBtStart
+            .Cells(10, startColIdx + GetColIdx("H")).Resize(31, 1).Value = balkSetActBtEnd
+            .Cells(10, startColIdx + GetColIdx("I")).Resize(31, 1).Formula2R1C1 = "=LET(ws,RC[-4],we,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(we-ws-bt)*24,IF(OR(ws="""",we=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
+            .Cells(10, startColIdx + GetColIdx("J")).Resize(31, 1).Value = balkSetPlanWhStart
+            .Cells(10, startColIdx + GetColIdx("K")).Resize(31, 1).Value = balkSetPlanWhEnd
+            .Cells(10, startColIdx + GetColIdx("L")).Resize(31, 1).Value = balkSetPlanBtStart
+            .Cells(10, startColIdx + GetColIdx("M")).Resize(31, 1).Value = balkSetPlanBtEnd
+            .Cells(10, startColIdx + GetColIdx("N")).Resize(31, 1).Formula2R1C1 = "=LET(ws,RC[-4],we,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(we-ws-bt)*24,IF(OR(ws="""",we=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
+            .Cells(11, startColIdx + GetColIdx("B")).Resize(30, 1).Formula2R1C1 = "=IF(R[-1]C="""","""",IF(R[-1]C+1<=EOMONTH(R8C" & startColIdx + GetColIdx("A") & ",0),R[-1]C+1,""""))"
         End With
     Next
 
     'Sheet設定
     ws.Activate
     ActiveSheet.Outline.SummaryColumn = xlLeft 'グループ化 解除
-    ActiveWindow.DisplayGridlines = False '目盛線
-    ws.Cells.VerticalAlignment = xlTop '文字揃え
+    ActiveWindow.DisplayGridlines = False      '目盛線
+    ws.Cells.VerticalAlignment = xlTop         '文字揃え
     ws.Cells.HorizontalAlignment = xlLeft
-    ws.Rows("2:7").Group 'グループ化
-    ws.Cells(10, 1).Select 'ウィンドウ枠の固定
+    ws.Rows("2:7").Group                       'グループ化
+    ws.Cells(10, 1).Select                     'ウィンドウ枠の固定
     ActiveWindow.FreezePanes = True
 
     '12か月分Loop
     For i = 1 To 12
-        colStartIdx = i * 18 '基準列
+        startColIdx = i * 18 '基準列
         With ws
             '文字サイズ
-            .Cells(8, colStartIdx + GetColIdx("A")).Font.Size = 9.5
+            .Cells(8, startColIdx + GetColIdx("A")).Font.Size = 9.5
             '太字
-            .Cells(1, colStartIdx + GetColIdx("B")).Font.Bold = True
-            .Cells(8, colStartIdx + GetColIdx("A")).Font.Bold = True
+            .Cells(1, startColIdx + GetColIdx("B")).Font.Bold = True
+            .Cells(8, startColIdx + GetColIdx("A")).Font.Bold = True
             '文字色
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "8:" & GetColNm(colStartIdx + GetColIdx("H")) & 40).Font.Color = RGB(128, 128, 128) '#808080
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "8:" & GetColNm(colStartIdx + GetColIdx("N")) & 40).Font.Color = RGB(128, 128, 128) '#808080
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "8:" & GetColNm(startColIdx + GetColIdx("H")) & 40).Font.Color = RGB(128, 128, 128) '#808080
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "8:" & GetColNm(startColIdx + GetColIdx("N")) & 40).Font.Color = RGB(128, 128, 128) '#808080
             '背景色
-            .Range(GetColNm(colStartIdx + GetColIdx("A")) & "1:" & GetColNm(colStartIdx + GetColIdx("Q")) & 1).Interior.Color = RGB(218, 242, 208)  '#DAF2D0
-            .Range(GetColNm(colStartIdx + GetColIdx("A")) & "2:" & GetColNm(colStartIdx + GetColIdx("A")) & 40).Interior.Color = RGB(218, 242, 208) '#DAF2D0
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & "2:" & GetColNm(colStartIdx + GetColIdx("Q")) & 6).Interior.Color = RGB(242, 242, 242)  '#F2F2F2
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "8:" & GetColNm(colStartIdx + GetColIdx("H")) & 40).Interior.Color = RGB(242, 242, 242) '#F2F2F2
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "8:" & GetColNm(colStartIdx + GetColIdx("N")) & 40).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            .Range(GetColNm(startColIdx + GetColIdx("A")) & "1:" & GetColNm(startColIdx + GetColIdx("Q")) & 1).Interior.Color = RGB(218, 242, 208)  '#DAF2D0
+            .Range(GetColNm(startColIdx + GetColIdx("A")) & "2:" & GetColNm(startColIdx + GetColIdx("A")) & 40).Interior.Color = RGB(218, 242, 208) '#DAF2D0
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & "2:" & GetColNm(startColIdx + GetColIdx("Q")) & 6).Interior.Color = RGB(242, 242, 242)  '#F2F2F2
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "8:" & GetColNm(startColIdx + GetColIdx("H")) & 40).Interior.Color = RGB(242, 242, 242) '#F2F2F2
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "8:" & GetColNm(startColIdx + GetColIdx("N")) & 40).Interior.Color = RGB(217, 217, 217) '#D9D9D9
             '行幅
             .Rows(2).RowHeight = 6
             .Rows("6:7").RowHeight = 6
             '列幅
-            .Columns(colStartIdx + GetColIdx("A")).ColumnWidth = 3.5
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & ":" & GetColNm(colStartIdx + GetColIdx("D"))).ColumnWidth = 3
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & ":" & GetColNm(colStartIdx + GetColIdx("Q"))).ColumnWidth = 6
-            .Columns(GetColNm(colStartIdx + GetColIdx("R"))).ColumnWidth = 2
+            .Columns(startColIdx + GetColIdx("A")).ColumnWidth = 3.5
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & ":" & GetColNm(startColIdx + GetColIdx("D"))).ColumnWidth = 3
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & ":" & GetColNm(startColIdx + GetColIdx("Q"))).ColumnWidth = 6
+            .Columns(GetColNm(startColIdx + GetColIdx("R"))).ColumnWidth = 2
             'セル結合
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & "1:" & GetColNm(colStartIdx + GetColIdx("Q")) & 1).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & "3:" & GetColNm(colStartIdx + GetColIdx("D")) & 5).Merge Across:=True
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "3:" & GetColNm(colStartIdx + GetColIdx("H")) & 3).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "3:" & GetColNm(colStartIdx + GetColIdx("K")) & 3).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("A")) & "8:" & GetColNm(colStartIdx + GetColIdx("A")) & 9).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & "8:" & GetColNm(colStartIdx + GetColIdx("F")) & 8).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "8:" & GetColNm(colStartIdx + GetColIdx("H")) & 8).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "8:" & GetColNm(colStartIdx + GetColIdx("K")) & 8).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("L")) & "8:" & GetColNm(colStartIdx + GetColIdx("M")) & 8).Merge
-            .Range(GetColNm(colStartIdx + GetColIdx("O")) & "9:" & GetColNm(colStartIdx + GetColIdx("Q")) & 40).Merge Across:=True
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & "1:" & GetColNm(startColIdx + GetColIdx("Q")) & 1).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & "3:" & GetColNm(startColIdx + GetColIdx("D")) & 5).Merge Across:=True
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "3:" & GetColNm(startColIdx + GetColIdx("H")) & 3).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "3:" & GetColNm(startColIdx + GetColIdx("K")) & 3).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("A")) & "8:" & GetColNm(startColIdx + GetColIdx("A")) & 9).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & "8:" & GetColNm(startColIdx + GetColIdx("F")) & 8).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "8:" & GetColNm(startColIdx + GetColIdx("H")) & 8).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "8:" & GetColNm(startColIdx + GetColIdx("K")) & 8).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("L")) & "8:" & GetColNm(startColIdx + GetColIdx("M")) & 8).Merge
+            .Range(GetColNm(startColIdx + GetColIdx("O")) & "9:" & GetColNm(startColIdx + GetColIdx("Q")) & 40).Merge Across:=True
             '1月の場合
             If i = 1 Then
                 '月 + 和暦
-                .Cells(10, colStartIdx + GetColIdx("A")).Font.Size = 10 '文字サイズ
-                .Cells(10, colStartIdx + GetColIdx("A")).Font.Bold = True '太字
-                .Range(GetColNm(colStartIdx + GetColIdx("A")) & "10:" & GetColNm(colStartIdx + GetColIdx("A")) & 15).Merge 'セル結合
-                .Cells(10, colStartIdx + GetColIdx("A")).HorizontalAlignment = xlCenter '文字揃え
-                .Cells(10, colStartIdx + GetColIdx("A")).Value = Format(DateSerial(inputYear, 1, 1), "(ggge年)") '表示形式
-                .Cells(10, colStartIdx + GetColIdx("A")).Orientation = xlVertical '縦書き
-                .Cells(10, colStartIdx + GetColIdx("A")).WrapText = True '折返し
+                .Cells(1, startColIdx + GetColIdx("B")).NumberFormatLocal = "m"" 月 (""ggge""年)""" '表示形式
+                .Cells(10, startColIdx + GetColIdx("A")).Value = Format(DateSerial(inputYear, 1, 1), "(ggge年)")           '値
+                .Range(GetColNm(startColIdx + GetColIdx("A")) & "10:" & GetColNm(startColIdx + GetColIdx("A")) & 15).Merge 'セル結合
+                .Cells(10, startColIdx + GetColIdx("A")).Font.Size = 10                                                    '文字サイズ
+                .Cells(10, startColIdx + GetColIdx("A")).Font.Bold = True                                                  '太字
+                .Cells(10, startColIdx + GetColIdx("A")).HorizontalAlignment = xlCenter                                    '文字揃え
+                .Cells(10, startColIdx + GetColIdx("A")).Orientation = xlVertical                                          '縦書き
+                .Cells(10, startColIdx + GetColIdx("A")).WrapText = True                                                   '折返し
             Else
                 '月
-                .Cells(1, colStartIdx + GetColIdx("B")).NumberFormatLocal = "m"" 月""" '表示形式
+                .Cells(1, startColIdx + GetColIdx("B")).NumberFormatLocal = "m"" 月""" '表示形式
             End If
             '表示形式
-            If i = 1 Then .Cells(1, colStartIdx + GetColIdx("B")).NumberFormatLocal = "m"" 月 (""ggge""年)"""
-            .Cells(8, colStartIdx + GetColIdx("A")).NumberFormatLocal = "m" & Chr(10) & "月"
-            .Cells(8, colStartIdx + GetColIdx("A")).WrapText = True
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & "3:" & GetColNm(colStartIdx + GetColIdx("E")) & 4).NumberFormatLocal = "0"" 日"""
-            .Cells(5, colStartIdx + GetColIdx("G")).NumberFormatLocal = "0"" 日"""
-            .Cells(5, colStartIdx + GetColIdx("J")).NumberFormatLocal = "0"" 日"""
-            .Cells(5, colStartIdx + GetColIdx("E")).NumberFormatLocal = "0 %"
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & "10:" & GetColNm(colStartIdx + GetColIdx("B")) & 40).NumberFormatLocal = "d"
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & "10:" & GetColNm(colStartIdx + GetColIdx("H")) & 40).NumberFormatLocal = "h:mm"
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "10:" & GetColNm(colStartIdx + GetColIdx("M")) & 40).NumberFormatLocal = "h:mm"
-            .Range(GetColNm(colStartIdx + GetColIdx("I")) & "10:" & GetColNm(colStartIdx + GetColIdx("I")) & 40).NumberFormatLocal = "0.###"" h"""
-            .Range(GetColNm(colStartIdx + GetColIdx("N")) & "10:" & GetColNm(colStartIdx + GetColIdx("N")) & 40).NumberFormatLocal = "0.###"" h"""
+            .Cells(8, startColIdx + GetColIdx("A")).NumberFormatLocal = "m" & Chr(10) & "月"
+            .Cells(8, startColIdx + GetColIdx("A")).WrapText = True
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & "3:" & GetColNm(startColIdx + GetColIdx("E")) & 4).NumberFormatLocal = "0"" 日"""
+            .Cells(5, startColIdx + GetColIdx("G")).NumberFormatLocal = "0"" 日"""
+            .Cells(5, startColIdx + GetColIdx("J")).NumberFormatLocal = "0"" 日"""
+            .Cells(5, startColIdx + GetColIdx("E")).NumberFormatLocal = "0 %"
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & "10:" & GetColNm(startColIdx + GetColIdx("B")) & 40).NumberFormatLocal = "d"
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & "10:" & GetColNm(startColIdx + GetColIdx("H")) & 40).NumberFormatLocal = "h:mm"
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "10:" & GetColNm(startColIdx + GetColIdx("M")) & 40).NumberFormatLocal = "h:mm"
+            .Range(GetColNm(startColIdx + GetColIdx("I")) & "10:" & GetColNm(startColIdx + GetColIdx("I")) & 40).NumberFormatLocal = "0.###"" h"""
+            .Range(GetColNm(startColIdx + GetColIdx("N")) & "10:" & GetColNm(startColIdx + GetColIdx("N")) & 40).NumberFormatLocal = "0.###"" h"""
             '文字揃え
-            .Cells(1, colStartIdx + GetColIdx("B")).HorizontalAlignment = xlCenter
-            .Cells(8, colStartIdx + GetColIdx("A")).HorizontalAlignment = xlCenter
-            .Cells(10, colStartIdx + GetColIdx("A")).HorizontalAlignment = xlCenter
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & "3:" & GetColNm(colStartIdx + GetColIdx("E")) & 5).HorizontalAlignment = xlRight
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "3:" & GetColNm(colStartIdx + GetColIdx("H")) & 4).HorizontalAlignment = xlCenter
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "3:" & GetColNm(colStartIdx + GetColIdx("K")) & 4).HorizontalAlignment = xlCenter
-            .Range(GetColNm(colStartIdx + GetColIdx("G")) & "5:" & GetColNm(colStartIdx + GetColIdx("H")) & 5).HorizontalAlignment = xlRight
-            .Range(GetColNm(colStartIdx + GetColIdx("J")) & "5:" & GetColNm(colStartIdx + GetColIdx("K")) & 5).HorizontalAlignment = xlRight
-            .Range(GetColNm(colStartIdx + GetColIdx("D")) & "8:" & GetColNm(colStartIdx + GetColIdx("Q")) & 9).HorizontalAlignment = xlCenter
-            .Range(GetColNm(colStartIdx + GetColIdx("B")) & "10:" & GetColNm(colStartIdx + GetColIdx("D")) & 40).HorizontalAlignment = xlCenter
-            .Range(GetColNm(colStartIdx + GetColIdx("E")) & "10:" & GetColNm(colStartIdx + GetColIdx("N")) & 40).HorizontalAlignment = xlRight
+            .Cells(1, startColIdx + GetColIdx("B")).HorizontalAlignment = xlCenter
+            .Cells(8, startColIdx + GetColIdx("A")).HorizontalAlignment = xlCenter
+            .Cells(10, startColIdx + GetColIdx("A")).HorizontalAlignment = xlCenter
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & "3:" & GetColNm(startColIdx + GetColIdx("E")) & 5).HorizontalAlignment = xlRight
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "3:" & GetColNm(startColIdx + GetColIdx("H")) & 4).HorizontalAlignment = xlCenter
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "3:" & GetColNm(startColIdx + GetColIdx("K")) & 4).HorizontalAlignment = xlCenter
+            .Range(GetColNm(startColIdx + GetColIdx("G")) & "5:" & GetColNm(startColIdx + GetColIdx("H")) & 5).HorizontalAlignment = xlRight
+            .Range(GetColNm(startColIdx + GetColIdx("J")) & "5:" & GetColNm(startColIdx + GetColIdx("K")) & 5).HorizontalAlignment = xlRight
+            .Range(GetColNm(startColIdx + GetColIdx("D")) & "8:" & GetColNm(startColIdx + GetColIdx("Q")) & 9).HorizontalAlignment = xlCenter
+            .Range(GetColNm(startColIdx + GetColIdx("B")) & "10:" & GetColNm(startColIdx + GetColIdx("D")) & 40).HorizontalAlignment = xlCenter
+            .Range(GetColNm(startColIdx + GetColIdx("E")) & "10:" & GetColNm(startColIdx + GetColIdx("N")) & 40).HorizontalAlignment = xlRight
             'グループ化
-            .Columns(GetColNm(colStartIdx + GetColIdx("B")) & ":" & GetColNm(colStartIdx + GetColIdx("R"))).Group
+            .Columns(GetColNm(startColIdx + GetColIdx("B")) & ":" & GetColNm(startColIdx + GetColIdx("R"))).Group
             '条件付き書式(背景色)
-            Set rng = Range(GetColNm(colStartIdx + GetColIdx("B")) & "10:" & GetColNm(colStartIdx + GetColIdx("Q")) & 40)
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=$" & GetColNm(colStartIdx + GetColIdx("B")) & "10=""""").Interior.Color = RGB(217, 217, 217)                  '#D9D9D9
-            Set rng = Range(GetColNm(colStartIdx + GetColIdx("C")) & "10:" & GetColNm(colStartIdx + GetColIdx("C")) & 40)
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B," & GetColNm(colStartIdx + GetColIdx("B")) & "10)>0").Interior.Color = RGB(240, 144, 144)  '#F09090
-            Set rng = Range(GetColNm(colStartIdx + GetColIdx("C")) & "10:" & GetColNm(colStartIdx + GetColIdx("C")) & 40)
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(colStartIdx + GetColIdx("B")) & "10,2)=7").Interior.Color = RGB(251, 226, 213)           '#FBE2D5
-            Set rng = Range(GetColNm(colStartIdx + GetColIdx("C")) & "10:" & GetColNm(colStartIdx + GetColIdx("C")) & 40)
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(colStartIdx + GetColIdx("B")) & "10,2)=6").Interior.Color = RGB(218, 233, 248)           '#DAE9F8
+            Set rng = Range(GetColNm(startColIdx + GetColIdx("B")) & "10:" & GetColNm(startColIdx + GetColIdx("Q")) & 40)
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=$" & GetColNm(startColIdx + GetColIdx("B")) & "10=""""").Interior.Color = RGB(217, 217, 217)                  '#D9D9D9
+            Set rng = Range(GetColNm(startColIdx + GetColIdx("C")) & "10:" & GetColNm(startColIdx + GetColIdx("C")) & 40)
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B," & GetColNm(startColIdx + GetColIdx("B")) & "10)>0").Interior.Color = RGB(240, 144, 144)  '#F09090
+            Set rng = Range(GetColNm(startColIdx + GetColIdx("C")) & "10:" & GetColNm(startColIdx + GetColIdx("C")) & 40)
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(startColIdx + GetColIdx("B")) & "10,2)=7").Interior.Color = RGB(251, 226, 213)           '#FBE2D5
+            Set rng = Range(GetColNm(startColIdx + GetColIdx("C")) & "10:" & GetColNm(startColIdx + GetColIdx("C")) & 40)
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(startColIdx + GetColIdx("B")) & "10,2)=6").Interior.Color = RGB(218, 233, 248)           '#DAE9F8
         End With
         '罫線
-        Set rng = Range(GetColNm(colStartIdx + GetColIdx("B")) & "1:" & GetColNm(colStartIdx + GetColIdx("Q")) & "6")
+        Set rng = Range(GetColNm(startColIdx + GetColIdx("B")) & "1:" & GetColNm(startColIdx + GetColIdx("Q")) & "6")
         For Each borderType In Array(xlEdgeRight, xlEdgeBottom)
             rng.Borders(borderType).LineStyle = xlContinuous
             rng.Borders(borderType).Weight = xlThick
-            rng.Borders(borderType).Color = RGB(218, 242, 208) ' #DAF2D0
+            rng.Borders(borderType).Color = RGB(218, 242, 208) '#DAF2D0
         Next
-        Set rng = Range(GetColNm(colStartIdx + GetColIdx("B")) & "3:" & GetColNm(colStartIdx + GetColIdx("E")) & 5)
+        Set rng = Range(GetColNm(startColIdx + GetColIdx("B")) & "3:" & GetColNm(startColIdx + GetColIdx("E")) & 5)
         rng.Borders(xlInsideHorizontal).Weight = xlHairline
         rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
-        Set rng = Range(GetColNm(colStartIdx + GetColIdx("G")) & "4:" & GetColNm(colStartIdx + GetColIdx("H")) & 5)
+        Set rng = Range(GetColNm(startColIdx + GetColIdx("G")) & "4:" & GetColNm(startColIdx + GetColIdx("H")) & 5)
         rng.Borders(xlInsideHorizontal).Weight = xlHairline
         rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
-        Set rng = Range(GetColNm(colStartIdx + GetColIdx("J")) & "4:" & GetColNm(colStartIdx + GetColIdx("K")) & 5)
+        Set rng = Range(GetColNm(startColIdx + GetColIdx("J")) & "4:" & GetColNm(startColIdx + GetColIdx("K")) & 5)
         rng.Borders(xlInsideHorizontal).Weight = xlHairline
         rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
-        Set rng = Range(GetColNm(colStartIdx + GetColIdx("B")) & "9:" & GetColNm(colStartIdx + GetColIdx("Q")) & 40)
+        Set rng = Range(GetColNm(startColIdx + GetColIdx("B")) & "9:" & GetColNm(startColIdx + GetColIdx("Q")) & 40)
         rng.Borders(xlInsideHorizontal).Weight = xlHairline
         rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
     Next
@@ -880,19 +878,27 @@ End Sub
 '概要 : Sheet[勤務表(時間数タイプ)]を作成する
 '引数 : holidayDict : 祝日辞書
 '     : inputYear   : 入力年
-'     : inputWorkHr : 入力勤務時間
+'     : inputWorkHr : 入力勤務時間数
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWorkHr As Double)
+Private Sub CreateSheet_WorkSchedule02(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWorkHr As Double)
     Dim ws As Worksheet      'Sheet
     Dim wsNm As String       'Sheet名
-    Dim i As Long, j As Long
-    Dim rowStartIdx As Long  '開始行番号
+    Dim i As Long, j As Long 'Loopカウンタ
+    Dim startRowIdx As Long  '開始行
     Dim rng As Range         '範囲
     Dim tmpDate1 As Date
-    Dim tmpDate2 As Date
+    Dim tmpDate2 As String
     Dim borderType As Variant
+    '●年末年始
+    Dim newYearSeasonDict As Object: Set newYearSeasonDict = CreateObject("Scripting.Dictionary")
+    newYearSeasonDict("1-1") = True
+    newYearSeasonDict("1-2") = True
+    newYearSeasonDict("1-3") = True
+    newYearSeasonDict("12-29") = True
+    newYearSeasonDict("12-30") = True
+    newYearSeasonDict("12-31") = True
     '●一括セット用
     Dim balkSetWeek(1 To 1, 1 To 31) As Variant '曜日
     Dim balkSetDate(1 To 1, 1 To 31) As Variant '日付
@@ -907,28 +913,28 @@ Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYe
     ws.name = wsNm
     '12か月分Loop(書込)
     For i = 1 To 12
-        rowStartIdx = i * 12
+        startRowIdx = i * 12
         With ws
-            .Cells(rowStartIdx + 3, "A").Value = "予"
-            .Cells(rowStartIdx + 4, "A").Value = "実"
-            .Cells(rowStartIdx + 5, "A").Value = "出"
-            .Cells(rowStartIdx + 6, "A").Value = "備"
-            .Cells(rowStartIdx, "C").Value = DateSerial(inputYear, i, 1)
-            .Cells(rowStartIdx + 1, "AI").Value = "予定(日)"
-            .Cells(rowStartIdx + 2, "AI").Value = "予定(時)"
-            .Cells(rowStartIdx + 3, "AI").Value = "実績(日)"
-            .Cells(rowStartIdx + 4, "AI").Value = "実績(時)"
-            .Cells(rowStartIdx + 5, "AI").Value = "出社"
-            .Cells(rowStartIdx + 6, "AI").Value = "リモート"
-            .Cells(rowStartIdx + 7, "AI").Value = "出社率"
-            .Cells(rowStartIdx + 1, "AJ").Formula = "=COUNT(C" & rowStartIdx + 3 & ":AG" & rowStartIdx + 3 & ")"
-            .Cells(rowStartIdx + 2, "AJ").Formula = "=LET(v,SUM(C" & rowStartIdx + 3 & ":AG" & rowStartIdx + 3 & "),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
-            .Cells(rowStartIdx + 3, "AJ").Formula = "=COUNT(C" & rowStartIdx + 4 & ":AG" & rowStartIdx + 4 & ")"
-            .Cells(rowStartIdx + 4, "AJ").Formula = "=LET(v,SUM(C" & rowStartIdx + 4 & ":AG" & rowStartIdx + 4 & "),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
-            .Cells(rowStartIdx + 5, "AJ").Formula = "=COUNTIF(C" & rowStartIdx + 5 & ":AG" & rowStartIdx + 5 & ",""出"")"
-            .Cells(rowStartIdx + 6, "AJ").Formula = "=COUNTIF(C" & rowStartIdx + 5 & ":AG" & rowStartIdx + 5 & ",""リ"")"
-            .Cells(rowStartIdx + 7, "AJ").Formula = "=AJ" & rowStartIdx + 5 & "/(AJ" & rowStartIdx + 5 & "+AJ" & rowStartIdx + 6 & ")"
-            .Cells(rowStartIdx + 2, "C").Formula = "=C" & rowStartIdx
+            .Cells(startRowIdx + 3, "A").Value = "予"
+            .Cells(startRowIdx + 4, "A").Value = "実"
+            .Cells(startRowIdx + 5, "A").Value = "出"
+            .Cells(startRowIdx + 6, "A").Value = "備"
+            .Cells(startRowIdx, "C").Value = DateSerial(inputYear, i, 1)
+            .Cells(startRowIdx + 1, "AI").Value = "予定(日)"
+            .Cells(startRowIdx + 2, "AI").Value = "予定(時)"
+            .Cells(startRowIdx + 3, "AI").Value = "実績(日)"
+            .Cells(startRowIdx + 4, "AI").Value = "実績(時)"
+            .Cells(startRowIdx + 5, "AI").Value = "出社"
+            .Cells(startRowIdx + 6, "AI").Value = "リモート"
+            .Cells(startRowIdx + 7, "AI").Value = "出社率"
+            .Cells(startRowIdx + 1, "AJ").Formula2R1C1 = "=COUNT(R[2]C[-33]:R[2]C[-3])"
+            .Cells(startRowIdx + 2, "AJ").Formula2R1C1 = "=LET(v,SUM(R[1]C[-33]:R[1]C[-3]),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
+            .Cells(startRowIdx + 3, "AJ").Formula2R1C1 = "=COUNT(R[1]C[-33]:R[1]C[-3])"
+            .Cells(startRowIdx + 4, "AJ").Formula2R1C1 = "=LET(v,SUM(RC[-33]:RC[-3]),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
+            .Cells(startRowIdx + 5, "AJ").Formula2R1C1 = "=COUNTIF(RC[-33]:RC[-3],""出"")"
+            .Cells(startRowIdx + 6, "AJ").Formula2R1C1 = "=COUNTIF(R[-1]C[-33]:R[-1]C[-3],""リ"")"
+            .Cells(startRowIdx + 7, "AJ").Formula2R1C1 = "=R[-2]C/(R[-2]C+R[-1]C)"
+            .Cells(startRowIdx + 2, "C").Formula2R1C1 = "=R[-2]C"
             '31日分Loop
             For j = 1 To 31
                 '初期化
@@ -937,14 +943,14 @@ Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYe
                 balkSetPlan(1, j) = ""
                 balkSetAct(1, j) = ""
                 balkSetType(1, j) = ""
-                balkSetWeek(1, j) = "=TEXT(" & GetColNm(j + 2) & rowStartIdx + 2 & ",""aaa"")"
-                balkSetDate(1, j) = "=IF(" & GetColNm(j + 2) & rowStartIdx + 2 & "="""","""",IF(" & GetColNm(j + 2) & rowStartIdx + 2 & "+1<=EOMONTH($C$" & rowStartIdx & ",0)," & GetColNm(j + 2) & rowStartIdx + 2 & "+1,""""))"
+                balkSetWeek(1, j) = "=TEXT(R[1]C,""aaa"")"
+                balkSetDate(1, j) = "=IF(RC[-1]="""","""",IF(RC[-1]+1<=EOMONTH(R[-2]C3,0),RC[-1]+1,""""))"
                 '平日の場合、[勤務時間/出リ] 書込
                 tmpDate1 = DateSerial(inputYear, i, j)
                 If Month(tmpDate1) = i And weekday(tmpDate1, vbMonday) <= 5 Then
-                    '12/29-1/3でない場合
-                    tmpDate2 = Month(tmpDate1) & "-" & Day(tmpDate1)
-                    If tmpDate2 <> "12-29" And tmpDate2 <> "12-30" And tmpDate2 <> "12-31" And tmpDate2 <> "1-1" And tmpDate2 <> "1-2" And tmpDate2 <> "1-3" Then
+                    '年末年始でない場合
+                    tmpDate2 = Format(tmpDate1, "M-d")
+                    If Not newYearSeasonDict.exists(tmpDate2) Then
                         '祝日でない場合
                         If Not holidayDict.exists(tmpDate1) Then
                             balkSetPlan(1, j) = inputWorkHr
@@ -954,11 +960,11 @@ Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYe
                     End If
                 End If
             Next
-            .Cells(rowStartIdx + 1, "C").Resize(1, 31).Formula = balkSetWeek
-            .Cells(rowStartIdx + 2, "D").Resize(1, 30).Formula = balkSetDate
-            .Cells(rowStartIdx + 3, "C").Resize(1, 31).Value = balkSetPlan
-            .Cells(rowStartIdx + 4, "C").Resize(1, 31).Value = balkSetAct
-            .Cells(rowStartIdx + 5, "C").Resize(1, 31).Value = balkSetType
+            .Cells(startRowIdx + 1, "C").Resize(1, 31).Formula2R1C1 = balkSetWeek
+            .Cells(startRowIdx + 2, "D").Resize(1, 30).Formula2R1C1 = balkSetDate
+            .Cells(startRowIdx + 3, "C").Resize(1, 31).Value = balkSetPlan
+            .Cells(startRowIdx + 4, "C").Resize(1, 31).Value = balkSetAct
+            .Cells(startRowIdx + 5, "C").Resize(1, 31).Value = balkSetType
         End With
     Next
 
@@ -969,13 +975,13 @@ Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYe
     ws.Cells.HorizontalAlignment = xlLeft
     '12か月分Loop
     For i = 1 To 12
-        rowStartIdx = i * 12
+        startRowIdx = i * 12
         With ws
-            .Cells(rowStartIdx, "C").Font.Bold = True '太字
-            .Cells(rowStartIdx + 3, "A").Interior.Color = RGB(217, 217, 217)                             '#D9D9D9 背景色
-            .Cells(rowStartIdx, "C").Interior.Color = RGB(218, 242, 208)                                 '#DAF2D0
-            .Range("C" & rowStartIdx + 3 & ":AG" & rowStartIdx + 3).Interior.Color = RGB(217, 217, 217)  '#D9D9D9
-            .Range("AI" & rowStartIdx + 1 & ":AJ" & rowStartIdx + 2).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+            .Cells(startRowIdx, "C").Font.Bold = True '太字
+            .Cells(startRowIdx + 3, "A").Interior.Color = RGB(217, 217, 217)                             '#D9D9D9 背景色
+            .Cells(startRowIdx, "C").Interior.Color = RGB(218, 242, 208)                                 '#DAF2D0
+            .Range("C" & startRowIdx + 3 & ":AG" & startRowIdx + 3).Interior.Color = RGB(217, 217, 217)  '#D9D9D9
+            .Range("AI" & startRowIdx + 1 & ":AJ" & startRowIdx + 2).Interior.Color = RGB(217, 217, 217) '#D9D9D9
             .Columns("A").ColumnWidth = 3   '列幅
             .Columns("B").ColumnWidth = 0.5
             If Len(mid(inputWorkHr, InStr(inputWorkHr, ".") + 1)) < 2 Then
@@ -985,40 +991,41 @@ Private Sub CreateWorkScheduleSheet02(ByVal holidayDict As Object, ByVal inputYe
             End If
             .Columns("AH").ColumnWidth = 0.5
             .Columns("AI:AJ").ColumnWidth = 8
-            .Range("C" & rowStartIdx & ":AG" & rowStartIdx).Merge Across:=True 'セル結合
-            .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10).Merge
-            .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10).Merge
-            .Range("A" & rowStartIdx + 3 & ":A" & rowStartIdx + 6).HorizontalAlignment = xlCenter
-            .Range("C" & rowStartIdx & ":AG" & rowStartIdx + 5).HorizontalAlignment = xlCenter
-            .Range("AI" & rowStartIdx + 1 & ":AI" & rowStartIdx + 7).HorizontalAlignment = xlCenter
-            .Range("AJ" & rowStartIdx + 1 & ":AJ" & rowStartIdx + 7).HorizontalAlignment = xlRight
-            .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10).VerticalAlignment = xlTop
-            .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10).VerticalAlignment = xlTop
-            If i = 1 Then .Range("C" & rowStartIdx).NumberFormatLocal = "m"" 月 (""ggge""年)""" '表示形式
-            If i <> 1 Then .Range("C" & rowStartIdx).NumberFormatLocal = "m"" 月"""
-            .Range("C" & rowStartIdx + 2 & ":AG" & rowStartIdx + 2).NumberFormatLocal = "d"
-            .Range("AJ" & rowStartIdx + 1).NumberFormatLocal = "0"" 日"""
-            .Range("AJ" & rowStartIdx + 3).NumberFormatLocal = "0"" 日"""
-            .Range("AJ" & rowStartIdx + 5).NumberFormatLocal = "0"" 日"""
-            .Range("AJ" & rowStartIdx + 6).NumberFormatLocal = "0"" 日"""
-            .Range("AJ" & rowStartIdx + 7).NumberFormatLocal = "0 %"
-            For j = 1 To 2 '備考枠線
-                If j = 1 Then Set rng = .Range("C" & rowStartIdx + 6 & ":Q" & rowStartIdx + 10)
-                If j = 2 Then Set rng = .Range("S" & rowStartIdx + 6 & ":AG" & rowStartIdx + 10)
+            .Range("C" & startRowIdx & ":AG" & startRowIdx).Merge Across:=True 'セル結合
+            .Range("C" & startRowIdx + 6 & ":Q" & startRowIdx + 10).Merge
+            .Range("S" & startRowIdx + 6 & ":AG" & startRowIdx + 10).Merge
+            .Range("A" & startRowIdx + 3 & ":A" & startRowIdx + 6).HorizontalAlignment = xlCenter
+            .Range("C" & startRowIdx & ":AG" & startRowIdx + 5).HorizontalAlignment = xlCenter
+            .Range("AI" & startRowIdx + 1 & ":AI" & startRowIdx + 7).HorizontalAlignment = xlCenter
+            .Range("AJ" & startRowIdx + 1 & ":AJ" & startRowIdx + 7).HorizontalAlignment = xlRight
+            .Range("C" & startRowIdx + 6 & ":Q" & startRowIdx + 10).VerticalAlignment = xlTop
+            .Range("S" & startRowIdx + 6 & ":AG" & startRowIdx + 10).VerticalAlignment = xlTop
+            If i = 1 Then .Range("C" & startRowIdx).NumberFormatLocal = "m"" 月 (""ggge""年)""" '表示形式
+            If i <> 1 Then .Range("C" & startRowIdx).NumberFormatLocal = "m"" 月"""
+            .Range("C" & startRowIdx + 2 & ":AG" & startRowIdx + 2).NumberFormatLocal = "d"
+            .Range("AJ" & startRowIdx + 1).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & startRowIdx + 3).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & startRowIdx + 5).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & startRowIdx + 6).NumberFormatLocal = "0"" 日"""
+            .Range("AJ" & startRowIdx + 7).NumberFormatLocal = "0 %"
+            '備考枠線
+            For j = 1 To 2
+                If j = 1 Then Set rng = .Range("C" & startRowIdx + 6 & ":Q" & startRowIdx + 10)
+                If j = 2 Then Set rng = .Range("S" & startRowIdx + 6 & ":AG" & startRowIdx + 10)
                 For Each borderType In Array(xlEdgeTop, xlEdgeBottom, xlEdgeLeft, xlEdgeRight, xlInsideHorizontal, xlInsideVertical)
                     rng.Borders(borderType).Weight = xlThin
                     rng.Borders(borderType).Color = RGB(191, 191, 191) '#BFBFBF
                 Next
             Next
-            .Range("A" & rowStartIdx + 1 & ":A" & rowStartIdx + 11).EntireRow.Group 'グループ化
-            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 5, "AG"))                                                                  '条件付き書式(背景色)
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=C$" & rowStartIdx + 2 & "=""""").Interior.Color = RGB(217, 217, 217)                 '#D9D9D9
-            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B,C" & rowStartIdx + 2 & ")>0").Interior.Color = RGB(240, 144, 144) '#F09090
-            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowStartIdx + 2 & ",2)=7").Interior.Color = RGB(251, 226, 213)          '#FBE2D5
-            Set rng = Range(.Cells(rowStartIdx + 1, "C"), .Cells(rowStartIdx + 1, "AG"))
-            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowStartIdx + 2 & ",2)=6").Interior.Color = RGB(218, 233, 248)          '#DAE9F8
+            .Range("A" & startRowIdx + 1 & ":A" & startRowIdx + 11).EntireRow.Group 'グループ化
+            Set rng = Range(.Cells(startRowIdx + 1, "C"), .Cells(startRowIdx + 5, "AG"))                                                                  '条件付き書式(背景色)
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=C$" & startRowIdx + 2 & "=""""").Interior.Color = RGB(217, 217, 217)                 '#D9D9D9
+            Set rng = Range(.Cells(startRowIdx + 1, "C"), .Cells(startRowIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B,C" & startRowIdx + 2 & ")>0").Interior.Color = RGB(240, 144, 144) '#F09090
+            Set rng = Range(.Cells(startRowIdx + 1, "C"), .Cells(startRowIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & startRowIdx + 2 & ",2)=7").Interior.Color = RGB(251, 226, 213)          '#FBE2D5
+            Set rng = Range(.Cells(startRowIdx + 1, "C"), .Cells(startRowIdx + 1, "AG"))
+            rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & startRowIdx + 2 & ",2)=6").Interior.Color = RGB(218, 233, 248)          '#DAE9F8
         End With
     Next
 
