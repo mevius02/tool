@@ -233,7 +233,7 @@ Private Function GetAllTheme() As Collection
     '▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 上書き範囲 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ01", "ハチワレあたま、かお、ほっぺ", 123, 166, 196, "#7BA6C4", 250, 248, 247, "#FAF8F7", 255, 194, 202, "#FFC2CA"))
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ02", "うさぎ、モモンガみみ", 255, 241, 203, "#FFF1CB", 198, 232, 243, "#C6E8F3", 255, 255, 255, "#FFFFFF"))
-    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ03", "地面、草1、草2", 247, 245, 234, "#F7F5EA", 220, 235, 197, "#DCEBC5", 205, 230, 184, "#CDE6B8"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ03", "地面1、草1、草2", 248, 248, 240, "#F8F8F0", 220, 235, 197, "#DCEBC5", 205, 230, 184, "#CDE6B8"))
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows01", "ロゴ　赤、緑", 242, 80, 34, "#F25022", 127, 186, 0, "#07FBA0", 255, 255, 255, "#FFFFFF"))
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows02", "ロゴ　青、黄", 0, 164, 239, "#00A4EF", 255, 185, 0, "#0FFB90", 255, 255, 255, "#FFFFFF"))
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows03", "Light1", 234, 234, 234, "#EAEAEA", 238, 238, 238, "#EEEEEE", 243, 243, 243, "#F3F3F3"))
