@@ -1,0 +1,896 @@
+'変数未宣言エラー設定ON
+Option Explicit
+'------------------------------------------------------------
+'概要 : Sheet[配色テーマ表]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_ThemeColorBook()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim ws As Worksheet     'Sheet
+    Dim wsNm As String      'Sheet名
+    Dim rowIdx As Long      '行
+    Dim colIdx As Long      '列
+    Dim endRowIdx As Long   '終了行
+    Dim endColIdx As Long   '終了列
+    Dim writeRowIdx As Long '書込行
+    Dim writeColIdx As Long '書込列
+
+    '●テーマ数
+    Dim themeCnt As Long
+    '●テーマリスト/行
+    Dim themeCol As Collection
+    Dim themeArr As Variant
+    '●カテゴリ名[前/現在]
+    Dim preCatNm As String
+    Dim crntCatNm As String
+
+    '========== 初期化 ==========
+    writeRowIdx = 1
+    writeColIdx = -12
+    themeCnt = 1
+    '============================
+
+    '全テーマ取得
+    Set themeCol = GetAllTheme()
+
+    'Sheet[設定]作成(存在しない場合)
+    If Not IsExistsSheet("設定") Then
+        CreateSheet_ThemeParamSetting
+    End If
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeToUniqueSheetNm("配色テーマ表")
+
+    '書込
+    For Each themeArr In themeCol
+        crntCatNm = themeArr(0)
+        'カテゴリ名が変わった場合
+        If preCatNm <> crntCatNm Then
+            'タイトル書込
+            writeRowIdx = 1
+            writeColIdx = writeColIdx + 13
+            Call WriteTitle(ws, writeRowIdx, writeColIdx, themeArr)
+            writeRowIdx = 2
+        End If
+        'テーマ書込
+        Call WriteOneTheme(ws, writeRowIdx, writeColIdx, themeArr, themeCnt)
+        themeCnt = themeCnt + 1
+        writeRowIdx = writeRowIdx + 6
+        preCatNm = crntCatNm
+    Next
+
+    '最下行/列 取得
+    endRowIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
+    endColIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
+
+    'Sheet設定
+    ws.Activate
+    With ws
+        .Cells.Font.Name = "Noto Sans JP"       'フォント
+        .Rows(1).Font.Size = 20                 '文字サイズ
+        .Rows(1).Font.Bold = True               '太字
+        .Cells.VerticalAlignment = xlTop        '文字揃え
+        .Cells.HorizontalAlignment = xlLeft
+        .Rows(1).HorizontalAlignment = xlCenter
+        .Rows(1).RowHeight = 30                 '行幅
+        .Columns.ColumnWidth = 4                '列幅
+    End With
+    ActiveWindow.DisplayGridlines = False       '目盛線
+    ActiveWindow.Zoom = 85                      '表示倍率
+
+    'グループ化
+    rowIdx = 4
+    Do While True
+        ws.Rows((rowIdx) & ":" & (rowIdx + 3)).Group
+        rowIdx = rowIdx + 6
+        If endRowIdx <= rowIdx Then Exit Do
+    Loop
+    'グループ閉じる
+    ws.Outline.ShowLevels RowLevels:=1, ColumnLevels:=1
+    '列幅
+    colIdx = 1
+    Do While True
+        ws.Columns(GetColNm(colIdx)).ColumnWidth = 2
+        colIdx = colIdx + 13
+        If endColIdx <= colIdx Then Exit Do
+    Loop
+
+    'ウィンドウ枠の固定
+    ws.range("A2").Select
+    ActiveWindow.FreezePanes = True
+
+    'Sheet[比較]作成(存在しない場合)
+    If Not IsExistsSheet("比較") Then
+        CreateSheet_ThemeCompare
+    End If
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic '自動
+    Else
+        Application.Calculation = xlCalculationManual '手動
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : Sheet名が重複しないよう、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在しない場合
+    If Not IsExistsSheet(wsNm) Then
+        ChangeToUniqueSheetNm = wsNm
+        Exit Function
+    End If
+    '存在する場合
+    For i = 2 To 100
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeToUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 列番号から列名(アルファベット)を取得する
+'     : (範囲外の数値の場合、空を返す)
+'引数 : colIdx : 列番号
+'戻値 : 列名(アルファベット)
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColNm(ByVal colIdx As Long) As String
+    Dim result As String
+    Dim n As Long
+    '範囲外の場合
+    If colIdx < 1 Or Application.Columns.Count < colIdx Then
+        GetColNm = ""
+        Exit Function
+    End If
+    n = colIdx
+    Do While 0 < n
+        n = n - 1
+        result = Chr$(65 + (n Mod 26)) & result
+        n = n \ 26
+    Loop
+    GetColNm = result
+End Function
+'------------------------------------------------------------
+'概要 : 列名(アルファベット)から列番号を取得する
+'     : (範囲外の列名の場合、0を返す)
+'引数 : colNm : 列名(アルファベット)
+'戻値 : 列番号
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColIdx(ByVal colNm As String) As Long
+    Dim i As Long
+    Dim result As Long
+    Dim baseA As Long
+    Dim length As Long
+    Dim ch As Long
+    baseA = Asc("A") - 1
+    colNm = Trim$(UCase$(colNm))
+    length = Len(colNm)
+    For i = 1 To length
+        ch = Asc(Mid$(colNm, i, 1)) - baseA
+        '範囲外の場合
+        If ch < 1 Or 26 < ch Then
+            GetColIdx = 0
+            Exit Function
+        End If
+        result = result * 26 + ch
+    Next
+    GetColIdx = result
+End Function
+'------------------------------------------------------------
+'概要 : 全テーマを取得する
+'引数 : -
+'戻値 : テーマリスト
+'備考 : 上書きする場合、上書き範囲のみ修正する
+'------------------------------------------------------------
+Private Function GetAllTheme() As Collection
+    Dim themeCol As New Collection
+    '▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 上書き範囲 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ01", "ハチワレあたま、かお、ほっぺ", 123, 166, 196, "#7BA6C4", 250, 248, 247, "#FAF8F7", 255, 194, 202, "#FFC2CA"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ02", "うさぎ、モモンガみみ", 255, 241, 203, "#FFF1CB", 198, 232, 243, "#C6E8F3", 255, 255, 255, "#FFFFFF"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ03", "地面、草1、草2", 247, 245, 234, "#F7F5EA", 220, 235, 197, "#DCEBC5", 205, 230, 184, "#CDE6B8"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows01", "ロゴ　赤、緑", 242, 80, 34, "#F25022", 127, 186, 0, "#07FBA0", 255, 255, 255, "#FFFFFF"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows02", "ロゴ　青、黄", 0, 164, 239, "#00A4EF", 255, 185, 0, "#0FFB90", 255, 255, 255, "#FFFFFF"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows03", "Light1", 234, 234, 234, "#EAEAEA", 238, 238, 238, "#EEEEEE", 243, 243, 243, "#F3F3F3"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows04", "Light2", 246, 246, 246, "#F6F6F6", 248, 248, 248, "#F8F8F8", 251, 251, 251, "#FBFBFB"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows05", "Dark1", 32, 32, 32, "#202020", 43, 43, 43, "#2B2B2B", 50, 50, 50, "#323232"))
+    Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "Windows06", "Dark2", 55, 55, 55, "#373737", 67, 67, 67, "#434343", 255, 255, 255, "#FFFFFF"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リラックス01", "ほんわりくすみミルキー", 247, 195, 191, "#F7C3BF", 138, 200, 207, "#8AC8CF", 239, 235, 224, "#EFEBE0"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リラックス02", "きなりベースでほっこりと", 243, 238, 213, "#F3EED5", 228, 175, 155, "#E4AF9B", 212, 223, 187, "#D4DFBB"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リラックス03", "オトナ女子のヨガカラー", 239, 212, 205, "#EFD4CD", 96, 68, 97, "#604461", 185, 205, 191, "#B9CDBF"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "フェミニン01", "甘めニュアンスカラー", 230, 197, 207, "#E6C5CF", 189, 216, 221, "#BDD8DD", 175, 157, 192, "#AF9DC0"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "フェミニン02", "ベビーカラーで愛らしく", 255, 247, 201, "#FFF7C9", 247, 196, 212, "#F7C4D4", 192, 228, 242, "#C0E4F2"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "フェミニン03", "甘さ控えめナチュラルシック", 138, 176, 188, "#8AB0BC", 248, 245, 181, "#F8F5B5", 230, 175, 207, "#E6AFCF"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "オーガニック01", "ふわっと優しいリネンのように", 239, 229, 203, "#EFE5CB", 193, 209, 224, "#C1D1E0", 191, 201, 189, "#BFC9BD"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "オーガニック02", "大地に包まれるアースカラー", 228, 198, 166, "#E4C6A6", 142, 119, 93, "#8E775D", 230, 205, 140, "#E6CD8C"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "オーガニック03", "さわやかカラーで心も軽く", 217, 216, 206, "#D9D8CE", 224, 182, 169, "#E0B6A9", 211, 233, 208, "#D3E9D0"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "クラフト01", "クラフト風のカジュアルカラー", 225, 185, 133, "#E1B985", 253, 210, 62, "#FDD23E", 0, 160, 141, "#00A08D"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "クラフト02", "レザーカラーで上品に", 112, 55, 44, "#70372C", 220, 95, 54, "#DC5F36", 247, 227, 175, "#F7E3AF"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "クラフト03", "シックなグレイクラフト", 220, 213, 200, "#DCD5C8", 162, 162, 173, "#A2A2AD", 31, 30, 99, "#1F1E63"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リビング01", "気分がアガるクリアピンク", 236, 187, 181, "#ECBBB5", 190, 224, 204, "#BEE0CC", 233, 155, 193, "#E99BC1"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リビング02", "明るいナチュラルリビング", 224, 241, 241, "#E0F1F1", 81, 136, 177, "#5188B1", 174, 210, 101, "#AED265"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "リビング03", "アロマのようにふんわり優しく", 215, 212, 134, "#D7D486", 210, 231, 191, "#D2E7BF", 243, 231, 234, "#F3E7EA"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "ボタニカル01", "みずみずしい新緑の若葉", 217, 234, 236, "#D9EAEC", 116, 166, 76, "#74A64C", 188, 213, 55, "#BCD537"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "ボタニカル02", "鮮やか南国プランツ", 235, 97, 67, "#EB6143", 255, 227, 63, "#FFE33F", 152, 79, 155, "#984F9B"))
+    Call themeCol.Add(Array("NATURAL", 158, 209, 168, "#9ED1A8", "ボタニカル03", "ハーブカラーで気分もスッキリ", 202, 229, 211, "#CAE5D3", 223, 226, 234, "#DFE2EA", 156, 201, 229, "#9CC9E5"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "カラフル01", "ビビッドなキャンディーカラー", 216, 12, 24, "#0D8C18", 166, 96, 163, "#A660A3", 234, 96, 150, "#EA6096"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "カラフル02", "トロピカルなカラフルポップ", 239, 139, 182, "#EF8BB6", 255, 218, 42, "#FFDA2A", 49, 182, 160, "#31B6A0"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "カラフル03", "フルーツみたいなビタミンカラー", 255, 238, 125, "#FFEE7D", 244, 156, 45, "#F49C2D", 196, 215, 0, "#0C4D70"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "レトロ01", "ノスタルジックなおもちゃ箱", 235, 216, 128, "#EBD880", 192, 54, 25, "#C03619", 0, 151, 155, "#00979B"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "レトロ02", "昭和レトロ復刻カラー", 46, 73, 157, "#2E499D", 255, 222, 0, "#0FFDE0", 209, 50, 9, "#0D1329"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "レトロ03", "上品なロマンティックアンティーク", 245, 232, 207, "#F5E8CF", 239, 195, 189, "#EFC3BD", 149, 126, 128, "#957E80"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "キッズ01", "ホンワカ楽しいナチュラルキッズ", 246, 183, 170, "#F6B7AA", 14, 83, 109, "#0E536D", 250, 224, 106, "#FAE06A"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "キッズ02", "遊び心のあるカラフルクレヨン", 240, 132, 55, "#F08437", 0, 160, 64, "#00A040", 230, 25, 28, "#E6191C"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "ガーリー01", "フェミニンなマシュマロカラー", 248, 204, 209, "#F8CCD1", 194, 226, 210, "#C2E2D2", 201, 194, 224, "#C9C2E0"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "ガーリー02", "ギフトに嬉しいハッピーピンク", 255, 248, 238, "#FFF8EE", 243, 159, 137, "#F39F89", 249, 207, 209, "#F9CFD1"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "アクティブ01", "鮮やかなスポーティーカラー", 100, 192, 171, "#64C0AB", 77, 67, 152, "#4D4398", 232, 82, 152, "#E85298"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "アクティブ02", "アクティブなアウトドアスタイル", 237, 109, 70, "#ED6D46", 255, 241, 0, "#0FFF10", 43, 183, 179, "#2BB7B3"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "アクティブ03", "紺が映える大人マリン", 0, 42, 91, "#002A5B", 215, 0, 15, "#00D70F", 234, 246, 253, "#EAF6FD"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "キッチュ01", "カラフルポップなジャングル", 255, 235, 39, "#FFEB27", 232, 56, 47, "#E8382F", 19, 174, 103, "#13AE67"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "キッチュ02", "派手さを抑えたネオンライト", 221, 91, 156, "#DD5B9C", 211, 231, 245, "#D3E7F5", 243, 171, 192, "#F3ABC0"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "キッチュ03", "80年代イラスト風配色", 243, 173, 197, "#F3ADC5", 255, 242, 178, "#FFF2B2", 167, 217, 221, "#A7D9DD"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "ハッピー01", "幸せいっぱいハッピーウェディング", 255, 246, 228, "#FFF6E4", 132, 204, 206, "#84CCCE", 249, 210, 217, "#F9D2D9"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "ハッピー02", "淡くて優しいピュアカラー", 192, 228, 242, "#C0E4F2", 222, 211, 214, "#DED3D6", 255, 252, 215, "#FFFCD7"))
+    Call themeCol.Add(Array("POP", 245, 178, 195, "#F5B2C3", "ハッピー03", "バースデイに素敵な贈り物", 250, 202, 123, "#FACA7B", 240, 150, 160, "#F096A0", 224, 241, 244, "#E0F1F4"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "大人カラー01", "モノトーンにレディな赤を効かせて", 73, 69, 68, "#494544", 196, 26, 48, "#C41A30", 186, 200, 198, "#BAC8C6"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "大人カラー02", "紳士に似合うシックな配色", 9, 34, 55, "#092237", 73, 119, 188, "#4977BC", 106, 73, 40, "#6A4928"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "大人カラー03", "艶を感じるヌーディーカラー", 238, 226, 211, "#EEE2D3", 195, 156, 137, "#C39C89", 231, 176, 159, "#E7B09F"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "ゴージャス01", "ゴールドは深み色で上品に", 212, 181, 114, "#D4B572", 0, 55, 64, "#003740", 177, 90, 94, "#B15A5E"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "ゴージャス02", "黒を効かせたスタイリッシュ", 255, 245, 224, "#FFF5E0", 26, 11, 8, "#001AB8", 227, 223, 220, "#E3DFDC"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "ゴージャス03", "きらめくシャンパン＆パール", 209, 174, 21, "#D1AE15", 231, 190, 153, "#E7BE99", 245, 243, 242, "#F5F3F2"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "美術01", "陶磁器のような深みと温もり", 234, 228, 209, "#EAE4D1", 108, 134, 80, "#6C8650", 168, 117, 112, "#A87570"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "美術02", "フランス印象派の色", 0, 76, 134, "#004C86", 248, 200, 178, "#F8C8B2", 102, 155, 118, "#669B76"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "美術03", "シックな現代アート風", 48, 57, 103, "#303967", 230, 0, 18, "#0E6012", 255, 226, 0, "#0FFE20"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "インテリジェンス01", "英国風トラディショナル", 52, 72, 94, "#34485E", 60, 125, 155, "#3C7D9B", 91, 159, 138, "#5B9F8A"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "インテリジェンス02", "知を感じる重厚な図書館", 70, 46, 46, "#462E2E", 207, 170, 42, "#CFAA2A", 173, 114, 47, "#AD722F"))
+    Call themeCol.Add(Array("ELEGANT", 188, 159, 145, "#BC9F91", "インテリジェンス03", "センスを磨く趣味の時間", 219, 203, 199, "#DBCBC7", 127, 80, 114, "#7F5072", 172, 176, 168, "#ACB0A8"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "シンプル01", "クールなメタリックテイスト", 99, 103, 107, "#63676B", 210, 213, 236, "#D2D5EC", 75, 122, 124, "#4B7A7C"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "シンプル02", "ストイック無彩色", 230, 229, 239, "#E6E5EF", 62, 58, 58, "#3E3A3A", 206, 215, 220, "#CED7DC"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "シンプル03", "洗練されたミニマリズム", 21, 2, 1, "#001521", 206, 226, 223, "#CEE2DF", 0, 33, 59, "#00213B"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "抜け感01", "ほんのり甘めな上品ベージュ", 203, 127, 105, "#CB7F69", 215, 182, 61, "#D7B63D", 248, 236, 186, "#F8ECBA"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "抜け感02", "シティボーイの今どきカジュアル", 242, 161, 166, "#F2A1A6", 57, 188, 221, "#39BCDD", 0, 164, 121, "#00A479"))
+    Call themeCol.Add(Array("MODERN", 170, 160, 197, "#AAA0C5", "抜け感03", "大人っぽいナチュラルガーリー", 234, 197, 182, "#EAC5B6", 193, 163, 125, "#C1A37D", 236, 228, 225, "#ECE4E1"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "春01", "春爛漫カラーで気持ちを弾ませて", 243, 167, 172, "#F3A7AC", 221, 230, 123, "#DDE67B", 252, 233, 237, "#FCE9ED"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "春02", "心ときめくガーリーピンク", 252, 235, 239, "#FCEBEF", 246, 192, 209, "#F6C0D1", 239, 136, 147, "#EF8893"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "春03", "スイートなパステルスプリング", 245, 181, 167, "#F5B5A7", 189, 225, 218, "#BDE1DA", 254, 238, 220, "#FEEEDC"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "夏01", "爽快感のある夏色", 253, 208, 0, "#0FDD00", 0, 104, 183, "#0068B7", 159, 217, 246, "#9FD9F6"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "夏02", "ドリーミーなアイスクリームカラー", 246, 186, 178, "#F6BAB2", 255, 229, 109, "#FFE56D", 116, 181, 228, "#74B5E4"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "夏03", "賑やか夏祭りカラー", 252, 247, 176, "#FCF7B0", 232, 56, 13, "#0E838D", 0, 76, 131, "#004C83"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "秋01", "小洒落た明るめオータムカラー", 240, 131, 30, "#F0831E", 254, 235, 190, "#FEEBBE", 168, 110, 46, "#A86E2E"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "秋02", "ビターな秋色クラシカル", 124, 46, 30, "#7C2E1E", 177, 153, 98, "#B19962", 42, 71, 67, "#2A4743"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "秋03", "パーティ気分なハロウィンマジック", 96, 25, 134, "#601986", 194, 206, 0, "#0C2CE0", 241, 141, 0, "#0F18D0"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "冬01", "洗練されたクリスマスの彩り", 220, 197, 140, "#DCC58C", 219, 58, 9, "#0DB3A9", 71, 134, 87, "#478657"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "冬02", "白銀のコールド＆クール", 79, 133, 166, "#4F85A6", 121, 167, 217, "#79A7D9", 216, 219, 217, "#D8DBD9"))
+    Call themeCol.Add(Array("SEASON 1", 154, 213, 229, "#9AD5E5", "冬03", "ガーリーなバレンタインカラー", 139, 39, 43, "#8B272B", 229, 0, 106, "#0E506A", 206, 104, 69, "#CE6845"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "華やか01", "ふわっと優しい桜ピンク", 249, 214, 226, "#F9D6E2", 247, 243, 236, "#F7F3EC", 244, 170, 154, "#F4AA9A"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "華やか02", "京都のかわいいはんなり色", 243, 222, 185, "#F3DEB9", 232, 170, 163, "#E8AAA3", 174, 172, 120, "#AEAC78"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "華やか03", "朱色で作るあでやかジャパニズム", 233, 71, 9, "#0E9479", 183, 205, 218, "#B7CDDA", 193, 168, 88, "#C1A858"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "伝統01", "日本の工芸色", 179, 36, 37, "#B32425", 255, 253, 225, "#FFFDE1", 214, 184, 69, "#D6B845"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "伝統02", "漆黒と金", 21, 12, 21, "#015C15", 154, 17, 23, "#9A1117", 145, 124, 80, "#917C50"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "伝統03", "お正月は縁起よく", 224, 38, 19, "#E02613", 247, 243, 233, "#F7F3E9", 222, 178, 83, "#DEB253"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "しっとり01", "粋ジャパン", 185, 201, 201, "#B9C9C9", 26, 39, 75, "#1A274B", 75, 98, 81, "#4B6251"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "しっとり02", "藍を活かしたモダンな和", 0, 84, 167, "#0054A7", 247, 187, 162, "#F7BBA2", 170, 171, 171, "#AAABAB"))
+    Call themeCol.Add(Array("JAPAN", 245, 167, 144, "#F5A790", "しっとり03", "ハイカラなヴィンテージ和モダン", 230, 223, 203, "#E6DFCB", 86, 121, 71, "#567947", 235, 90, 9, "#0EB5A9"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "外国01", "ヒュッゲな暮らしの北欧カラー", 37, 70, 120, "#254678", 187, 227, 245, "#BBE3F5", 218, 106, 56, "#DA6A38"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "外国02", "アメリカ西海岸サーフカラー", 232, 235, 231, "#E8EBE7", 201, 190, 114, "#C9BE72", 118, 161, 184, "#76A1B8"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "外国03", "気品漂うパリジェンヌ", 170, 153, 138, "#AA998A", 234, 223, 202, "#EADFCA", 158, 195, 188, "#9EC3BC"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "旅01", "異国風ボヘミアン", 53, 181, 210, "#35B5D2", 254, 213, 43, "#FED52B", 244, 172, 146, "#F4AC92"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "旅02", "パワフルなアジアンエキゾチック", 234, 85, 32, "#EA5520", 25, 139, 134, "#198B86", 246, 214, 15, "#0F6D6F"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "旅03", "アフリカンバティック", 159, 0, 45, "#09F02D", 13, 149, 90, "#0D955A", 231, 161, 0, "#0E7A10"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "不思議系01", "ミステリアスなサーカス", 254, 221, 107, "#FEDD6B", 0, 63, 103, "#003F67", 173, 0, 3, "#00AD03"))
+    Call themeCol.Add(Array("OVERSEAS", 250, 198, 123, "#FAC67B", "不思議系02", "KAWAII原宿系", 245, 184, 204, "#F5B8CC", 46, 105, 179, "#2E69B3", 74, 188, 185, "#4ABCB9"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ビジネス01", "クールなビジネスブルー", 16, 24, 65, "#101841", 112, 172, 206, "#70ACCE", 20, 77, 160, "#144DA0"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ビジネス02", "メッセージを伝えるPRカラー", 104, 102, 108, "#68666C", 238, 125, 80, "#EE7D50", 210, 221, 222, "#D2DDDE"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ビジネス03", "清潔感あふれるホスピタリティ", 212, 236, 234, "#D4ECEA", 99, 166, 219, "#63A6DB", 167, 210, 143, "#A7D28F"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "デジタル01", "ハイテクカラーでスマートにキメる", 95, 193, 199, "#5FC1C7", 230, 229, 0, "#0E6E50", 29, 71, 99, "#1D4763"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "デジタル02", "近未来的なサイバーワールド", 30, 18, 16, "#1E1210", 255, 226, 0, "#0FFE20", 195, 216, 45, "#C3D82D"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ショップ01", "シャビーシックなカフェStyle", 162, 153, 127, "#A2997F", 110, 100, 87, "#6E6457", 207, 222, 223, "#CFDEDF"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ショップ02", "南国トロピカルリゾート", 156, 216, 246, "#9CD8F6", 233, 88, 132, "#E95884", 0, 180, 182, "#00B4B6"))
+    Call themeCol.Add(Array("SERVICE", 184, 182, 195, "#B8B6C3", "ショップ03", "セールは目立って映えさせる！", 232, 56, 32, "#E83820", 125, 188, 232, "#7DBCE8", 255, 226, 7, "#0FFE27"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヒーリング01", "甘さ控えめのアロマカラー", 225, 208, 208, "#E1D0D0", 156, 160, 197, "#9CA0C5", 249, 241, 234, "#F9F1EA"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヒーリング02", "森の草木に癒されて", 89, 135, 139, "#59878B", 234, 184, 191, "#EAB8BF", 244, 233, 224, "#F4E9E0"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヒーリング03", "清々しいモーニングブルー", 116, 195, 198, "#74C3C6", 232, 226, 214, "#E8E2D6", 246, 250, 246, "#F6FAF6"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "スローライフ01", "マリンブルーでのんびりと", 231, 229, 227, "#E7E5E3", 183, 204, 221, "#B7CCDD", 82, 109, 152, "#526D98"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "スローライフ02", "マイルドビターなカフェタイム", 235, 203, 67, "#EBCB43", 219, 171, 134, "#DBAB86", 122, 91, 84, "#7A5B54"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "スローライフ03", "優しいくすみナチュラル", 143, 139, 138, "#8F8B8A", 229, 226, 222, "#E5E2DE", 176, 202, 180, "#B0CAB4"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ボタニカル01", "上品で洗練されたボタニカル", 234, 230, 217, "#EAE6D9", 198, 181, 135, "#C6B587", 88, 141, 103, "#588D67"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ボタニカル02", "やわらかモスグリーン", 136, 157, 133, "#889D85", 253, 235, 222, "#FDEBDE", 178, 201, 186, "#B2C9BA"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ボタニカル03", "南国サマーバカンス", 0, 110, 110, "#006E6E", 154, 195, 135, "#9AC387", 230, 107, 0, "#0E66B0"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ナチュラル01", "コットンのようなソフトカラー", 247, 238, 226, "#F7EEE2", 150, 186, 215, "#96BAD7", 204, 225, 212, "#CCE1D4"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ナチュラル02", "ディープな大人のラベンダー", 197, 166, 205, "#C5A6CD", 184, 215, 115, "#B8D773", 110, 97, 146, "#6E6192"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ナチュラル03", "コーラルカラーでオトナ可愛く", 228, 173, 157, "#E4AD9D", 208, 212, 212, "#D0D4D4", 238, 230, 220, "#EEE6DC"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヘルシー01", "オーガニックなシリアルカラー", 234, 229, 218, "#EAE5DA", 244, 171, 26, "#F4AB1A", 190, 151, 124, "#BE977C"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヘルシー02", "ビタミンポジティブカラー", 175, 201, 92, "#AFC95C", 243, 242, 236, "#F3F2EC", 248, 235, 125, "#F8EB7D"))
+    Call themeCol.Add(Array("RELAX", 227, 211, 198, "#E3D3C6", "ヘルシー03", "甘酸っぱいミックスベリー", 224, 107, 123, "#E06B7B", 85, 81, 104, "#555168", 245, 215, 214, "#F5D7D6"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "ハッピー01", "ハピネスなフラワーカラー", 246, 199, 206, "#F6C7CE", 141, 204, 176, "#8DCCB0", 237, 119, 107, "#ED776B"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "ハッピー02", "気分が晴れる爽やかポップ", 188, 222, 186, "#BCDEBA", 255, 238, 169, "#FFEEA9", 123, 171, 219, "#7BABDB"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "キッズ01", "ふんわりポップなクレヨンカラー", 238, 128, 106, "#EE806A", 255, 225, 83, "#FFE153", 145, 211, 234, "#91D3EA"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "キッズ02", "ワクワク！キッズマリン", 28, 140, 205, "#1C8CCD", 240, 144, 127, "#F0907F", 246, 250, 243, "#F6FAF3"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "キッズ03", "陽だまりのこども部屋", 171, 218, 209, "#ABDAD1", 250, 238, 198, "#FAEEC6", 244, 164, 96, "#F4A460"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "パワー01", "キャッチーなビビッドカラー", 232, 74, 135, "#E84A87", 251, 221, 215, "#FBDDD7", 0, 167, 123, "#00A77B"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "パワー02", "真夜中のパーティー", 72, 93, 169, "#485DA9", 56, 53, 122, "#38357A", 235, 92, 32, "#EB5C20"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "パワー03", "スポーティーなエナジーカラー", 0, 130, 145, "#008291", 207, 199, 195, "#CFC7C3", 239, 167, 43, "#EFA72B"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "アウトドア01", "秋香るアウトドアカラー", 58, 89, 103, "#3A5967", 178, 124, 65, "#B27C41", 239, 203, 45, "#EFCB2D"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "アウトドア02", "キャンプもおしゃれに楽しく", 238, 151, 63, "#EE973F", 114, 124, 88, "#727C58", 219, 207, 174, "#DBCFAE"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "ネオン01", "ハッピーな蛍光カラー", 231, 238, 241, "#E7EEF1", 232, 124, 173, "#E87CAD", 204, 220, 67, "#CCDC43"))
+    Call themeCol.Add(Array("POSITIVE", 241, 192, 113, "#F1C071", "ネオン02", "抜け感で遊ぶクールなネオン", 252, 241, 102, "#FCF166", 226, 221, 207, "#E2DDCF", 165, 152, 201, "#A598C9"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "ヌーディー01", "オトナ女子のヌーディーピンク", 234, 215, 204, "#EAD7CC", 207, 159, 150, "#CF9F96", 113, 106, 103, "#716A67"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "ヌーディー02", "格式高いモダンなインテリア", 227, 181, 138, "#E3B58A", 192, 119, 84, "#C07754", 0, 69, 69, "#004545"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "モダン01", "クラシックなヴィンテージボルドー", 141, 0, 29, "#08D01D", 117, 148, 136, "#759488", 226, 219, 189, "#E2DBBD"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "モダン02", "ビターなショコラブラウン", 221, 209, 207, "#DDD1CF", 56, 36, 34, "#382422", 116, 55, 49, "#743731"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "エレガント01", "優美なフォーマルエレガント", 242, 218, 213, "#F2DAD5", 204, 170, 107, "#CCAA6B", 16, 79, 89, "#104F59"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "エレガント02", "伝統的なロイヤルカラー", 15, 19, 81, "#0F1351", 214, 204, 177, "#D6CCB1", 148, 126, 50, "#947E32"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "グラマラス01", "魅惑のグラマーカラー", 55, 39, 69, "#372745", 135, 90, 130, "#875A82", 167, 179, 176, "#A7B3B0"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "グラマラス02", "シルキー＆キャメルの上質感", 254, 242, 226, "#FEF2E2", 169, 116, 74, "#A9744A", 47, 36, 27, "#2F241B"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "和01", "スタイリッシュな和モダン", 255, 69, 10, "#0FF45A", 32, 39, 43, "#20272B", 141, 139, 113, "#8D8B71"))
+    Call themeCol.Add(Array("LUXURY", 192, 149, 177, "#C095B1", "和02", "黄金と藍", 147, 130, 45, "#93822D", 223, 219, 212, "#DFDBD4", 0, 58, 78, "#003A4E"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ガーリー01", "ふんわりベビーカラー", 254, 244, 244, "#FEF4F4", 207, 232, 241, "#CFE8F1", 249, 201, 166, "#F9C9A6"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ガーリー02", "ソフトパステルのイースター", 250, 239, 155, "#FAEF9B", 245, 190, 211, "#F5BED3", 227, 215, 233, "#E3D7E9"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ガーリー03", "昼下がりのお菓子パーティー", 252, 214, 142, "#FCD68E", 255, 247, 255, "#FFF7FF", 212, 194, 219, "#D4C2DB"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ロマンティック01", "星空のプリンセス", 218, 198, 217, "#DAC6D9", 242, 238, 236, "#F2EEEC", 152, 188, 223, "#98BCDF"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ロマンティック02", "うっとりピンクと爽やかミント", 235, 165, 172, "#EBA5AC", 246, 223, 222, "#F6DFDE", 158, 209, 200, "#9ED1C8"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "ロマンティック03", "夢見るエンジェルカラー", 230, 205, 227, "#E6CDE3", 191, 173, 202, "#BFADCA", 252, 231, 235, "#FCE7EB"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "フェミニン01", "甘さ控えめのガーデンローズ", 120, 148, 133, "#789485", 219, 171, 176, "#DBABB0", 240, 214, 212, "#F0D6D4"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "フェミニン02", "サボン香るブルーで優しく", 190, 213, 232, "#BED5E8", 171, 176, 188, "#ABB0BC", 236, 240, 244, "#ECF0F4"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "キュート01", "ミステリアスな街中へ", 249, 231, 230, "#F9E7E6", 236, 122, 172, "#EC7AAC", 125, 153, 205, "#7D99CD"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "キュート02", "おちゃめでアクティブに", 254, 249, 196, "#FEF9C4", 240, 139, 84, "#F08B54", 171, 220, 241, "#ABDCF1"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "キュート03", "メルヘンなガーリーレトロ", 247, 245, 232, "#F7F5E8", 249, 212, 225, "#F9D4E1", 99, 186, 199, "#63BAC7"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "メロウ01", "ノスタルジーな夕焼け", 128, 144, 192, "#8090C0", 242, 155, 143, "#F29B8F", 247, 242, 235, "#F7F2EB"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "メロウ02", "柔らかな夜のチルタイム", 116, 121, 156, "#74799C", 249, 233, 146, "#F9E992", 211, 207, 208, "#D3CFD0"))
+    Call themeCol.Add(Array("SWEET", 242, 208, 209, "#F2D0D1", "メロウ03", "メロウなピーチカラー", 246, 185, 159, "#F6B99F", 102, 160, 155, "#66A09B", 253, 236, 227, "#FDECE3"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "シティポップ01", "思い出のサマースカイブルー", 56, 123, 188, "#387BBC", 251, 227, 229, "#FBE3E5", 230, 153, 172, "#E699AC"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "シティポップ02", "派手かわいいネオポップ", 98, 192, 180, "#62C0B4", 246, 192, 204, "#F6C0CC", 131, 83, 158, "#83539E"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "エモーショナル01", "放課後のサンセットドリーム", 251, 219, 212, "#FBDBD4", 76, 79, 154, "#4C4F9A", 210, 131, 180, "#D283B4"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "エモーショナル02", "セピアカラーの想い出", 238, 239, 211, "#EEEFD3", 111, 117, 110, "#6F756E", 200, 172, 82, "#C8AC52"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "アンティーク01", "フランスのアンティーク", 194, 218, 218, "#C2DADA", 243, 243, 237, "#F3F3ED", 202, 174, 103, "#CAAE67"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "アンティーク02", "アメリカのヴィンテージ雑誌", 212, 202, 180, "#D4CAB4", 143, 69, 71, "#8F4547", 156, 168, 144, "#9CA890"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "大正", "ハイカラモダンな大正浪漫", 213, 192, 151, "#D5C097", 105, 67, 100, "#694364", 136, 158, 133, "#889E85"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "昭和01", "80年代のパステルポップ", 82, 146, 202, "#5292CA", 255, 241, 104, "#FFF168", 247, 201, 221, "#F7C9DD"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "昭和02", "ときめきファンシーレトロ", 232, 109, 165, "#E86DA5", 102, 191, 151, "#66BF97", 253, 244, 127, "#FDF47F"))
+    Call themeCol.Add(Array("RETRO", 228, 126, 121, "#E47E79", "平成", "平成レトロなコミカルカルチャー", 225, 69, 103, "#E14567", 253, 210, 43, "#FDD22B", 199, 232, 248, "#C7E8F8"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "春01", "うららかなはるかぜ色", 243, 189, 183, "#F3BDB7", 207, 221, 178, "#CFDDB2", 252, 241, 210, "#FCF1D2"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "春02", "爽やかに咲く満開のライラック", 219, 210, 232, "#DBD2E8", 223, 232, 240, "#DFE8F0", 255, 246, 255, "#FFF6FF"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "春03", "春のピンクスイーツ", 249, 207, 209, "#F9CFD1", 233, 244, 240, "#E9F4F0", 238, 134, 154, "#EE869A"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "夏01", "はじけるソーダとレモンの香り", 152, 211, 231, "#98D3E7", 212, 236, 241, "#D4ECF1", 255, 240, 89, "#FFF059"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "夏02", "あの夏のプールサイド", 127, 169, 217, "#7FA9D9", 208, 233, 221, "#D0E9DD", 242, 162, 182, "#F2A2B6"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "夏03", "真夏のトロピカルフルーツ", 249, 209, 203, "#F9D1CB", 248, 183, 61, "#F8B73D", 0, 175, 132, "#00AF84"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "秋01", "愛されピンクブラウン", 245, 197, 181, "#F5C5B5", 104, 115, 82, "#687352", 192, 128, 107, "#C0806B"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "秋02", "チャイティーのスパイスカレー", 146, 121, 138, "#92798A", 214, 173, 52, "#D6AD34", 229, 216, 178, "#E5D8B2"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "秋03", "鮮やかに色づく紅葉", 179, 30, 35, "#B31E23", 211, 96, 40, "#D36028", 233, 218, 191, "#E9DABF"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "冬01", "クリスマスカラーをナチュラルに", 238, 224, 199, "#EEE0C7", 197, 76, 61, "#C54C3D", 0, 95, 92, "#005F5C"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "冬02", "聖なるブルーゴールド", 218, 204, 137, "#DACC89", 232, 236, 238, "#E8ECEE", 120, 148, 171, "#7894AB"))
+    Call themeCol.Add(Array("SEASON 2", 149, 205, 222, "#95CDDE", "冬03", "日本のお正月とハレの日", 230, 226, 218, "#E6E2DA", 181, 29, 44, "#B51D2C", 177, 158, 138, "#B19E8A"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "グリーン01", "森林浴でリフレッシュ", 84, 146, 85, "#549255", 202, 214, 64, "#CAD640", 0, 94, 85, "#005E55"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "グリーン02", "カラダが喜ぶオーガニック野菜", 219, 226, 155, "#DBE29B", 235, 153, 56, "#EB9938", 75, 137, 79, "#4B894F"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "エシカル01", "砂漠の風と大地", 224, 195, 164, "#E0C3A4", 179, 138, 107, "#B38A6B", 109, 115, 98, "#6D7362"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "エシカル02", "奥深い森で心を整える", 153, 175, 135, "#99AF87", 74, 107, 68, "#4A6B44", 75, 73, 54, "#4B4936"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "エコロジー01", "自然にやさしいグリーンエコ", 36, 163, 104, "#24A368", 166, 197, 68, "#A6C544", 246, 237, 179, "#F6EDB3"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "エコロジー02", "未来のクリーンエネルギー", 238, 240, 238, "#EEF0EE", 239, 216, 28, "#EFD81C", 0, 166, 163, "#00A6A3"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "グローバル01", "地球を感じるクリーンカラー", 255, 230, 117, "#FFE675", 176, 211, 113, "#B0D371", 108, 198, 219, "#6CC6DB"))
+    Call themeCol.Add(Array("SUSTAINABLE", 188, 211, 107, "#BCD36B", "グローバル02", "異国情緒の彩りトリップ", 236, 102, 42, "#EC662A", 234, 216, 193, "#EAD8C1", 59, 103, 170, "#3B67AA"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ラフ01", "リラックス＆トラッド", 211, 204, 188, "#D3CCBC", 191, 161, 119, "#BFA177", 72, 106, 131, "#486A83"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ラフ02", "知的なミニマリスト", 189, 198, 202, "#BDC6CA", 136, 146, 145, "#889291", 50, 73, 95, "#32495F"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ラフ03", "ダスティなフレンチ感をラフに", 38, 55, 95, "#26375F", 221, 190, 191, "#DDBEBF", 216, 125, 92, "#D87D5C"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "クリーン01", "コーラルブルーで誠実に", 115, 139, 147, "#738B93", 82, 190, 198, "#52BEC6", 225, 237, 246, "#E1EDF6"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "クリーン02", "信頼感のあるスマートなカラー", 190, 217, 138, "#BED98A", 238, 246, 241, "#EEF6F1", 139, 157, 208, "#8B9DD0"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "テクノロジー01", "近未来のミッドナイト", 72, 78, 159, "#484E9F", 0, 12, 66, "#000C42", 76, 182, 121, "#4CB679"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "テクノロジー02", "次世代のサイバー空間", 0, 44, 44, "#002C2C", 246, 237, 153, "#F6ED99", 0, 104, 101, "#006865"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "テクノロジー03", "洗練されたフューチャーピンク", 209, 166, 203, "#D1A6CB", 57, 75, 119, "#394B77", 124, 134, 169, "#7C86A9"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ビジネス01", "情熱的でエネルギッシュ", 208, 17, 35, "#D01123", 153, 157, 153, "#999D99", 238, 207, 0, "#0EECF0"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ビジネス02", "硬すぎずスマートに", 0, 51, 86, "#003356", 227, 225, 214, "#E3E1D6", 243, 152, 28, "#F3981C"))
+    Call themeCol.Add(Array("COOL", 145, 157, 171, "#919DAB", "ビジネス03", "希望を感じるスターイエロー", 0, 95, 148, "#005F94", 182, 188, 191, "#B6BCBF", 250, 226, 0, "#0FAE20"))
+    '▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 上書き範囲 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    Set GetAllTheme = themeCol
+End Function
+'------------------------------------------------------------
+'概要 : Sheet書込(タイトル)
+'引数 : テーマパラメータ行
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub WriteTitle(ByRef ws As Worksheet, ByVal writeRowIdx As Long, ByVal writeColIdx As Long, ByVal themeArr As Variant)
+    Dim rng As range: Set rng = ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx))
+    '書込
+    ws.Cells(writeRowIdx, writeColIdx + 1).Value = themeArr(0)
+    'セル結合
+    rng.Merge
+    '文字色
+    rng.Font.Color = RGB(themeArr(1), themeArr(2), themeArr(3))
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet書込(1テーマ)
+'引数 : テーマパラメータ行
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub WriteOneTheme(ByRef ws As Worksheet, ByVal writeRowIdx As Long, ByVal writeColIdx As Long, ByVal themeArr As Variant, ByVal themeCnt As Long)
+    '書込
+    ws.Cells(writeRowIdx, writeColIdx + 1).Value = themeCnt & "：" & themeArr(5)
+    ws.Cells(writeRowIdx, writeColIdx + 5).Value = themeArr(6)
+    ws.Cells(writeRowIdx + 2, writeColIdx + 1).Value = "R"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 2).Value = "G"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 3).Value = "B"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 5).Value = "R"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 6).Value = "G"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 7).Value = "B"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 9).Value = "R"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 10).Value = "G"
+    ws.Cells(writeRowIdx + 2, writeColIdx + 11).Value = "B"
+    ws.Cells(writeRowIdx + 3, writeColIdx + 1).Value = themeArr(7)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 2).Value = themeArr(8)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 3).Value = themeArr(9)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 5).Value = themeArr(11)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 6).Value = themeArr(12)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 7).Value = themeArr(13)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 9).Value = themeArr(15)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 10).Value = themeArr(16)
+    ws.Cells(writeRowIdx + 3, writeColIdx + 11).Value = themeArr(17)
+    ws.Cells(writeRowIdx + 4, writeColIdx + 1).Value = themeArr(10)
+    ws.Cells(writeRowIdx + 4, writeColIdx + 5).Value = themeArr(14)
+    ws.Cells(writeRowIdx + 4, writeColIdx + 9).Value = themeArr(18)
+    '文字揃え
+    ws.Columns(GetColNm(writeColIdx)).HorizontalAlignment = xlCenter
+    '行幅
+    ws.Rows(writeRowIdx + 1).RowHeight = 40
+    'セル結合
+    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx)).Merge
+    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx)).Merge
+    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 1)).Merge
+    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 1)).Merge
+    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 1)).Merge
+    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 4)).Merge
+    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 4)).Merge
+    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 4)).Merge
+    '背景色
+    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(7), themeArr(8), themeArr(9))
+    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(11), themeArr(12), themeArr(13))
+    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(15), themeArr(16), themeArr(17))
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[比較]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_ThemeCompare()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim ws As Worksheet   'Sheet
+    Dim endRowIdx As Long '終了行
+    Dim endColIdx As Long '終了列
+    '検索番号セル番地 行/列
+    Dim searchNoRowList As Variant: searchNoRowList = Array(3, 8, 13, 18, 23)
+    Dim searchNoColList As Variant: searchNoColList = Array("C", "P", "AC")
+    Dim searchNoRow As Variant
+    Dim searchNoCol As Variant
+    '罫線位置区分
+    Dim borderType As Variant
+
+    '図形/サイズ[横/縦]
+    Dim shp As Shape
+    Dim shpWidth As Long: shpWidth = 2
+    Dim shpHeight As Long: shpHeight = 1
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeToUniqueSheetNm("比較")
+
+    '書込
+    For Each searchNoRow In searchNoRowList
+        For Each searchNoCol In searchNoColList
+            ws.Cells(searchNoRow, GetColIdx(searchNoCol) - 1).Value = "番号"
+            'サンプル番号出力
+            If searchNoRow < 10 Then ws.Cells(searchNoRow, searchNoCol).Value = searchNoRow * GetColIdx(searchNoCol)
+        Next
+    Next
+
+    '最下行/列 取得
+    endRowIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Row + 3
+    endColIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
+
+    'Sheet設定
+    ws.Activate
+    ActiveWindow.DisplayGridlines = False       '目盛線
+    With ws
+        .Cells.Font.Name = "Noto Sans JP"       'フォント
+        .Cells.VerticalAlignment = xlTop        '文字揃え
+        .Cells.HorizontalAlignment = xlLeft
+        .Rows(1).HorizontalAlignment = xlCenter
+        .Rows(1).RowHeight = 36                 '行幅
+        .Rows(2).RowHeight = 6
+        .Columns.ColumnWidth = 4                '列幅
+        .Columns("A").ColumnWidth = 2
+        .Columns("N").ColumnWidth = 2
+        .Columns("AA").ColumnWidth = 2
+    End With
+
+    '文字揃え/行幅/罫線
+    For Each searchNoRow In searchNoRowList
+        ws.Rows(1).HorizontalAlignment = xlCenter
+        ws.Rows(searchNoRow + 1).RowHeight = 10
+        ws.Rows(searchNoRow + 3).RowHeight = 40
+        ws.Rows(searchNoRow + 4).RowHeight = 10
+        For Each searchNoCol In searchNoColList
+            For Each borderType In Array(xlEdgeTop, xlEdgeRight, xlEdgeBottom, xlEdgeLeft)
+                ws.Cells(searchNoRow, searchNoCol).Borders(borderType).LineStyle = xlContinuous
+                ws.Cells(searchNoRow, searchNoCol).Borders(borderType).Weight = xlThin
+            Next
+        Next
+    Next
+
+    'グループ化
+    ws.Rows("1:2").Group
+
+    'ウィンドウ枠の固定
+    ws.range("A2").Select
+    ActiveWindow.FreezePanes = True
+
+    'マクロボタン 作成
+    Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
+    With shp
+        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
+        .Line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
+        .Line.Weight = 1                                                   '枠線太さ
+        .TextFrame2.TextRange.Text = "更新"                                '表示文字列
+        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント
+        .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント
+        .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
+        .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
+        .OnAction = "RefreshCompareSheet"                                  'マクロ登録
+        .Top = 4                                                           '配置場所(縦)
+        .Left = 16                                                         '配置場所(横)
+    End With
+
+    'Sheet更新
+    RefreshCompareSheet
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[比較]の表示を更新する
+'     : (番号に一致するテーマを検索し、存在する場合、コピーする)
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub RefreshCompareSheet()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    '現在Sheet/検索先Sheet
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim searchWs As Worksheet: Set searchWs = ThisWorkbook.Sheets("配色テーマ表")
+
+    '終了行/列
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
+
+    '検索一致セル
+    Dim foundCell As range
+    '範囲 [コピー元/先]
+    Dim srcRange As range, destRange As range
+
+    '検索番号セル番地 行/列
+    Dim searchNoRowList As Variant
+    Dim searchNoColList As Variant
+    Dim searchNoRow As Variant
+    Dim searchNoCol As Variant
+    Dim searchText As String
+
+    '検索番号セル番地 セット
+    searchNoRowList = Array(3, 8, 13, 18, 23)
+    searchNoColList = Array("C", "P", "AC")
+
+    '最下行/列 取得
+    endRowIdx = searchWs.Cells.SpecialCells(xlCellTypeLastCell).Row
+    endColIdx = searchWs.Cells.SpecialCells(xlCellTypeLastCell).Column
+
+    '検索/コピー
+    For Each searchNoRow In searchNoRowList
+        For Each searchNoCol In searchNoColList
+            '検索値
+            searchText = ws.Cells(searchNoRow, searchNoCol).Value2 & "："
+            '一致セル検索(前方一致)
+            Set foundCell = searchWs.range("A2:" & GetColNm(endColIdx) & endRowIdx).Find(What:=searchText & "*", LookIn:=xlValues, LookAt:=xlWhole)
+            '存在しない場合
+            If foundCell Is Nothing Then
+                'テーマ削除
+                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & searchNoRow + 2 & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & searchNoRow + 2).Value2 = ""
+                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & searchNoRow + 3 & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & searchNoRow + 3).Interior.ColorIndex = xlNone
+                '書込
+                ws.Cells(searchNoRow, GetColIdx(searchNoCol) + 2).Value = "該当なし"
+            Else
+                '該当なし削除
+                ws.Cells(searchNoRow, GetColIdx(searchNoCol) + 2).Value2 = ""
+                'コピー元/先 指定
+                Set srcRange = foundCell.Offset(0, 0).Resize(2, 12)
+                Set destRange = ws.Cells(searchNoRow, GetColIdx(searchNoCol)).Offset(2, -1).Resize(2, 12)
+                'コピー
+                srcRange.Copy
+                destRange.PasteSpecial Paste:=xlPasteAll
+                Application.CutCopyMode = False
+            End If
+        Next
+    Next
+
+    '選択
+    ws.range("C3").Select
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[設定]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_ThemeParamSetting()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Sheet
+    Dim ws As Worksheet
+    '行/列/終了行/終了列
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
+
+    '図形/サイズ[横/縦]
+    Dim shp As Shape
+    Dim shpWidth As Long: shpWidth = 4
+    Dim shpHeight As Long: shpHeight = 1
+    '罫線位置区分
+    Dim borderType As Variant
+
+    '●テーマリスト/行
+    Dim themeCol As Collection
+    Dim themeArr As Variant
+
+    '全テーマ取得
+    Set themeCol = GetAllTheme()
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeToUniqueSheetNm("設定")
+
+    '書込(ヘッダー)
+    Dim tmpArr As Variant: tmpArr = Array("No", "順番", "カテゴリ", "タイトル1", "タイトル2", "色1", "色2", "色3", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "書換用VBA")
+    With ws
+        .Cells(2, "I").Value = "カテゴリ"
+        .Cells(2, "M").Value = "色1"
+        .Cells(2, "Q").Value = "色2"
+        .Cells(2, "U").Value = "色3"
+    End With
+    For colIdx = 1 To 25
+        ws.Cells(3, colIdx).Value = tmpArr(colIdx - 1)
+    Next
+
+    '書込(データ)
+    rowIdx = 4
+    For Each themeArr In themeCol
+        With ws
+            .Cells(rowIdx, "A").Formula2R1C1 = "=ROW()-3"
+            .Cells(rowIdx, "B").Value = rowIdx - 3
+            .Cells(rowIdx, "C").Value = themeArr(0)
+            .Cells(rowIdx, "C").Interior.Color = RGB(themeArr(1), themeArr(2), themeArr(3))
+            .Cells(rowIdx, "D").Value = themeArr(5)
+            .Cells(rowIdx, "E").Value = themeArr(6)
+            .Cells(rowIdx, "F").Interior.Color = RGB(themeArr(7), themeArr(8), themeArr(9))
+            .Cells(rowIdx, "G").Interior.Color = RGB(themeArr(11), themeArr(12), themeArr(13))
+            .Cells(rowIdx, "H").Interior.Color = RGB(themeArr(15), themeArr(16), themeArr(17))
+            .Cells(rowIdx, "I").Value = themeArr(1)
+            .Cells(rowIdx, "J").Value = themeArr(2)
+            .Cells(rowIdx, "K").Value = themeArr(3)
+            .Cells(rowIdx, "L").Value = themeArr(4)
+            .Cells(rowIdx, "M").Value = themeArr(7)
+            .Cells(rowIdx, "N").Value = themeArr(8)
+            .Cells(rowIdx, "O").Value = themeArr(9)
+            .Cells(rowIdx, "P").Value = themeArr(10)
+            .Cells(rowIdx, "Q").Value = themeArr(11)
+            .Cells(rowIdx, "R").Value = themeArr(12)
+            .Cells(rowIdx, "S").Value = themeArr(13)
+            .Cells(rowIdx, "T").Value = themeArr(14)
+            .Cells(rowIdx, "U").Value = themeArr(15)
+            .Cells(rowIdx, "V").Value = themeArr(16)
+            .Cells(rowIdx, "W").Value = themeArr(17)
+            .Cells(rowIdx, "X").Value = themeArr(18)
+            .Cells(rowIdx, "Y").Formula2R1C1 = "=""    Call themeCol.Add(Array(""""""&RC[-22]&"""""", ""&RC[-16]&"", ""&RC[-15]&"", ""&RC[-14]&"", """"""&RC[-13]&"""""", """"""&RC[-21]&"""""", """"""&RC[-20]&"""""", ""&RC[-12]&"", ""&RC[-11]&"", ""&RC[-10]&"", """"""&RC[-9]&"""""", ""&RC[-8]&"", ""&RC[-7]&"", ""&RC[-6]&"", """"""&RC[-5]&"""""", ""&RC[-4]&"", ""&RC[-3]&"", ""&RC[-2]&"", """"""&RC[-1]&""""""))"""
+        End With
+        rowIdx = rowIdx + 1
+    Next
+
+    '最下行/列 セット
+    endRowIdx = themeCol.Count + 3
+    endColIdx = 25
+
+    'Sheet設定
+    ws.Activate
+    ActiveWindow.DisplayGridlines = False '目盛線
+    With ws
+        'Tab色
+        .Tab.Color = RGB(128, 128, 128) '#808080
+        'フォント
+        .Cells.Font.Name = "Noto Sans JP"
+        '太字
+        .range("I2:X2").Font.Bold = True
+        .range("A3:Y3").Font.Bold = True
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .range("I2:X2").HorizontalAlignment = xlCenter
+        .range("A3:Y3").HorizontalAlignment = xlCenter
+        .range("A4:B" & endRowIdx).HorizontalAlignment = xlCenter
+        '背景色
+        .range("I2:X2").Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        .range("A3:Y3").Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        '列幅
+        .Columns("A:B").ColumnWidth = 4
+        .Columns("C:D").ColumnWidth = 15
+        .Columns("E").ColumnWidth = 30
+        .Columns("F:H").ColumnWidth = 15
+        .Columns("I:K").ColumnWidth = 5
+        .Columns("L").ColumnWidth = 8
+        .Columns("M:O").ColumnWidth = 5
+        .Columns("P").ColumnWidth = 8
+        .Columns("Q:S").ColumnWidth = 5
+        .Columns("T").ColumnWidth = 8
+        .Columns("U:W").ColumnWidth = 5
+        .Columns("X").ColumnWidth = 8
+        .Columns("Y").ColumnWidth = 100
+        'セル結合
+        .range("I2:L2").Merge
+        .range("M2:P2").Merge
+        .range("Q2:T2").Merge
+        .range("U2:X2").Merge
+    End With
+
+    '罫線
+    For Each borderType In Array(xlInsideHorizontal, xlInsideVertical)
+        ws.range("I2:X3").Borders(borderType).Weight = xlHairline
+        ws.range("A3:Y" & endRowIdx).Borders(borderType).Weight = xlHairline
+    Next
+
+    '条件付き書式(奇数行背景色)
+    ws.range("A4:B" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+    ws.range("D4:E" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+    ws.range("I4:Y" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+
+    'フィルター
+    ws.Rows(3).AutoFilter
+
+    'ウィンドウ枠の固定
+    ws.range("E4").Select
+    ActiveWindow.FreezePanes = True
+
+    'マクロボタン 作成
+    Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
+    With shp
+        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
+        .Line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
+        .Line.Weight = 1                                                   '枠線太さ
+        .TextFrame2.TextRange.Text = "RGBセット"                           '表示文字列
+        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント
+        .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント
+        .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
+        .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
+        .OnAction = "SetRgbParam"                                          'マクロ登録
+        .Top = 4                                                           '配置場所(縦)
+        .Left = 5                                                          '配置場所(横)
+    End With
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[設定]にセットされた背景色からRGBの値と色コードをセットする
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub SetRgbParam()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Sheet/行/列1/列2/終了行
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim rowIdx As Long
+    Dim colIdx1 As Long
+    Dim colIdx2 As Long
+    Dim endRowIdx As Long
+
+    '●色値/RGB値/色コード
+    Dim colorVal As Long
+    Dim r As Long, g As Long, b As Long
+    Dim colorCd As String
+
+    '最下行 取得
+    endRowIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
+
+    '書込
+    For rowIdx = 4 To endRowIdx
+        '========== カテゴリ色 ==========
+        colorVal = ws.Cells(rowIdx, "C").Interior.Color
+        '赤/緑/青/色コード 取得
+        r = colorVal Mod 256
+        g = (colorVal \ 256) Mod 256
+        b = (colorVal \ 65536) Mod 256
+        colorCd = "#" & Right("000000" & Hex(r) & Hex(g) & Hex(b), 6)
+        '書込
+        ws.Cells(rowIdx, "I").Value = r
+        ws.Cells(rowIdx, "J").Value = g
+        ws.Cells(rowIdx, "K").Value = b
+        ws.Cells(rowIdx, "L").Value = colorCd
+        '========== 色1,2,3 ==========
+        colIdx2 = 1
+        For colIdx1 = 1 To 3
+            colorVal = ws.Cells(rowIdx, colIdx1 + 5).Interior.Color
+            r = colorVal Mod 256
+            g = (colorVal \ 256) Mod 256
+            b = (colorVal \ 65536) Mod 256
+            colorCd = "#" & Right("000000" & Hex(r) & Hex(g) & Hex(b), 6)
+            ws.Cells(rowIdx, colIdx2 + 12).Value = r
+            ws.Cells(rowIdx, colIdx2 + 13).Value = g
+            ws.Cells(rowIdx, colIdx2 + 14).Value = b
+            ws.Cells(rowIdx, colIdx2 + 15).Value = colorCd
+            colIdx2 = colIdx2 + 4
+        Next
+    Next
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
