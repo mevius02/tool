@@ -1,7 +1,7 @@
 '変数未宣言エラー設定ON
 Option Explicit
 '------------------------------------------------------------
-'概要 : Sheet[配色テーマ表]を作成する
+'概要 : Sheet[配色テーマ集]を作成する
 '引数 : -
 '戻値 : -
 '備考 : -
@@ -44,7 +44,7 @@ Public Sub CreateSheet_ThemeColorBook()
 
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    ws.Name = ChangeToUniqueSheetNm("配色テーマ表")
+    ws.Name = ChangeToUniqueSheetNm("配色テーマ集")
 
     '書込
     For Each themeArr In themeCol
@@ -162,7 +162,7 @@ Private Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
         Exit Function
     End If
     '存在する場合
-    For i = 2 To 100
+    For i = 2 To 1000
         '末尾付与
         uniqueNo = " (" & i & ")"
         '存在しない場合
@@ -497,10 +497,7 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Public Sub CreateSheet_ThemeCompare()
-    '処理中描画OFF設定
-    Call SettingRenderingProcess(False)
-
+Private Sub CreateSheet_ThemeCompare()
     Dim ws As Worksheet   'Sheet
     Dim endRowIdx As Long '終了行
     Dim endColIdx As Long '終了列
@@ -585,16 +582,13 @@ Public Sub CreateSheet_ThemeCompare()
         .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "RefreshCompareSheet"                                  'マクロ登録
+        .OnAction = "Btn_RefreshCompareSheet"                                  'マクロ登録
         .Top = 4                                                           '配置場所(縦)
         .Left = 16                                                         '配置場所(横)
     End With
 
     'Sheet更新
-    RefreshCompareSheet
-
-    '処理中描画ON設定
-    Call SettingRenderingProcess(True)
+    Btn_RefreshCompareSheet
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[比較]の表示を更新する
@@ -603,13 +597,13 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Public Sub RefreshCompareSheet()
+Private Sub Btn_RefreshCompareSheet()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
     '現在Sheet/検索先Sheet
     Dim ws As Worksheet: Set ws = ActiveSheet
-    Dim searchWs As Worksheet: Set searchWs = ThisWorkbook.Sheets("配色テーマ表")
+    Dim searchWs As Worksheet: Set searchWs = ThisWorkbook.Sheets("配色テーマ集")
 
     '終了行/列
     Dim endRowIdx As Long
@@ -675,17 +669,13 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Public Sub CreateSheet_ThemeParamSetting()
-    '処理中描画OFF設定
-    Call SettingRenderingProcess(False)
-
+Private Sub CreateSheet_ThemeParamSetting()
     'Sheet
     Dim ws As Worksheet
-    '行/列/終了行/終了列
+    '行/列/終了行
     Dim rowIdx As Long
     Dim colIdx As Long
     Dim endRowIdx As Long
-    Dim endColIdx As Long
 
     '図形/サイズ[横/縦]
     Dim shp As Shape
@@ -753,7 +743,6 @@ Public Sub CreateSheet_ThemeParamSetting()
 
     '最下行/列 セット
     endRowIdx = themeCol.Count + 3
-    endColIdx = 25
 
     'Sheet設定
     ws.Activate
@@ -828,13 +817,10 @@ Public Sub CreateSheet_ThemeParamSetting()
         .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "SetRgbParam"                                          'マクロ登録
+        .OnAction = "Btn_SetRgbParam"                                          'マクロ登録
         .Top = 4                                                           '配置場所(縦)
         .Left = 5                                                          '配置場所(横)
     End With
-
-    '処理中描画ON設定
-    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[設定]にセットされた背景色からRGBの値と色コードをセットする
@@ -842,7 +828,7 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Public Sub SetRgbParam()
+Private Sub Btn_SetRgbParam()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
