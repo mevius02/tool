@@ -98,7 +98,7 @@ Public Sub CreateSheet_WorkSchedule()
     Dim inputThemeNo As Long
     Dim initThemeNo As Double: initThemeNo = 1
     Dim minThemeNo As Double: minThemeNo = 1
-    Dim maxThemeNo As Double: maxThemeNo = 5
+    Dim maxThemeNo As Double: maxThemeNo = 6
 
     '●祝日辞書(検索用)
     Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
@@ -147,7 +147,8 @@ Public Sub CreateSheet_WorkSchedule()
           "2：Light" & vbCrLf & _
           "3：Dark" & vbCrLf & _
           "4：Sweets" & vbCrLf & _
-          "5：Chiikawa"
+          "5：Chiikawa" & vbCrLf & _
+          "6：Ocean"
     inputThemeNo = Int(InputForm_Num(title, msg, initThemeNo, minThemeNo, maxThemeNo))
     If inputThemeNo = -1 Then Exit Sub
 
@@ -444,7 +445,7 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnFontExcelColor = RGB(250, 250, 250)  '#FAFAFA ボタン文字色(Excel)
         Case "2" '========== Light ==========
             result.FontAll = "游ゴシック"                  'フォント(全体)
-            result.FontBtn = "游ゴシック"                  'フォント(ボタン)
+            result.FontBtn = "Comic Sans MS"               'フォント(ボタン)
             result.FontAllColor = RGB(0, 0, 0)             '#000000 文字色(全体)
             result.FontHeaderColor = RGB(0, 0, 0)          '#000000 文字色(ヘッダー)
             result.FontOutColor1 = RGB(128, 128, 128)      '#808080 文字色(グレーアウト)1
@@ -510,13 +511,13 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.FontBtn = "Noto Sans JP"                'フォント(ボタン)
             result.FontAllColor = RGB(70, 46, 49)          '#462E31 文字色(全体)
             result.FontHeaderColor = RGB(250, 248, 247)    '#FAF8F7 文字色(ヘッダー)
-            result.FontOutColor1 = RGB(106, 63, 57)        '#6A3F39 文字色(グレーアウト)1
-            result.FontOutColor2 = RGB(106, 63, 57)        '#6A3F39 文字色(グレーアウト)2
+            result.FontOutColor1 = RGB(152, 197, 133)      '#98C585 文字色(グレーアウト)1
+            result.FontOutColor2 = RGB(152, 197, 133)      '#98C585 文字色(グレーアウト)2
             result.BgAllColor = RGB(248, 248, 240)         '#F8F8F0 背景色(全体)
             result.BgHeaderColor = RGB(123, 166, 196)      '#7BA6C4 ヘッダー色
             result.BgTopContColor = RGB(250, 248, 247)     '#FAF8F7 上部コンテンツ色
-            result.BgBgGrayOutColor1 = RGB(190, 139, 110)  '#BE8B6E グレーアウト色1
-            result.BgBgGrayOutColor2 = RGB(188, 232, 151)  '#BCE897 グレーアウト色2
+            result.BgBgGrayOutColor1 = RGB(219, 235, 196)  '#DBEBC4 グレーアウト色1
+            result.BgBgGrayOutColor2 = RGB(202, 229, 181)  '#CAE5B5 グレーアウト色2
             result.BgSaturdayColor = RGB(198, 232, 243)    '#C6E8F3 土曜色
             result.BgSundayColor = RGB(255, 241, 203)      '#FFF1CB 日曜色
             result.BgHolidayColor = RGB(255, 194, 202)     '#FFC2CA 祝日色
@@ -526,6 +527,27 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnExcelColor = RGB(199, 240, 182)      '#C7F0B6 ボタン背景色(Excel)
             result.BtnFontCsvColor = RGB(118, 140, 132)    '#768C84 ボタン文字色(CSV)
             result.BtnFontExcelColor = RGB(118, 140, 132)  '#768C84 ボタン文字色(Excel)
+        Case "6" '========== Ocean ==========
+            result.FontAll = "Noto Sans JP"                'フォント(全体)
+            result.FontBtn = "Magneto"                     'フォント(ボタン)
+            result.FontAllColor = RGB(0, 30, 150)          '#001E96 文字色(全体)
+            result.FontHeaderColor = RGB(242, 242, 242)    '#F2F2F2 文字色(ヘッダー)
+            result.FontOutColor1 = RGB(140, 170, 255)      '#8CAAFF 文字色(グレーアウト)1
+            result.FontOutColor2 = RGB(140, 170, 255)      '#8CAAFF 文字色(グレーアウト)2
+            result.BgAllColor = RGB(210, 230, 255)         '#D2E6FF 背景色(全体)
+            result.BgHeaderColor = RGB(90, 110, 255)       '#5A6EFF ヘッダー色
+            result.BgTopContColor = RGB(235, 245, 255)     '#EBF5FF 上部コンテンツ色
+            result.BgBgGrayOutColor1 = RGB(190, 220, 255)  '#BEDCFF グレーアウト色1
+            result.BgBgGrayOutColor2 = RGB(180, 210, 255)  '#B4D2FF グレーアウト色2
+            result.BgSaturdayColor = RGB(180, 210, 255)    '#B4D2FF 土曜色
+            result.BgSundayColor = RGB(255, 230, 170)      '#FFE6AA 日曜色
+            result.BgHolidayColor = RGB(255, 160, 160)     '#FFA0A0 祝日色
+            result.BorderContColor = RGB(0, 30, 150)       '#001E98 罫線色(行間)
+            result.BorderTopContColor = RGB(90, 110, 255)  '#5A6EFF4 罫線色(上部コンテンツ[下/右])
+            result.BtnCsvColor = RGB(240, 240, 160)        '#F0F0A0 ボタン背景色(CSV)
+            result.BtnExcelColor = RGB(100, 220, 100)      '#64DC64 ボタン背景色(Excel)
+            result.BtnFontCsvColor = RGB(64, 64, 64)       '#404040 ボタン文字色(CSV)
+            result.BtnFontExcelColor = RGB(64, 64, 64)     '#404040 ボタン文字色(Excel)
     End Select
     GetThemePreset_01 = result
 End Function
@@ -571,7 +593,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontOutColor = RGB(166, 166, 166)    '#A6A6A6 文字色(グレーアウト)
             result.BgAllColor = RGB(128, 128, 128)      '#808080 背景色(全体)
             result.BgHeaderColor = RGB(41, 41, 41)      '#292929 ヘッダー色
-            result.BgBikoColor = RGB(128, 128, 128)     '#808080 備考色
+            result.BgBikoColor = RGB(89, 89, 89)        '#595959 備考色
             result.BgGrayOutColor = RGB(89, 89, 89)     '#595959 グレーアウト色
             result.BgSaturdayColor = RGB(100, 160, 200) '#64A0C8 土曜色
             result.BgSundayColor = RGB(190, 100, 0)     '#BE6400 日曜色
@@ -579,17 +601,17 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderBikoColor = RGB(255, 255, 255) '#FFFFFF 罫線色(備考)
         Case "4" '========== Sweets ==========
             result.FontAll = "Noto Sans JP"             'フォント(全体)
-            result.FontAllColor = RGB(90, 0, 0)         '#5A0000 文字色(全体)
-            result.FontHeaderColor = RGB(90, 0, 0)      '#5A0000 文字色(ヘッダー)
-            result.FontOutColor = RGB(240, 190, 190)    '#F0BEBE 文字色(グレーアウト)
+            result.FontAllColor = RGB(120, 0, 0)        '#780000 文字色(全体)
+            result.FontHeaderColor = RGB(120, 0, 0)     '#780000 文字色(ヘッダー)
+            result.FontOutColor = RGB(230, 180, 180)    '#E6B4B4 文字色(グレーアウト)
             result.BgAllColor = RGB(255, 255, 230)      '#FFFFE6 背景色(全体)
             result.BgHeaderColor = RGB(255, 200, 255)   '#FFC8FF ヘッダー色
-            result.BgBikoColor = RGB(255, 255, 255)     '#FFFFFF 備考色
-            result.BgGrayOutColor = RGB(245, 245, 245)  '#F5F5F5 グレーアウト色
+            result.BgBikoColor = RGB(255, 255, 180)     '#FFFFB4 備考色
+            result.BgGrayOutColor = RGB(255, 255, 150)  '#FFFF96 グレーアウト色
             result.BgSaturdayColor = RGB(190, 255, 255) '#BEFFFF 土曜色
             result.BgSundayColor = RGB(255, 200, 100)   '#FFC864 日曜色
             result.BgHolidayColor = RGB(255, 140, 140)  '#FF8C8C 祝日色
-            result.BorderBikoColor = RGB(191, 191, 191) '#BFBFBF 罫線色(備考)
+            result.BorderBikoColor = RGB(120, 0, 0)     '#780000 罫線色(備考)
         Case "5" '========== Chiikawa ==========
             result.FontAll = "Noto Sans JP"             'フォント(全体)
             result.FontAllColor = RGB(70, 46, 49)       '#462E31 文字色(全体)
@@ -603,6 +625,19 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BgSundayColor = RGB(255, 241, 203)   '#FFF1CB 日曜色
             result.BgHolidayColor = RGB(255, 194, 202)  '#FFC2CA 祝日色
             result.BorderBikoColor = RGB(99, 133, 108)  '#63856C 罫線色(備考)
+        Case "6" '========== Ocean ==========
+            result.FontAll = "Noto Sans JP"             'フォント(全体)
+            result.FontAllColor = RGB(0, 30, 150)       '#001E96 文字色(全体)
+            result.FontHeaderColor = RGB(242, 242, 242) '#F2F2F2 文字色(ヘッダー)
+            result.FontOutColor = RGB(140, 170, 255)    '#8CAAFF 文字色(グレーアウト)
+            result.BgAllColor = RGB(210, 230, 255)      '#D2E6FF 背景色(全体)
+            result.BgHeaderColor = RGB(90, 110, 255)    '#5A6EFF4 ヘッダー色
+            result.BgBikoColor = RGB(180, 210, 255)     '#B4D2FF 備考色
+            result.BgGrayOutColor = RGB(190, 220, 255)  '#BEDCFF グレーアウト色
+            result.BgSaturdayColor = RGB(180, 210, 255) '#B4D2FF 土曜色
+            result.BgSundayColor = RGB(255, 230, 170)   '#FFE6AA 日曜色
+            result.BgHolidayColor = RGB(255, 160, 160)  '#FFA0A0 祝日色
+            result.BorderBikoColor = RGB(0, 30, 150)    '#001E96 罫線色(備考)
     End Select
     GetThemePreset_02 = result
 End Function
@@ -1428,6 +1463,9 @@ Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal input
             rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowIdx + 2 & ",2)=7").Interior.Color = theme.BgSundayColor
             Set rng = Range(.Cells(rowIdx + 1, "C"), .Cells(rowIdx + 1, "AG"))
             rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowIdx + 2 & ",2)=6").Interior.Color = theme.BgSaturdayColor
+            '折り返して表示
+            ws.Range(.Cells(rowIdx + 6, "C"), .Cells(rowIdx + 10, "Q")).WrapText = True
+            ws.Range(.Cells(rowIdx + 6, "S"), .Cells(rowIdx + 10, "AG")).WrapText = True
         End With
     Next
 
