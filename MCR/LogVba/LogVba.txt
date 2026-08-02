@@ -1,41 +1,70 @@
 '変数未宣言エラー設定ON
 Option Explicit
-
 '========== グローバル変数 ==========
-'●ログ出力フラグ(True:出力する / False:出力しない)
+'●ログ出力有無フラグ(True:する / False:しない)
 Public writeLogFlg As Boolean
+'●ログ出力レベル
+Public writeLogLv As String
+'●ログレベル名
+Const LOGLVNM_DEBUG = "DEBUG"
+Const LOGLVNM_DETAIL = "DETAIL"
+Const LOGLVNM_INFO = "INFO"
+Const LOGLVNM_WARN = "WARN"
+Const LOGLVNM_ERROR = "ERROR"
+'●ログレベル
+Public Enum LogLv
+    DEBUG_lv = 1
+    DETAIL_lv = 2
+    INFO_lv = 3
+    WARN_lv = 4
+    ERROR_lv = 5
+End Enum
 '●ログSheet
 Public logWs As Worksheet
-'●ログ種別
-Public LOG_INFO As String
-Public LOG_WARN As String
-Public LOG_ERROR As String
-Public LOG_DEBUG As String
-Public LOG_DETAIL As String
 '●ログ書込行番号
-Public logWriteIdx As Long
-Public Sub Main()
+Public writeLogIdx As Long
+'------------------------------------------------------------
+'概要 : テスト用Main処理
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub TestMain()
     '処理中描画OFF設定
-    RenderingProcess False
+    Call SettingRenderingProcess(False)
 
-    'ログ出力設定
-    writeLogFlg = True
-    'ログSheet準備
-    PrepareLog False, "LOG"
-    'Proc/Cat設定
-    Dim proc As String: proc = "Main"
+    '●Loopカウンタ
+    Dim i As Long
+    '●Proc/Cat設定
+    Dim proc As String: proc = "TestMain"
     Dim cat1 As String: cat1 = ""
+    '●ログ出力内容
+    Dim text As String
+    Dim num As String
+
+    '========== ログ出力準備 ==========
+    'ログ出力有無
+    writeLogFlg = True
+    'ログ出力レベル
+    writeLogLv = LogLv.DEBUG_lv
+    'ログSheet
+    Call PrepareLog(True, "LOG")
+    '==================================
+
+    'テスト用
+    Dim logLvArr As Variant: logLvArr = Array(LogLv.DEBUG_lv, LogLv.DETAIL_lv, LogLv.INFO_lv, LogLv.WARN_lv, LogLv.ERROR_lv)
 
     'ログ出力
-    WriteLog LOG_INFO, proc, cat1, "START"
-    Dim i As Long
-    For i = 1 To 100
-        WriteLog LOG_INFO, proc, cat1, "処理" & i & "：出力メッセージ" & i
+    Call WriteLog(LogLv.INFO_lv, proc, cat1, "START")
+    For i = 1 To 10000
+        num = AddFrontChara(i, 5, 0)
+        text = "処理" & num & "：出力メッセージ" & num
+        Call WriteLog(logLvArr((i - 1) Mod 5), proc, cat1, text)
     Next
-    WriteLog LOG_INFO, proc, cat1, "END"
+    Call WriteLog(LogLv.INFO_lv, proc, cat1, "END")
 
     '処理中描画ON設定
-    RenderingProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
 '概要 : 処理中の画面描画を設定する
@@ -43,14 +72,15 @@ End Sub
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub RenderingProcess(ByVal flg As Boolean)
-    Application.ScreenUpdating = flg
-    Application.DisplayAlerts = flg
-    Application.EnableEvents = flg
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
     If flg Then
-        Application.Calculation = xlCalculationAutomatic
+        Application.Calculation = xlCalculationAutomatic '自動
     Else
-        Application.Calculation = xlCalculationManual
+        Application.Calculation = xlCalculationManual '手動
     End If
 End Sub
 '------------------------------------------------------------
@@ -60,81 +90,154 @@ End Sub
 '備考 : -
 '------------------------------------------------------------
 Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
-    '一時的にエラー処理OFF設定
-    On Error Resume Next
-    IsExistsSheet = Not Worksheets(wsNm) Is Nothing
-    'エラー処理ON設定
-    On Error GoTo 0
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在しない場合
+    If Not IsExistsSheet(wsNm) Then
+        ChangeUniqueSheetNm = wsNm
+        Exit Function
+    End If
+    '存在する場合
+    For i = 2 To 1000
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 文字列を桁数と同じ桁数になるまで先頭にchを付け足す
+'引数 : str      : 文字列
+'     : digitNum : 桁数
+'     : ch       : 挿入文字
+'戻値 : 文字列
+'備考 : -
+'------------------------------------------------------------
+Private Function AddFrontChara(ByVal str As String, ByVal digitNum As Long, ByVal ch As String) As String
+    Do While Len(str) < digitNum
+        str = ch & str
+    Loop
+    AddFrontChara = str
 End Function
 '------------------------------------------------------------
 '概要 : ログSheetを準備する
 '引数 : newWsFlg : ログSheetを新しく作成するか(True:する / False:しない)
 '     : (False & ログSheetが存在しない場合、作成する)
-'引数 : wsNm     : 作成するSheet名
+'引数 : wsNm     : 作成Sheet名
 '戻値 : -
 '備考 : グローバル変数を使うため、定義必要
 '------------------------------------------------------------
 Private Sub PrepareLog(ByVal newWsFlg As Boolean, ByVal wsNm As String)
     If writeLogFlg Then
-        '==================== 初期化 ====================
-        '●ログ種別
-        LOG_INFO = "INFO"
-        LOG_WARN = "WARN"
-        LOG_ERROR = "ERROR"
-        LOG_DEBUG = "DEBUG"
-        LOG_DETAIL = "DETAIL"
         'Sheet作成OFF & Sheet存在する場合
         If Not newWsFlg And IsExistsSheet(wsNm) Then
             '既存Sheetセット
             Set logWs = ThisWorkbook.Sheets(wsNm)
             '書込初期位置セット(最下行 + 1)
-            logWriteIdx = logWs.Cells(logWs.Rows.count, "A").End(xlUp).row + 1
+            writeLogIdx = logWs.Cells(logWs.Rows.count, "A").End(xlUp).row + 1
         Else
             newWsFlg = True
-            '作成
+            'Sheet作成 & Sheet名セット
             Set logWs = ThisWorkbook.Sheets.Add(before:=ThisWorkbook.Worksheets(1))
-            'Sheet名セット
-            If IsExistsSheet(wsNm) Then wsNm = wsNm & "_" & Format(Now, "YYYYMMDDHHMMSS")
-            logWs.name = wsNm
+            logWs.Name = ChangeUniqueSheetNm(wsNm)
+            'ヘッダー書込
+            logWs.Range("A1").Value = "日時"
+            logWs.Range("B1").Value = "ログLv"
+            logWs.Range("C1").Value = "プロシージャ名"
+            logWs.Range("D1").Value = "項目1"
+            logWs.Range("E1").Value = "内容"
+            'フィルター
+            logWs.Rows(1).AutoFilter
+            'ウィンドウ枠の固定
+            logWs.Range("A2").Select
+            ActiveWindow.FreezePanes = True
             '書込初期位置セット
-            logWriteIdx = 1
+            writeLogIdx = 2
         End If
-        '================================================
         'Sheet詳細設定
         If newWsFlg Then
             logWs.Activate
-            ActiveWindow.Zoom = 85 '表示倍率
-            ActiveWindow.DisplayGridlines = False '目盛線
             With logWs
-                .Tab.Color = RGB(128, 128, 128)     'Tab色 #808080
-                .Cells.Font.name = "HGｺﾞｼｯｸM"       'フォント
-                .Cells.VerticalAlignment = xlTop    '文字揃え
+                'Tab色
+                .Tab.Color = RGB(128, 128, 128) '#808080
+                'フォント
+                .Cells.Font.Name = "HGｺﾞｼｯｸM"
+                '文字揃え
+                .Cells.VerticalAlignment = xlTop
                 .Cells.HorizontalAlignment = xlLeft
-                .Columns("A").ColumnWidth = 7       '列幅
-                .Range("B:D").ColumnWidth = 20
+                '背景色
+                .Range("A1:E1").Interior.Color = RGB(221, 235, 247) '#DDEBF7
+                '列幅
+                .Columns("A").ColumnWidth = 22
+                .Columns("B").ColumnWidth = 8
+                .Range("C:D").ColumnWidth = 22
                 .Columns("E").ColumnWidth = 100
-                .Columns("B").NumberFormatLocal = "yyyy/mm/dd hh:mm:ss" '表示形式
+                '表示形式
+                .Columns("A").NumberFormatLocal = "yyyy/mm/dd hh:mm:ss.000"
             End With
+            '目盛線
+            ActiveWindow.DisplayGridlines = False
+            '表示倍率
+            ActiveWindow.Zoom = 85
         End If
     End If
 End Sub
 '------------------------------------------------------------
-'概要 : ログ書込
-'引数 : lvl  : ログ種別
+'概要 : ログレベル名を取得する
+'引数 : lv : ログレベル
+'戻値 : ログレベル名
+'備考 : グローバル変数を使うため、定義必要
+'------------------------------------------------------------
+Private Function GetLogLvNm(ByVal lv As LogLv) As String
+    Select Case lv
+        Case DEBUG_lv: GetLogLvNm = LOGLVNM_DEBUG
+        Case DETAIL_lv: GetLogLvNm = LOGLVNM_DETAIL
+        Case INFO_lv: GetLogLvNm = LOGLVNM_INFO
+        Case WARN_lv: GetLogLvNm = LOGLVNM_WARN
+        Case ERROR_lv: GetLogLvNm = LOGLVNM_ERROR
+    End Select
+End Function
+'------------------------------------------------------------
+'概要 : ログ1行書込(ログ出力レベル以上の場合、出力する)
+'引数 : lv   : ログレベル
 '     : proc : プロシージャ名
 '     : cat1 : 項目1
 '     : msg  : 本文
 '戻値 : -
 '備考 : グローバル変数を使うため、定義必要
 '------------------------------------------------------------
-Private Sub WriteLog(ByVal lvl As String, ByVal proc As String, ByVal cat1 As String, ByVal msg As String)
-    If writeLogFlg Then
-        logWs.Cells(logWriteIdx, 1) = lvl
-        logWs.Cells(logWriteIdx, 2) = Format(Now, "yyyy/mm/dd hh/mm:ss")
-        logWs.Cells(logWriteIdx, 3) = proc
-        logWs.Cells(logWriteIdx, 4) = cat1
-        logWs.Cells(logWriteIdx, 5) = msg
-        logWriteIdx = logWriteIdx + 1
+Private Sub WriteLog(ByVal lv As String, ByVal proc As String, ByVal cat1 As String, ByVal msg As String)
+    '出力レベル以上の場合
+    If writeLogLv <= lv Then
+        Dim t As Single: t = Timer
+        If writeLogFlg Then
+            logWs.Cells(writeLogIdx, "A") = Format(Now, "yyyy/mm/dd hh:mm:ss") & "." & Format((t - Int(t)) * 1000, "000")
+            logWs.Cells(writeLogIdx, "B") = GetLogLvNm(lv)
+            logWs.Cells(writeLogIdx, "C") = proc
+            logWs.Cells(writeLogIdx, "D") = cat1
+            logWs.Cells(writeLogIdx, "E") = msg
+            writeLogIdx = writeLogIdx + 1
+        End If
     End If
 End Sub
-

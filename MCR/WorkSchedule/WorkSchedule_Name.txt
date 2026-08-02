@@ -1364,7 +1364,7 @@ Private Sub CreateSheet_WorkSchedule_01(ByVal holidayDict As Object, ByVal input
                 .Fill.ForeColor.RGB = btnColor(i)                                '塗りつぶし色
                 .line.ForeColor.RGB = btnColor(i)                                '枠線色
                 .TextFrame2.TextRange.text = btnNm(i)                            '表示文字列
-                .TextFrame2.TextRange.Font.Name = theme.BtnFont                  'フォント
+                .TextFrame2.TextRange.Font.Name = theme.BtnFont                  'フォント(EN)
                 .TextFrame2.TextRange.Font.Size = theme.BtnFontSize              '文字サイズ
                 .TextFrame2.TextRange.Font.Bold = True                           '太字
                 .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = btnFontColor(i)  '文字色
@@ -1491,6 +1491,7 @@ Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal input
         With ws
             '文字色
             .Range("C" & rowIdx & ":AG" & rowIdx).Font.Color = theme.FontColor_Header
+            .Range("AI1:AJ2").Offset(rowIdx, 0).Font.Color = theme.FontColor_GrayOut
             .Range("C3:AG3").Offset(rowIdx, 0).Font.Color = theme.FontColor_GrayOut
             '太字
             .Range("C" & rowIdx).Font.Bold = True
@@ -1536,10 +1537,10 @@ Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal input
             .Range("AJ6").Offset(rowIdx, 0).NumberFormatLocal = "0"" 日"""
             .Range("AJ7").Offset(rowIdx, 0).NumberFormatLocal = "0 %"
             '文字揃え
-            .Range("C7:Q11").Offset(rowIdx, 0).VerticalAlignment = xlTop
-            .Range("C7:Q11").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
-            .Range("S7:AG11").Offset(rowIdx, 0).VerticalAlignment = xlTop
-            .Range("S7:AG11").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
+            .Range("C6:Q10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            .Range("C6:Q10").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
+            .Range("S6:AG10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            .Range("S6:AG10").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
             '備考枠線
             For j = 1 To 2
                 If j = 1 Then Set rng = .Range("C6:Q10").Offset(rowIdx, 0)

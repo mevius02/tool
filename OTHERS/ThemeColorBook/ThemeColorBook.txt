@@ -10,29 +10,25 @@ Public Sub CreateSheet_ThemeColorBook()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    Dim ws As Worksheet     'Sheet
-    Dim wsNm As String      'Sheet名
-    Dim rowIdx As Long      '行
-    Dim colIdx As Long      '列
-    Dim endRowIdx As Long   '終了行
-    Dim endColIdx As Long   '終了列
-    Dim writeRowIdx As Long '書込行
-    Dim writeColIdx As Long '書込列
+    Dim ws As Worksheet   'Sheet
+    Dim rowIdx As Long    '行
+    Dim colIdx As Long    '列
+    Dim endRowIdx As Long '終了行
+    Dim endColIdx As Long '終了列
 
     '●テーマ数
     Dim themeCnt As Long
     '●テーマリスト/行
     Dim themeCol As Collection
     Dim themeArr As Variant
-    '●カテゴリ名[前/現在]
+    '●カテゴリ名(前/現在)
     Dim preCatNm As String
     Dim crntCatNm As String
 
-    '========== 初期化 ==========
-    writeRowIdx = 1
-    writeColIdx = -12
+    '初期化
+    rowIdx = 1
+    colIdx = -12
     themeCnt = 1
-    '============================
 
     '全テーマ取得
     Set themeCol = GetAllTheme()
@@ -44,7 +40,7 @@ Public Sub CreateSheet_ThemeColorBook()
 
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    ws.Name = ChangeToUniqueSheetNm("配色テーマ集")
+    ws.Name = ChangeUniqueSheetNm("配色テーマ集")
 
     '書込
     For Each themeArr In themeCol
@@ -52,19 +48,19 @@ Public Sub CreateSheet_ThemeColorBook()
         'カテゴリ名が変わった場合
         If preCatNm <> crntCatNm Then
             'タイトル書込
-            writeRowIdx = 1
-            writeColIdx = writeColIdx + 13
-            Call WriteTitle(ws, writeRowIdx, writeColIdx, themeArr)
-            writeRowIdx = 2
+            rowIdx = 1
+            colIdx = colIdx + 13
+            Call WriteTitle(ws, rowIdx, colIdx, themeArr)
+            rowIdx = 2
         End If
         'テーマ書込
-        Call WriteOneTheme(ws, writeRowIdx, writeColIdx, themeArr, themeCnt)
+        Call WriteOneTheme(ws, rowIdx, colIdx, themeArr, themeCnt)
         themeCnt = themeCnt + 1
-        writeRowIdx = writeRowIdx + 6
+        rowIdx = rowIdx + 6
         preCatNm = crntCatNm
     Next
 
-    '最下行/列 取得
+    '終了(行/列) 取得
     endRowIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
     endColIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
 
@@ -82,11 +78,10 @@ Public Sub CreateSheet_ThemeColorBook()
     End With
     ActiveWindow.DisplayGridlines = False       '目盛線
     ActiveWindow.Zoom = 85                      '表示倍率
-
     'グループ化
     rowIdx = 4
     Do While True
-        ws.Rows((rowIdx) & ":" & (rowIdx + 3)).Group
+        ws.Rows(rowIdx & ":" & (rowIdx + 3)).Group
         rowIdx = rowIdx + 6
         If endRowIdx <= rowIdx Then Exit Do
     Loop
@@ -95,11 +90,10 @@ Public Sub CreateSheet_ThemeColorBook()
     '列幅
     colIdx = 1
     Do While True
-        ws.Columns(GetColNm(colIdx)).ColumnWidth = 2
+        ws.Columns(colIdx).ColumnWidth = 2
         colIdx = colIdx + 13
         If endColIdx <= colIdx Then Exit Do
     Loop
-
     'ウィンドウ枠の固定
     ws.range("A2").Select
     ActiveWindow.FreezePanes = True
@@ -145,7 +139,7 @@ Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Next
 End Function
 '------------------------------------------------------------
-'概要 : Sheet名が重複しないよう、末尾に連番を付与する
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
 '     : (同じ名前のSheetが存在しない場合、そのまま返す)
 '     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
 '     : "AAA" → "AAA (2)" → "AAA (3)"
@@ -153,12 +147,12 @@ End Function
 '戻値 : Sheet名
 '備考 : -
 '------------------------------------------------------------
-Private Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
     Dim i As Long
     Dim uniqueNo As String
     '存在しない場合
     If Not IsExistsSheet(wsNm) Then
-        ChangeToUniqueSheetNm = wsNm
+        ChangeUniqueSheetNm = wsNm
         Exit Function
     End If
     '存在する場合
@@ -167,7 +161,7 @@ Private Function ChangeToUniqueSheetNm(ByVal wsNm As String) As String
         uniqueNo = " (" & i & ")"
         '存在しない場合
         If Not IsExistsSheet(wsNm & uniqueNo) Then
-            ChangeToUniqueSheetNm = wsNm & uniqueNo
+            ChangeUniqueSheetNm = wsNm & uniqueNo
             Exit Function
         End If
     Next
@@ -181,17 +175,15 @@ End Function
 '------------------------------------------------------------
 Private Function GetColNm(ByVal colIdx As Long) As String
     Dim result As String
-    Dim n As Long
     '範囲外の場合
     If colIdx < 1 Or Application.Columns.Count < colIdx Then
         GetColNm = ""
         Exit Function
     End If
-    n = colIdx
-    Do While 0 < n
-        n = n - 1
-        result = Chr$(65 + (n Mod 26)) & result
-        n = n \ 26
+    Do While 0 < colIdx
+        colIdx = colIdx - 1
+        result = Chr$(65 + (colIdx Mod 26)) & result
+        colIdx = colIdx \ 26
     Loop
     GetColNm = result
 End Function
@@ -205,13 +197,10 @@ End Function
 Private Function GetColIdx(ByVal colNm As String) As Long
     Dim i As Long
     Dim result As Long
-    Dim baseA As Long
-    Dim length As Long
+    Dim baseA As Long: baseA = Asc("A") - 1
+    Dim colNmLen As Long: colNmLen = Len(UCase$(colNm))
     Dim ch As Long
-    baseA = Asc("A") - 1
-    colNm = Trim$(UCase$(colNm))
-    length = Len(colNm)
-    For i = 1 To length
+    For i = 1 To colNmLen
         ch = Asc(Mid$(colNm, i, 1)) - baseA
         '範囲外の場合
         If ch < 1 Or 26 < ch Then
@@ -229,6 +218,7 @@ End Function
 '備考 : 上書きする場合、上書き範囲のみ修正する
 '------------------------------------------------------------
 Private Function GetAllTheme() As Collection
+    '●テーマリスト
     Dim themeCol As New Collection
     '▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 上書き範囲 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
     Call themeCol.Add(Array("ORIGINAL", 136, 72, 152, "#884898", "ちいかわ01", "ハチワレあたま、かお、ほっぺ", 123, 166, 196, "#7BA6C4", 250, 248, 247, "#FAF8F7", 255, 194, 202, "#FFC2CA"))
@@ -429,14 +419,18 @@ Private Function GetAllTheme() As Collection
 End Function
 '------------------------------------------------------------
 '概要 : Sheet書込(タイトル)
-'引数 : テーマパラメータ行
+'引数 : ws       : Sheet
+'     : rowIdx   : 行
+'     : colIdx   : 列
+'     : themeArr : テーマパラメータ行
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub WriteTitle(ByRef ws As Worksheet, ByVal writeRowIdx As Long, ByVal writeColIdx As Long, ByVal themeArr As Variant)
-    Dim rng As range: Set rng = ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx))
+Private Sub WriteTitle(ByRef ws As Worksheet, ByVal rowIdx As Long, ByVal colIdx As Long, ByVal themeArr As Variant)
+    '●範囲
+    Dim rng As range: Set rng = ws.range("A" & rowIdx & ":L" & rowIdx).Offset(0, colIdx)
     '書込
-    ws.Cells(writeRowIdx, writeColIdx + 1).Value = themeArr(0)
+    ws.Cells(rowIdx, colIdx).Offset(0, 1).Value = themeArr(0)
     'セル結合
     rng.Merge
     '文字色
@@ -444,52 +438,57 @@ Private Sub WriteTitle(ByRef ws As Worksheet, ByVal writeRowIdx As Long, ByVal w
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet書込(1テーマ)
-'引数 : テーマパラメータ行
+'引数 : ws       : Sheet
+'     : rowIdx   : 行
+'     : colIdx   : 列
+'     : themeArr : テーマパラメータ行
+'     : themeCnt : テーマ数
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub WriteOneTheme(ByRef ws As Worksheet, ByVal writeRowIdx As Long, ByVal writeColIdx As Long, ByVal themeArr As Variant, ByVal themeCnt As Long)
-    '書込
-    ws.Cells(writeRowIdx, writeColIdx + 1).Value = themeCnt & "：" & themeArr(5)
-    ws.Cells(writeRowIdx, writeColIdx + 5).Value = themeArr(6)
-    ws.Cells(writeRowIdx + 2, writeColIdx + 1).Value = "R"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 2).Value = "G"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 3).Value = "B"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 5).Value = "R"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 6).Value = "G"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 7).Value = "B"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 9).Value = "R"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 10).Value = "G"
-    ws.Cells(writeRowIdx + 2, writeColIdx + 11).Value = "B"
-    ws.Cells(writeRowIdx + 3, writeColIdx + 1).Value = themeArr(7)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 2).Value = themeArr(8)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 3).Value = themeArr(9)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 5).Value = themeArr(11)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 6).Value = themeArr(12)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 7).Value = themeArr(13)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 9).Value = themeArr(15)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 10).Value = themeArr(16)
-    ws.Cells(writeRowIdx + 3, writeColIdx + 11).Value = themeArr(17)
-    ws.Cells(writeRowIdx + 4, writeColIdx + 1).Value = themeArr(10)
-    ws.Cells(writeRowIdx + 4, writeColIdx + 5).Value = themeArr(14)
-    ws.Cells(writeRowIdx + 4, writeColIdx + 9).Value = themeArr(18)
-    '文字揃え
-    ws.Columns(GetColNm(writeColIdx)).HorizontalAlignment = xlCenter
-    '行幅
-    ws.Rows(writeRowIdx + 1).RowHeight = 40
-    'セル結合
-    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx)).Merge
-    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx)).Merge
-    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 1)).Merge
-    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 1)).Merge
-    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 1)).Merge
-    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 4)).Merge
-    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 4)).Merge
-    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 4) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 4)).Merge
-    '背景色
-    ws.range(GetColNm(writeColIdx + 1) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 4) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(7), themeArr(8), themeArr(9))
-    ws.range(GetColNm(writeColIdx + 5) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 8) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(11), themeArr(12), themeArr(13))
-    ws.range(GetColNm(writeColIdx + 9) & (writeRowIdx + 1) & ":" & GetColNm(writeColIdx + 12) & (writeRowIdx + 1)).Interior.Color = RGB(themeArr(15), themeArr(16), themeArr(17))
+Private Sub WriteOneTheme(ByRef ws As Worksheet, ByVal rowIdx As Long, ByVal colIdx As Long, ByVal themeArr As Variant, ByVal themeCnt As Long)
+    Dim i As Long
+    With ws
+        '書込
+        .Cells(rowIdx, colIdx).Offset(0, 1).Value = themeCnt & "：" & themeArr(5)
+        .Cells(rowIdx, colIdx).Offset(0, 5).Value = themeArr(6)
+        Do While True
+            If 11 <= i Then Exit Do
+            .Cells(rowIdx, colIdx).Offset(2, i).Value = "R"
+            .Cells(rowIdx, colIdx).Offset(2, i + 1).Value = "G"
+            .Cells(rowIdx, colIdx).Offset(2, i + 2).Value = "B"
+            i = i + 4
+        Loop
+        .Cells(rowIdx, colIdx).Offset(3, 1).Value = themeArr(7)
+        .Cells(rowIdx, colIdx).Offset(3, 2).Value = themeArr(8)
+        .Cells(rowIdx, colIdx).Offset(3, 3).Value = themeArr(9)
+        .Cells(rowIdx, colIdx).Offset(3, 5).Value = themeArr(11)
+        .Cells(rowIdx, colIdx).Offset(3, 6).Value = themeArr(12)
+        .Cells(rowIdx, colIdx).Offset(3, 7).Value = themeArr(13)
+        .Cells(rowIdx, colIdx).Offset(3, 9).Value = themeArr(15)
+        .Cells(rowIdx, colIdx).Offset(3, 10).Value = themeArr(16)
+        .Cells(rowIdx, colIdx).Offset(3, 11).Value = themeArr(17)
+        .Cells(rowIdx, colIdx).Offset(4, 1).Value = themeArr(10)
+        .Cells(rowIdx, colIdx).Offset(4, 5).Value = themeArr(14)
+        .Cells(rowIdx, colIdx).Offset(4, 9).Value = themeArr(18)
+        '文字揃え
+        .Columns(colIdx).HorizontalAlignment = xlCenter
+        '行幅
+        .Rows(rowIdx + 1).RowHeight = 40
+        'セル結合
+        .range("A" & rowIdx & ":D" & rowIdx).Offset(0, colIdx).Merge
+        .range("E" & rowIdx & ":L" & rowIdx).Offset(0, colIdx).Merge
+        .range("A" & rowIdx & ":D" & rowIdx).Offset(1, colIdx).Merge
+        .range("E" & rowIdx & ":H" & rowIdx).Offset(1, colIdx).Merge
+        .range("I" & rowIdx & ":L" & rowIdx).Offset(1, colIdx).Merge
+        .range("A" & rowIdx & ":D" & rowIdx).Offset(4, colIdx).Merge
+        .range("E" & rowIdx & ":H" & rowIdx).Offset(4, colIdx).Merge
+        .range("I" & rowIdx & ":L" & rowIdx).Offset(4, colIdx).Merge
+        '背景色
+        .range("A" & rowIdx & ":D" & rowIdx).Offset(1, colIdx).Interior.Color = RGB(themeArr(7), themeArr(8), themeArr(9))
+        .range("E" & rowIdx & ":H" & rowIdx).Offset(1, colIdx).Interior.Color = RGB(themeArr(11), themeArr(12), themeArr(13))
+        .range("I" & rowIdx & ":L" & rowIdx).Offset(1, colIdx).Interior.Color = RGB(themeArr(15), themeArr(16), themeArr(17))
+    End With
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[比較]を作成する
@@ -501,69 +500,75 @@ Private Sub CreateSheet_ThemeCompare()
     Dim ws As Worksheet   'Sheet
     Dim endRowIdx As Long '終了行
     Dim endColIdx As Long '終了列
-    '検索番号セル番地 行/列
-    Dim searchNoRowList As Variant: searchNoRowList = Array(3, 8, 13, 18, 23)
-    Dim searchNoColList As Variant: searchNoColList = Array("C", "P", "AC")
+    '●検索番号セル番地(行/列)
+    Dim searchNoRowList As Variant
+    Dim searchNoColList As Variant
     Dim searchNoRow As Variant
     Dim searchNoCol As Variant
-    '罫線位置区分
+    '●罫線位置区分
     Dim borderType As Variant
-
-    '図形/サイズ[横/縦]
+    '●図形/サイズ[横/縦]
     Dim shp As Shape
     Dim shpWidth As Long: shpWidth = 2
     Dim shpHeight As Long: shpHeight = 1
 
+    '検索番号セル番地 セット
+    searchNoRowList = Array(3, 8, 13, 18, 23)
+    searchNoColList = Array("C", "P", "AC")
+
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    ws.Name = ChangeToUniqueSheetNm("比較")
+    ws.Name = ChangeUniqueSheetNm("比較")
 
     '書込
     For Each searchNoRow In searchNoRowList
         For Each searchNoCol In searchNoColList
-            ws.Cells(searchNoRow, GetColIdx(searchNoCol) - 1).Value = "番号"
-            'サンプル番号出力
+            ws.Cells(searchNoRow, GetColIdx(CStr(searchNoCol)) - 1).Value = "番号"
+            'いくつかサンプル番号出力
             If searchNoRow < 10 Then ws.Cells(searchNoRow, searchNoCol).Value = searchNoRow * GetColIdx(searchNoCol)
         Next
     Next
 
-    '最下行/列 取得
+    '終了(行/列) 取得
     endRowIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Row + 3
     endColIdx = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
 
     'Sheet設定
     ws.Activate
-    ActiveWindow.DisplayGridlines = False       '目盛線
     With ws
-        .Cells.Font.Name = "Noto Sans JP"       'フォント
-        .Cells.VerticalAlignment = xlTop        '文字揃え
+        'フォント
+        .Cells.Font.Name = "Noto Sans JP"
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
         .Cells.HorizontalAlignment = xlLeft
         .Rows(1).HorizontalAlignment = xlCenter
-        .Rows(1).RowHeight = 36                 '行幅
+        '行幅
+        .Rows(1).RowHeight = 36
         .Rows(2).RowHeight = 6
-        .Columns.ColumnWidth = 4                '列幅
+        '列幅
+        .Columns.ColumnWidth = 4
         .Columns("A").ColumnWidth = 2
         .Columns("N").ColumnWidth = 2
         .Columns("AA").ColumnWidth = 2
-    End With
-
-    '文字揃え/行幅/罫線
-    For Each searchNoRow In searchNoRowList
-        ws.Rows(1).HorizontalAlignment = xlCenter
-        ws.Rows(searchNoRow + 1).RowHeight = 10
-        ws.Rows(searchNoRow + 3).RowHeight = 40
-        ws.Rows(searchNoRow + 4).RowHeight = 10
-        For Each searchNoCol In searchNoColList
-            For Each borderType In Array(xlEdgeTop, xlEdgeRight, xlEdgeBottom, xlEdgeLeft)
-                ws.Cells(searchNoRow, searchNoCol).Borders(borderType).LineStyle = xlContinuous
-                ws.Cells(searchNoRow, searchNoCol).Borders(borderType).Weight = xlThin
+        '文字揃え/行幅/罫線
+        For Each searchNoRow In searchNoRowList
+            .Rows(1).HorizontalAlignment = xlCenter
+            .Rows(searchNoRow + 1).RowHeight = 10
+            .Rows(searchNoRow + 3).RowHeight = 40
+            .Rows(searchNoRow + 4).RowHeight = 10
+            For Each searchNoCol In searchNoColList
+                .Cells(searchNoRow, searchNoCol).HorizontalAlignment = xlRight
+                For Each borderType In Array(xlEdgeTop, xlEdgeRight, xlEdgeBottom, xlEdgeLeft)
+                    .Cells(searchNoRow, searchNoCol).Borders(borderType).LineStyle = xlContinuous
+                    .Cells(searchNoRow, searchNoCol).Borders(borderType).Weight = xlThin
+                Next
             Next
         Next
-    Next
-
-    'グループ化
-    ws.Rows("1:2").Group
-
+        'グループ化
+        .Rows("1:2").Group
+    End With
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
     'ウィンドウ枠の固定
     ws.range("A2").Select
     ActiveWindow.FreezePanes = True
@@ -573,16 +578,14 @@ Private Sub CreateSheet_ThemeCompare()
     With shp
         .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
         .Line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
-        .Line.Weight = 1                                                   '枠線太さ
         .TextFrame2.TextRange.Text = "更新"                                '表示文字列
-        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント
-        .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント
+        .TextFrame2.TextRange.Font.NameFarEast = "Noto Sans JP"            'フォント(JP)
         .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
         .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
         .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "Btn_RefreshCompareSheet"                                  'マクロ登録
+        .OnAction = "Btn_RefreshCompareSheet"                              'マクロ登録
         .Top = 4                                                           '配置場所(縦)
         .Left = 16                                                         '配置場所(横)
     End With
@@ -601,20 +604,17 @@ Private Sub Btn_RefreshCompareSheet()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    '現在Sheet/検索先Sheet
+    '●現在Sheet/検索先Sheet
     Dim ws As Worksheet: Set ws = ActiveSheet
     Dim searchWs As Worksheet: Set searchWs = ThisWorkbook.Sheets("配色テーマ集")
-
-    '終了行/列
+    '●終了行/列
     Dim endRowIdx As Long
     Dim endColIdx As Long
-
-    '検索一致セル
+    '●検索一致セル
     Dim foundCell As range
-    '範囲 [コピー元/先]
+    '●範囲 [コピー元/先]
     Dim srcRange As range, destRange As range
-
-    '検索番号セル番地 行/列
+    '●検索番号セル番地 行/列
     Dim searchNoRowList As Variant
     Dim searchNoColList As Variant
     Dim searchNoRow As Variant
@@ -625,7 +625,7 @@ Private Sub Btn_RefreshCompareSheet()
     searchNoRowList = Array(3, 8, 13, 18, 23)
     searchNoColList = Array("C", "P", "AC")
 
-    '最下行/列 取得
+    '終了(行/列) 取得
     endRowIdx = searchWs.Cells.SpecialCells(xlCellTypeLastCell).Row
     endColIdx = searchWs.Cells.SpecialCells(xlCellTypeLastCell).Column
 
@@ -638,17 +638,17 @@ Private Sub Btn_RefreshCompareSheet()
             Set foundCell = searchWs.range("A2:" & GetColNm(endColIdx) & endRowIdx).Find(What:=searchText & "*", LookIn:=xlValues, LookAt:=xlWhole)
             '存在しない場合
             If foundCell Is Nothing Then
-                'テーマ削除
-                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & searchNoRow + 2 & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & searchNoRow + 2).Value2 = ""
-                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & searchNoRow + 3 & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & searchNoRow + 3).Interior.ColorIndex = xlNone
+                '既存テーマ削除
+                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & (searchNoRow + 2) & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & (searchNoRow + 2)).Value = ""
+                ws.range(GetColNm(GetColIdx(searchNoCol) - 1) & (searchNoRow + 3) & ":" & GetColNm(GetColIdx(searchNoCol) + 10) & (searchNoRow + 3)).Interior.ColorIndex = xlNone
                 '書込
                 ws.Cells(searchNoRow, GetColIdx(searchNoCol) + 2).Value = "該当なし"
             Else
                 '該当なし削除
-                ws.Cells(searchNoRow, GetColIdx(searchNoCol) + 2).Value2 = ""
-                'コピー元/先 指定
-                Set srcRange = foundCell.Offset(0, 0).Resize(2, 12)
-                Set destRange = ws.Cells(searchNoRow, GetColIdx(searchNoCol)).Offset(2, -1).Resize(2, 12)
+                ws.Cells(searchNoRow, GetColIdx(searchNoCol) + 2).Value = ""
+                'コピー(元/先) 指定
+                Set srcRange = foundCell.Resize(2, 12)
+                Set destRange = ws.range(searchNoCol & searchNoRow).Offset(2, -1).Resize(2, 12)
                 'コピー
                 srcRange.Copy
                 destRange.PasteSpecial Paste:=xlPasteAll
@@ -670,20 +670,16 @@ End Sub
 '備考 : -
 '------------------------------------------------------------
 Private Sub CreateSheet_ThemeParamSetting()
-    'Sheet
-    Dim ws As Worksheet
-    '行/列/終了行
-    Dim rowIdx As Long
-    Dim colIdx As Long
-    Dim endRowIdx As Long
-
-    '図形/サイズ[横/縦]
+    Dim ws As Worksheet   'Sheet
+    Dim rowIdx As Long    '行
+    Dim colIdx As Long    '列
+    Dim endRowIdx As Long '終了行
+    '●図形/サイズ[横/縦]
     Dim shp As Shape
     Dim shpWidth As Long: shpWidth = 4
     Dim shpHeight As Long: shpHeight = 1
-    '罫線位置区分
+    '●罫線位置区分
     Dim borderType As Variant
-
     '●テーマリスト/行
     Dim themeCol As Collection
     Dim themeArr As Variant
@@ -693,24 +689,22 @@ Private Sub CreateSheet_ThemeParamSetting()
 
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    ws.Name = ChangeToUniqueSheetNm("設定")
+    ws.Name = ChangeUniqueSheetNm("設定")
 
-    '書込(ヘッダー)
-    Dim tmpArr As Variant: tmpArr = Array("No", "順番", "カテゴリ", "タイトル1", "タイトル2", "色1", "色2", "色3", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "書換用VBA")
+    '書込
     With ws
-        .Cells(2, "I").Value = "カテゴリ"
-        .Cells(2, "M").Value = "色1"
-        .Cells(2, "Q").Value = "色2"
-        .Cells(2, "U").Value = "色3"
-    End With
-    For colIdx = 1 To 25
-        ws.Cells(3, colIdx).Value = tmpArr(colIdx - 1)
-    Next
-
-    '書込(データ)
-    rowIdx = 4
-    For Each themeArr In themeCol
-        With ws
+        'ヘッダー
+        Dim tmpArr As Variant: tmpArr = Array("No", "順番", "カテゴリ", "タイトル1", "タイトル2", "色1", "色2", "色3", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "R", "G", "B", "CD", "書換用VBA")
+        .range("I2").Value = "カテゴリ"
+        .range("M2").Value = "色1"
+        .range("Q2").Value = "色2"
+        .range("U2").Value = "色3"
+        For colIdx = 1 To 25
+            .Cells(3, colIdx).Value = tmpArr(colIdx - 1)
+        Next
+        'データ
+        rowIdx = 4
+        For Each themeArr In themeCol
             .Cells(rowIdx, "A").Formula2R1C1 = "=ROW()-3"
             .Cells(rowIdx, "B").Value = rowIdx - 3
             .Cells(rowIdx, "C").Value = themeArr(0)
@@ -737,16 +731,15 @@ Private Sub CreateSheet_ThemeParamSetting()
             .Cells(rowIdx, "W").Value = themeArr(17)
             .Cells(rowIdx, "X").Value = themeArr(18)
             .Cells(rowIdx, "Y").Formula2R1C1 = "=""    Call themeCol.Add(Array(""""""&RC[-22]&"""""", ""&RC[-16]&"", ""&RC[-15]&"", ""&RC[-14]&"", """"""&RC[-13]&"""""", """"""&RC[-21]&"""""", """"""&RC[-20]&"""""", ""&RC[-12]&"", ""&RC[-11]&"", ""&RC[-10]&"", """"""&RC[-9]&"""""", ""&RC[-8]&"", ""&RC[-7]&"", ""&RC[-6]&"", """"""&RC[-5]&"""""", ""&RC[-4]&"", ""&RC[-3]&"", ""&RC[-2]&"", """"""&RC[-1]&""""""))"""
-        End With
-        rowIdx = rowIdx + 1
-    Next
+            rowIdx = rowIdx + 1
+        Next
+    End With
 
-    '最下行/列 セット
+    '終了(行/列) セット
     endRowIdx = themeCol.Count + 3
 
     'Sheet設定
     ws.Activate
-    ActiveWindow.DisplayGridlines = False '目盛線
     With ws
         'Tab色
         .Tab.Color = RGB(128, 128, 128) '#808080
@@ -783,22 +776,20 @@ Private Sub CreateSheet_ThemeParamSetting()
         .range("M2:P2").Merge
         .range("Q2:T2").Merge
         .range("U2:X2").Merge
+        '罫線
+        For Each borderType In Array(xlInsideHorizontal, xlInsideVertical)
+            .range("I2:X3").Borders(borderType).Weight = xlHairline
+            .range("A3:Y" & endRowIdx).Borders(borderType).Weight = xlHairline
+        Next
+        '条件付き書式(奇数行背景色)
+        .range("A4:B" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        .range("D4:E" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        .range("I4:Y" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        'フィルター
+        .Rows(3).AutoFilter
     End With
-
-    '罫線
-    For Each borderType In Array(xlInsideHorizontal, xlInsideVertical)
-        ws.range("I2:X3").Borders(borderType).Weight = xlHairline
-        ws.range("A3:Y" & endRowIdx).Borders(borderType).Weight = xlHairline
-    Next
-
-    '条件付き書式(奇数行背景色)
-    ws.range("A4:B" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-    ws.range("D4:E" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-    ws.range("I4:Y" & endRowIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-
-    'フィルター
-    ws.Rows(3).AutoFilter
-
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
     'ウィンドウ枠の固定
     ws.range("E4").Select
     ActiveWindow.FreezePanes = True
@@ -808,16 +799,15 @@ Private Sub CreateSheet_ThemeParamSetting()
     With shp
         .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
         .Line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
-        .Line.Weight = 1                                                   '枠線太さ
         .TextFrame2.TextRange.Text = "RGBセット"                           '表示文字列
-        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント
-        .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント
+        .TextFrame2.TextRange.Font.NameFarEast = "Noto Sans JP"            'フォント(JP)
+        .TextFrame2.TextRange.Font.Name = "Noto Sans JP"                   'フォント(EN)
         .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
         .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
         .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "Btn_SetRgbParam"                                          'マクロ登録
+        .OnAction = "Btn_SetRgbParam"                                      'マクロ登録
         .Top = 4                                                           '配置場所(縦)
         .Left = 5                                                          '配置場所(横)
     End With
