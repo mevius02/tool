@@ -155,7 +155,7 @@ Private Sub PrepareLog(ByVal newWsFlg As Boolean, ByVal wsNm As String)
             '既存Sheetセット
             Set logWs = ThisWorkbook.Sheets(wsNm)
             '書込初期位置セット(最下行 + 1)
-            writeLogIdx = logWs.Cells(logWs.Rows.count, "A").End(xlUp).row + 1
+            writeLogIdx = logWs.Cells(logWs.Rows.Count, "A").End(xlUp).Row + 1
         Else
             newWsFlg = True
             'Sheet作成 & Sheet名セット
@@ -211,11 +211,11 @@ End Sub
 '------------------------------------------------------------
 Private Function GetLogLvNm(ByVal lv As LogLv) As String
     Select Case lv
-        Case DEBUG_lv: GetLogLvNm = LOGLVNM_DEBUG
-        Case DETAIL_lv: GetLogLvNm = LOGLVNM_DETAIL
-        Case INFO_lv: GetLogLvNm = LOGLVNM_INFO
-        Case WARN_lv: GetLogLvNm = LOGLVNM_WARN
-        Case ERROR_lv: GetLogLvNm = LOGLVNM_ERROR
+        Case LogLv.DEBUG_lv:  GetLogLvNm = LOGLVNM_DEBUG
+        Case LogLv.DETAIL_lv: GetLogLvNm = LOGLVNM_DETAIL
+        Case LogLv.INFO_lv:   GetLogLvNm = LOGLVNM_INFO
+        Case LogLv.WARN_lv:   GetLogLvNm = LOGLVNM_WARN
+        Case LogLv.ERROR_lv:  GetLogLvNm = LOGLVNM_ERROR
     End Select
 End Function
 '------------------------------------------------------------
