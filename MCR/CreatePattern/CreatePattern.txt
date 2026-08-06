@@ -1,349 +1,419 @@
 '変数未宣言エラー設定ON
 Option Explicit
 '------------------------------------------------------------
-'概要 : パターン作成SheetのテンプレートSheetを作成する
+'概要 : Sheet[パターン入力]を作成する
 '引数 : -
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Sub CreateSheet_TemplatePattern()
+Public Sub CreateSheet_InputPattern()
     '処理中描画OFF設定
-    SetDrawProcess False
+    Call SettingRenderingProcess(False)
 
-    '●列Index
-    Dim colIdx As Long
-    '●行Index
-    Dim rowIdx As Long
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-    '●タイムスタンプ
-    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
-    '●一時保持用(String)
-    Dim tmpStr As String
+    Dim ws As Worksheet     'Sheet
+    Dim i As Long           'Loopカウンタ
 
-    '●Index(開始列/開始行/終了列/終了行)
-    Dim colStartIdx As Long
-    Dim rowStartIdx As Long
-    Dim colEndIdx As Long
-    Dim rowEndIdx As Long
-    '●範囲
-    Dim rng As Range
-    '●Cell範囲データ
-    Dim rngVals As Variant
-    '●図形
+    '図形/サイズ(横/縦)
     Dim shp As Shape
+    Dim shpWidth As Long: shpWidth = 3
+    Dim shpHeight As Long: shpHeight = 1
 
-    '●新規Sheet
-    Dim newSheet As Variant
-    '●新規Sheet名
-    Dim newSheetNm As String: newSheetNm = "TMPL-PTN"
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("INPUT")
 
-    '■■■■■ Sheet存在チェック ■■■■■
-    If IsExistsSheet(newSheetNm) Then
-        MsgBox "すでにSheet [" & newSheetNm & "] が存在します"
-        Exit Sub
-    End If
+    '書込
+    With ws
+        .Range("A5").Value = "No"
+        .Range("A6:A105").Formula2 = "=ROW()-5"
+        .Range("B2").Value = "項目名"
+        .Range("B3").Value = "備考1"
+        .Range("B4").Value = "備考2"
+        .Range("B5").Value = "備考3"
+        For i = 3 To 32
+            .Cells(2, i).Value = "項目名" & i - 2
+        Next
+    End With
 
-    '■■■■■ Sheet 作成 & 詳細設定 ■■■■■
-    Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    With newSheet
-        '●Sheet名
-        .Name = newSheetNm
-        '●Tab色
-        .Tab.Color = RGB(255, 255, 255) '#FFFFFF
-        '●Cel|固定文字列
-        .Range("A4").Value = "No"
-        .Range("A5:A104").FormulaR1C1 = "=ROW()-4"
-        .Range("B1").Value = "項目名"
-        .Range("B2").Value = "備考1"
-        .Range("B3").Value = "備考2"
-        .Range("B4").Value = "備考3"
-        '●太字
-        .Range("A4:A104").Font.Bold = True
-        .Range("B1:B4").Font.Bold = True
-        .Range("C1:AF1").Font.Bold = True
-        '●Cell背景色
-        .Range("A1:A3").Interior.Color = RGB(166, 166, 166)   '#A6A6A6
-        .Range("A5:A104").Interior.Color = RGB(217, 217, 217) '#D9D9D9
-        .Range("B5:B104").Interior.Color = RGB(166, 166, 166) '#A6A6A6
-        .Range("B1:B2").Interior.Color = RGB(255, 242, 204)   '#FFF2CC
-        .Range("A4").Interior.Color = RGB(155, 194, 230)      '#9BC2E6
-        .Range("B1:B4").Interior.Color = RGB(155, 194, 230)   '#9BC2E6
-        .Range("C1:AF1").Interior.Color = RGB(189, 215, 238)  '#BDD7EE
-        .Range("C2:AF4").Interior.Color = RGB(221, 235, 247)  '#DDEBF7
-        '●列幅
+    'Sheet設定
+    ws.Activate
+    With ws
+        'フォント
+        .Cells.Font.Name = "HGｺﾞｼｯｸM"
+        '太字
+        .Range("A5:A105").Font.Bold = True
+        .Range("B2:B5").Font.Bold = True
+        .Range("C2:AF2").Font.Bold = True
+        '背景色
+        .Range("A2:B5").Interior.Color = RGB(155, 194, 230)   '#9BC2E6
+        .Range("C2:AF2").Interior.Color = RGB(189, 215, 238)  '#BDD7EE
+        .Range("C3:AF5").Interior.Color = RGB(221, 235, 247)  '#DDEBF7
+        .Range("A6:A105").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range("B6:B105").Interior.Color = RGB(191, 191, 191) '#BFBFBF
+        '行幅
+        .Rows(1).RowHeight = 36
+        '列幅
         .Columns("A").ColumnWidth = 4
         .Columns("B:AF").ColumnWidth = 15
-        '●文字揃え
-        .Cells.VerticalAlignment = xlTop                 '上揃え
-        .Cells.HorizontalAlignment = xlLeft              '左揃え
-        .Range("B1:AF1").VerticalAlignment = xlCenter    '文字揃え(縦)
-        .Range("B1:AF1").HorizontalAlignment = xlCenter  '文字揃え(横)
-        .Range("B2:B4").HorizontalAlignment = xlCenter   '文字揃え(横)
-        .Range("A4:A104").HorizontalAlignment = xlCenter '文字揃え(横)
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Range("B2:AF2").VerticalAlignment = xlCenter
+        .Range("B2:AF2").HorizontalAlignment = xlCenter
+        .Range("B3:B5").HorizontalAlignment = xlCenter
+        .Range("A5:A105").HorizontalAlignment = xlCenter
+        '折り返して表示
+        .Range("C2:AF5").WrapText = True
+        .Range("B6:B105").WrapText = True
+        'グループ化
+        .Rows("1").Group
+        .Rows("3:5").Group
+        .Columns("B").Group
     End With
-    '●Cell固定文字列
-    For i = 3 To 32
-        newSheet.Cells(1, i).Value = "項目名" & i - 2
-    Next i
-    '●表示倍率
-    newSheet.Activate
-    ActiveWindow.Zoom = 70
-    '●目盛線
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
     ActiveWindow.DisplayGridlines = False
-    '●罫線
-    Set rng = Range(newSheet.Cells(5, 1), newSheet.Cells(104, 32))
-    With rng.Borders(xlInsideHorizontal)
-        .Weight = xlHairline
-        .ColorIndex = xlAutomatic
-    End With
-    '●ウィンドウ枠の固定
-    newSheet.Range("B5").Select
+    'ウィンドウ枠の固定
+    ws.Range("C6").Select
     ActiveWindow.FreezePanes = True
-    '●条件付き書式(奇数行背景色)
-    Set rng = Range(newSheet.Cells(5, 3), newSheet.Cells(104, 32))
-    rng.FormatConditions.Add(Type:=xlExpression, Formula1:="-ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
 
-    '■■■■■ マクロボタン 作成 ■■■■■
-    Set shp = newSheet.Shapes.AddShape(msoShapeBevel, newSheet.Range("B6").Left, newSheet.Range("B6").Top, Application.CentimetersToPoints(4), Application.CentimetersToPoints(1.8))
+    '条件付き書式
+    ws.Range("C6:AF105").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+    '罫線
+    ws.Range("A2:AF105").Borders(xlInsideHorizontal).Weight = xlHairline
+    ws.Range("A2:AF105").Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+
+    'マクロボタン作成
+    Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
     With shp
-        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '塗りつぶし色 #5B9BD5
-        .line.ForeColor.RGB = RGB(91, 155, 213)                            '枠線色 #5B9BD5
-        .line.Weight = 1                                                   '枠線太さ
+        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
+        .line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
         .TextFrame2.TextRange.Text = "作成"                                '表示文字列
-        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック本文           'フォント"
-        .TextFrame2.TextRange.Font.Name = "Yu Gothic"                      'フォント
+        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント(JP)
         .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
-        .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
-        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(189, 215, 238) '文字色 #BDD7EE
+        .TextFrame2.TextRange.Font.Bold = True                             '太字
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "CreateSheet_ResultPattern"                            'マクロ登録
+        .OnAction = "Btn_CreateSheet_ResultPattern"                        'マクロ登録
+        .Top = ws.Range("A1").Top + 4                                      '配置場所(縦)
+        .Left = ws.Range("B1").Left + 4                                    '配置場所(横)
     End With
 
-    MsgBox "テンプレートSheetを作成しました"
-
     '処理中描画ON設定
-    SetDrawProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : パターン結果Sheetを作成する
+'概要 : Sheet[パターン結果]を作成する
 '引数 : -
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Sub CreateSheet_ResultPattern()
+Private Sub Btn_CreateSheet_ResultPattern()
     '処理中描画OFF設定
-    SetDrawProcess False
+    Call SettingRenderingProcess(False)
 
-    '●列Index
-    Dim colIdx As Long
-    '●行Index
-    Dim rowIdx As Long
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-    '●タイムスタンプ
-    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
-    '●一時保持用(String)
-    Dim tmpStr As String
+    Dim i As Long         'Loopカウンタ
+    Dim inputRng As Range '入力範囲
 
-    '●Sheet
-    Dim ws As Worksheet: Set ws = ActiveSheet
-    '●Sheet名
-    Dim wsNm As String
-    '●Index(開始列/開始行/終了列/終了行)
-    Dim colStartIdx As Long
-    Dim rowStartIdx As Long
-    Dim colEndIdx As Long
-    Dim rowEndIdx As Long
-    '●範囲
-    Dim rng As Range
-    '●Cell範囲データ
-    Dim rngVals As Variant
-    '●図形
-    Dim shp As Shape
+    '●入力Sheet/入力Sheet名
+    Dim inputWs As Worksheet: Set inputWs = ActiveSheet
+    Dim inputWsNm As String: inputWsNm = ActiveSheet.Name
+    '●新規Sheet/新規Sheet名
+    Dim newWs As Worksheet
+    Dim newWsNm As String: newWsNm = "PTN-"
 
-    '●新規Sheet
-    Dim newSheet As Variant
-    '●新規Sheet名
-    Dim newSheetNm As String: newSheetNm = "PTN-" & ActiveSheet.Name & "_" & timestamp
+    '●終了(行/列)
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
 
-    '■■■■■ Index セット ■■■■■
-    '●開始列
-    colStartIdx = 3
-    '●開始行
-    rowStartIdx = 5
-    '●終了列
-    colEndIdx = 3
-    Do While Not IsEmpty(ws.Cells(1, colEndIdx).Value2)
-        colEndIdx = colEndIdx + 1
-    Loop
-    colEndIdx = colEndIdx - 1
-    '●終了行
-    rowEndIdx = 5
+    '●書込データ内容/書込データ終了(行/列)
+    Dim writeSource As Variant
+    Dim writeEndRowIdx As Long
+    Dim writeEndColIdx As Long
 
-    Dim outputWs As Worksheet
-    Dim colNmList As Collection: Set colNmList = New Collection
-    Dim ptnList As Collection: Set ptnList = New Collection
-    Dim ptnRec As Collection
-    Dim rsltRec As Variant
-    Dim rsltList As Collection: Set rsltList = New Collection
+    '●入力受付Form表示内容
+    Dim title As String
+    Dim msg As String
+    Dim initVal As String
 
-    '■■■■■ パターン値 取得 ■■■■■
-    For i = 3 To colEndIdx
-        If Not IsEmpty(ws.Cells(1, i).Value2) Then
-            '項目名 取得
-            colNmList.Add ws.Cells(1, i).Value2
-            'パターン値 取得
-            Set ptnRec = New Collection
-            rowEndIdx = ws.Cells(ws.Rows.Count, i).End(xlUp).Row
-            For j = 5 To rowEndIdx
-                If Not IsEmpty(ws.Cells(j, i).Value2) Then
-                    ptnRec.Add ws.Cells(j, i).Value2
-                End If
-            Next j
-            '空の場合、空を1行分だけセット
-            If ptnRec.Count = 0 Then ptnRec.Add ""
-            ptnList.Add ptnRec
+    '終了(行/列) 取得
+    endRowIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).row
+    endColIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).Column
+
+    '入力範囲セット
+    Set inputRng = inputWs.Range("C6:" & GetColNm(endColIdx) & endRowIdx)
+
+    '書込内容 作成 & 書込データ最終(行/列)セット
+    writeSource = GetAllPattern(inputRng)
+    writeEndRowIdx = UBound(writeSource, 1)
+    writeEndColIdx = UBound(writeSource, 2)
+
+    '▼100万行OVER 強制終了
+    If 1048500 <= writeEndRowIdx Then
+        msg = "Excelの行数限界を超えています" & vbCrLf & _
+              "（パターン数：" & Format(writeEndRowIdx, "#,##0") & " 行）"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    '▼30万行OVER 警告
+    ElseIf 300000 <= writeEndRowIdx Then
+        Dim answer As VbMsgBoxResult
+        msg = "結果パターン数が多いです（" & Format(writeEndRowIdx, "#,##0") & " 行）" & vbCrLf & _
+              "Sheet作成に時間が掛かりますが、作成しますか？" & vbCrLf & _
+              "10万行  ：約5秒" & vbCrLf & _
+              "100万行：約30秒"
+        answer = MsgBox(msg, vbExclamation + vbYesNo, "")
+        If answer = vbNo Then
+            Exit Sub
         End If
-    Next i
+    End If
 
-    '■■■■■ パターン生成 ■■■■■
-    GenerateAllPattern ptnList, rsltList, Array(), 1
+    '新規Sheet作成 & 新規Sheet名セット
+    Set newWs = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    newWs.Name = ChangeUniqueSheetNm(newWsNm & inputWsNm)
 
-    '■■■■■ Sheet 作成 & 詳細設定 ■■■■■
-    Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    With newSheet
-        '●Sheet名
-        .Name = newSheetNm
-        '●Cell固定文字列
-        .Range("A1").Value = "No"
-        '●太字
+    'ヘッダー書込
+    inputWs.Range("C2:" & GetColNm(writeEndColIdx + 2) & 2).Copy
+    newWs.Range("A1").Value = "No"
+    newWs.Range("A2").Resize(writeEndRowIdx, 1).Formula2 = "=ROW()-1"
+    newWs.Range("B1:" & GetColNm(writeEndColIdx) & 1).PasteSpecial xlPasteAll
+    Application.CutCopyMode = False
+
+    'データ 一括書込
+    newWs.Range("B2").Resize(writeEndRowIdx, writeEndColIdx).Value = writeSource
+
+    'Sheet設定
+    With newWs
+        '太字
         .Columns("A").Font.Bold = True
-        .Rows("1").Font.Bold = True
-        '●Cell背景色
-        .Range(newSheet.Cells(1, 1), newSheet.Cells(1, colEndIdx - 1)).Interior.Color = RGB(189, 215, 238) '#BDD7EE
-        '●列幅
-        .Columns("A").ColumnWidth = 4
-        .Range(Columns(2), Columns(colEndIdx - 1)).ColumnWidth = 15
-        '●文字揃え
-        .Cells.VerticalAlignment = xlTop             '上揃え
-        .Cells.HorizontalAlignment = xlLeft          '左揃え
-        .Columns("A").HorizontalAlignment = xlCenter '文字揃え(横)
-        .Cells("1").HorizontalAlignment = xlCenter   '文字揃え(横)
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Rows(1).VerticalAlignment = xlCenter
+        .Columns("A").HorizontalAlignment = xlCenter
+        '列幅
+        .Columns("A").ColumnWidth = 8
+        .Columns("B:" & GetColNm(writeEndColIdx + 1)).ColumnWidth = 15
     End With
-
-    '■■■■■ 項目行 作成 ■■■■■
-    For i = 1 To colNmList.Count
-        With newSheet.Cells(1, i + 1)
-            .NumberFormat = "@" '表示書式[文字列]
-            .Value = colNmList(i)
-        End With
-    Next i
-
-    '■■■■■ データ行 作成 ■■■■■
-    For i = 1 To rsltList.Count
-        rsltRec = rsltList.Item(i)
-        'No
-        newSheet.Cells(i + 1, 1).Value = i
-        'データ
-        For j = 0 To UBound(rsltRec)
-            With newSheet.Cells(i + 1, j + 2)
-                .NumberFormat = "@" '表示書式[文字列]
-                .Value = rsltRec(j)
-            End With
-        Next j
-    Next i
-    '●Cel背景色
-    newSheet.Range(newSheet.Cells(2, 1), newSheet.Cells(newSheet.Cells(newSheet.Rows.Count, 1).End(xlUp).Row, 1)).Interior.Color = RGB(217, 217, 217) '#D9D9D9
-    '●表示倍率
-    newSheet.Activate
-    ActiveWindow.Zoom = 70
-    '●目盛線
+    'テーブルスタイル
+    Call ApplyTableStyle_01(newWs, newWs.Range("A1:" & GetColNm(writeEndColIdx + 1) & (writeEndRowIdx + 1)), 2)
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
     ActiveWindow.DisplayGridlines = False
-    '●罫線
-    Set rng = Range(newSheet.Cells(2, 1), newSheet.Cells(newSheet.Cells(newSheet.Rows.Count, 1).End(xlUp).Row, colEndIdx - 1))
-    With rng.Borders(xlInsideHorizontal)
-        .Weight = xlHairline
-        .ColorIndex = xlAutomatic
-    End With
-    '●ウィンドウ枠の固定
-    newSheet.Range("B2").Select
+    'ウィンドウ枠の固定
+    newWs.Range("B2").Select
     ActiveWindow.FreezePanes = True
-    '●条件付き書式(奇数行背景色)
-    Set rng = Range(newSheet.Cells(2, 2), newSheet.Cells(newSheet.Cells(newSheet.Rows.Count, 1).End(xlUp).Row, colEndIdx - 1))
-    rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-    '●フィルター
-    newSheet.Rows(1).AutoFilter
-
-    MsgBox "パターン結果Sheetを作成しました"
 
     '処理中描画ON設定
-    SetDrawProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : パターン作成
-'引数 : -
-'戻値 : -
+'概要 : 総パターンリストを取得する(2次元配列)
+'引数 : srcRng : 要素範囲
+'戻値 : 総パターンリスト
 '備考 : -
 '------------------------------------------------------------
-Private Sub GenerateAllPattern(ptList As Collection, rsltList As Collection, crntPtnBoard As Variant, level As Long)
+Private Function GetAllPattern(srcRng As Range) As Variant()
+    '●Loopカウンタ/行/列
     Dim i As Long
-    Dim ptnRec As Variant
-    Dim newPtnBoard() As Variant
+    Dim colIdx As Long
+    Dim rowIdx As Long
+    '●全要素リスト/1列要素リスト
+    Dim srcCol As New Collection
+    Dim srcValCol As New Collection
+    '●パターンリスト(作業用/結果用)
+    Dim workList() As Variant
+    Dim resultList() As Variant
+    '●総パターン数
+    Dim totalPtnCnt As Long
 
-    For Each ptnRec In ptList(level)
-        ReDim newPtnBoard(level - 1)
-        For i = 0 To level - 2
-            newPtnBoard(i) = crntPtnBoard(i)
-        Next i
-        newPtnBoard(level - 1) = ptnRec
+    '1列ごとの要素リストを追加していく
+    For colIdx = 1 To srcRng.Columns.Count
+        '要素無しの列で取得終了
+        If srcRng.Cells(1, colIdx).Value2 = "" Then Exit For
+        Set srcValCol = New Collection
+        For i = 1 To srcRng.Rows.Count
+            '空セルで終了
+            If srcRng.Cells(i, colIdx).Value2 = "" Then Exit For
+            Call srcValCol.Add(srcRng.Cells(i, colIdx).Value2)
+        Next
+        Call srcCol.Add(srcValCol)
+    Next
 
-        If level < ptList.Count Then
-            GenerateAllPattern ptList, rsltList, newPtnBoard, level + 1
-        Else
-            rsltList.Add newPtnBoard
-        End If
-    Next ptnRec
-End Sub
+    '総パターン数 算出
+    totalPtnCnt = 1
+    For i = 1 To srcCol.Count
+        totalPtnCnt = totalPtnCnt * srcCol(i).Count
+    Next
+
+    '配列サイズ再定義
+    ReDim workList(1 To srcCol.Count)
+    ReDim resultList(1 To totalPtnCnt, 1 To srcCol.Count)
+
+    '総パターン作成
+    Call CreateAllPattern(srcCol, 1, 1, workList, resultList)
+
+    GetAllPattern = resultList
+End Function
 '------------------------------------------------------------
-'概要 : 処理中の描画を設定する
-'引数 : flg(True=描画ON / False=描画OFF)
+'概要 : 総パターン作成
+'     : (パターンリスト(結果用)にセットする)
+'引数 : srcCol     : 要素リスト
+'     : rowIdx     : 行
+'     : colIdx     : 列
+'     : workList   : パターンリスト(作業用)
+'     : resultList : パターンリスト(結果用)
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub SetDrawProcess(ByVal flg As Boolean)
-    Application.ScreenUpdating = flg
-    Application.DisplayAlerts = flg
-    Application.EnableEvents = flg
+Private Sub CreateAllPattern(ByVal srcCol As Collection, ByRef rowIdx As Long, ByVal colIdx As Long, ByRef workList() As Variant, ByRef resultList() As Variant)
+    Dim i As Long
+    '全ての列の要素をセットした場合
+    If srcCol.Count < colIdx Then
+        For i = 1 To srcCol.Count
+            resultList(rowIdx, i) = workList(i)
+        Next
+        rowIdx = rowIdx + 1
+        '1つ前の再帰実行直後のSub処理に戻る(↓のFor文で直前の再帰実行した直後から再開)
+        Exit Sub
+    End If
+    '列のi行の要素をセットする
+    For i = 1 To srcCol(colIdx).Count
+        workList(colIdx) = CStr(srcCol(colIdx)(i))
+        '再帰実行(次の列の要素をセットする)
+        Call CreateAllPattern(srcCol, rowIdx, colIdx + 1, workList, resultList)
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
     If flg Then
-        Application.Calculation = xlCalculationAutomatic
+        Application.Calculation = xlCalculationAutomatic '自動
     Else
-        Application.Calculation = xlCalculationManual
+        Application.Calculation = xlCalculationManual '手動
     End If
 End Sub
 '------------------------------------------------------------
-'概要 : sheetNmのSheetが存在するか判定し、結果を返す
-'引数 : sheetNm : Sheet名
-'戻値 : 判定結果(True=存在する / False=存在しない)
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsExistsSheet(sheetNm As String) As Boolean
-    '一時的にエラー処理OFF設定
-    On Error Resume Next
-    IsExistsSheet = Not Worksheets(sheetNm) Is Nothing
-    'エラー処理ON設定
-    On Error GoTo 0
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
 End Function
 '------------------------------------------------------------
-'概要 : 空か判定し、結果を返す
-'       strの桁が0 or "" の場合、空判定
-'引数 : str : チェック対象文字列
-'戻値 : 判定結果(True=空 / False=空でない)
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
 '備考 : -
 '------------------------------------------------------------
-Private Function IsEmpty(str As String) As Boolean
-    If LenB(str) = 0 Or str = "" Then
-        IsEmpty = True
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在しない場合
+    If Not IsExistsSheet(wsNm) Then
+        ChangeUniqueSheetNm = wsNm
+        Exit Function
     End If
+    '存在する場合
+    For i = 2 To 1000
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+    Next
 End Function
+'------------------------------------------------------------
+'概要 : 列番号から列名(アルファベット)を取得する
+'     : (範囲外の数値の場合、空を返す)
+'引数 : colIdx : 列番号
+'戻値 : 列名(アルファベット)
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColNm(ByVal colIdx As Long) As String
+    Dim result As String
+    '範囲外の場合
+    If colIdx < 1 Or Application.Columns.Count < colIdx Then
+        GetColNm = ""
+        Exit Function
+    End If
+    Do While 0 < colIdx
+        colIdx = colIdx - 1
+        result = Chr$(65 + (colIdx Mod 26)) & result
+        colIdx = colIdx \ 26
+    Loop
+    GetColNm = result
+End Function
+'------------------------------------------------------------
+'概要 : 列名(アルファベット)から列番号を取得する
+'     : (範囲外の列名の場合、0を返す)
+'引数 : colNm : 列名(アルファベット)
+'戻値 : 列番号
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColIdx(ByVal colNm As String) As Long
+    Dim i As Long
+    Dim result As Long
+    Dim baseA As Long: baseA = Asc("A") - 1
+    Dim colNmLen As Long: colNmLen = Len(UCase$(colNm))
+    Dim ch As Long
+    For i = 1 To colNmLen
+        ch = Asc(Mid$(colNm, i, 1)) - baseA
+        '範囲外の場合
+        If ch < 1 Or 26 < ch Then
+            GetColIdx = 0
+            Exit Function
+        End If
+        result = result * 26 + ch
+    Next
+    GetColIdx = result
+End Function
+'------------------------------------------------------------
+'概要 : テーブルスタイル適用[01]
+'引数 : ws     : Sheet
+'     : rng    : 適用範囲
+'     : colIdx : ウィンドウ枠の固定列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyTableStyle_01(ByRef ws As Worksheet, ByRef rng As Range, ByVal colIdx As Long)
+    'テーブルスタイル適用
+    Dim tbl As ListObject: Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
+    tbl.TableStyle = "TableStyleMedium1"
+    'ヘッダー
+    With ws.Range(ws.Cells(rng.row, rng.Column), ws.Cells(rng.row, rng.Columns.Count))
+        .Font.Color = RGB(0, 0, 0)           '#000000 文字色
+        .Interior.Color = RGB(221, 235, 247) '#DDEBF7 背景色
+        .HorizontalAlignment = xlCenter      '文字揃え
+    End With
+    '罫線
+    rng.Borders(xlInsideHorizontal).Weight = xlHairline
+    rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+    'ウィンドウ枠の固定
+    ws.Activate
+    ws.Cells(rng.row + 1, rng.Column + colIdx - 1).Select
+    ActiveWindow.FreezePanes = True
+End Sub
