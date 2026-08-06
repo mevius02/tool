@@ -40,10 +40,6 @@ Public Sub CreateSheet_InputPattern()
     With ws
         'フォント
         .Cells.Font.Name = "HGｺﾞｼｯｸM"
-        '太字
-        .Range("A5:A105").Font.Bold = True
-        .Range("B2:B5").Font.Bold = True
-        .Range("C2:AF2").Font.Bold = True
         '背景色
         .Range("A2:B5").Interior.Color = RGB(155, 194, 230)   '#9BC2E6
         .Range("C2:AF2").Interior.Color = RGB(189, 215, 238)  '#BDD7EE
