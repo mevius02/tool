@@ -85,8 +85,8 @@ Public Sub CreateSheet_ThemeColorBook()
         rowIdx = rowIdx + 6
         If endRowIdx <= rowIdx Then Exit Do
     Loop
-    'グループ閉じる
-    ws.Outline.ShowLevels RowLevels:=1, ColumnLevels:=1
+    'グループ閉じる(行)
+    ws.Outline.ShowLevels RowLevels:=1
     '列幅
     colIdx = 1
     Do While True
@@ -435,6 +435,8 @@ Private Sub WriteTitle(ByRef ws As Worksheet, ByVal rowIdx As Long, ByVal colIdx
     rng.Merge
     '文字色
     rng.Font.Color = RGB(themeArr(1), themeArr(2), themeArr(3))
+    'グループ化
+    rng.Columns.Group
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet書込(1テーマ)
@@ -447,7 +449,7 @@ End Sub
 '備考 : -
 '------------------------------------------------------------
 Private Sub WriteOneTheme(ByRef ws As Worksheet, ByVal rowIdx As Long, ByVal colIdx As Long, ByVal themeArr As Variant, ByVal themeCnt As Long)
-    Dim i As Long
+    Dim i As Long: i = 1
     With ws
         '書込
         .Cells(rowIdx, colIdx).Offset(0, 1).Value = themeCnt & "：" & themeArr(5)
