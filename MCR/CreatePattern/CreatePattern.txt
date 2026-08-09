@@ -10,13 +10,13 @@ Public Sub CreateSheet_InputPattern()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    Dim ws As Worksheet     'Sheet
-    Dim i As Long           'Loopカウンタ
+    Dim ws As Worksheet 'Sheet
+    Dim i As Long       'Loopカウンタ
 
     '図形/サイズ(横/縦)
     Dim shp As Shape
-    Dim shpWidth As Long: shpWidth = 3
-    Dim shpHeight As Long: shpHeight = 1
+    Dim shpWidth As Double: shpWidth = 3
+    Dim shpHeight As Double: shpHeight = 1
 
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))

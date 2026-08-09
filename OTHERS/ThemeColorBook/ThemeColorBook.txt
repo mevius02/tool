@@ -511,8 +511,8 @@ Private Sub CreateSheet_ThemeCompare()
     Dim borderType As Variant
     '●図形/サイズ[横/縦]
     Dim shp As Shape
-    Dim shpWidth As Long: shpWidth = 2
-    Dim shpHeight As Long: shpHeight = 1
+    Dim shpWidth As Double: shpWidth = 2
+    Dim shpHeight As Double: shpHeight = 1
 
     '検索番号セル番地 セット
     searchNoRowList = Array(3, 8, 13, 18, 23)
@@ -678,8 +678,8 @@ Private Sub CreateSheet_ThemeParamSetting()
     Dim endRowIdx As Long '終了行
     '●図形/サイズ[横/縦]
     Dim shp As Shape
-    Dim shpWidth As Long: shpWidth = 4
-    Dim shpHeight As Long: shpHeight = 1
+    Dim shpWidth As Double: shpWidth = 4
+    Dim shpHeight As Double: shpHeight = 1
     '●罫線位置区分
     Dim borderType As Variant
     '●テーマリスト/行
