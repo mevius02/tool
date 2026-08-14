@@ -346,18 +346,21 @@ Private Function AddFrontChara(ByVal str As String, ByVal digitNum As Long, ByVa
 End Function
 '------------------------------------------------------------
 '概要 : 文字列をCSV出力値に変換する
-'     : 1,改行を除去する
-'     : 2,ダブルクォーテーションをエスケープする
+'     : 1,改行を除去
+'     : 2,タブを文字列に変換
+'     : 3,ダブルクォーテーションをエスケープ
 '引数 : str : 文字列
 '戻値 : CSV出力値
 '備考 : -
 '------------------------------------------------------------
 Private Function ConvertCsvVal(ByVal str As String) As String
-    '改行 除去
+    '改行
     str = Replace$(str, vbCr, "")
     str = Replace$(str, vbLf, "")
     str = Replace$(str, vbCrLf, "")
-    'ダブルクォーテーション エスケープ
+    'タブ
+    str = Replace$(str, vbTab, "[TAB]")
+    'ダブルクォーテーション
     str = Replace$(str, """", """""")
     ConvertCsvVal = str
 End Function
@@ -1778,26 +1781,28 @@ Private Sub CreateCsv(ByVal createMonth As Long)
     Next
 
     'ファイル作成(UTF-8(BOMあり))
-    Call CreateCsvUTF8(filePath, fileNm, fileExt, csvBody, True)
+    Call CreateTxtFile(filePath, fileNm, fileExt, csvBody, "UTF-8", True)
 
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : CSVファイルを作成する(UTF-8)
-'引数 : filePath : ファイルパス
-'     : fileNm   : ファイル名
-'     : fileExt  : ファイル拡張子
-'     : contents : 書込内容
-'     : bomFlg   : BOM有無フラグ(True=有 / False=無)
+'概要 : テキストファイルを作成する(UTF-8)
+'引数 : filePath  : ファイルパス
+'     : fileNm    : ファイル名
+'     : fileExt   : ファイル拡張子
+'     : contents  : 書込内容
+'     : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'     : bomFlg    : BOM有無フラグ(True=有 / False=無)
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub CreateCsvUTF8(ByVal filePath As String, ByVal fileNm As String, ByVal fileExt As String, ByVal contents As String, ByVal bomFlg As Boolean)
-    '●CSV書込用
+Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVal fileExt As String, ByVal contents As String, ByVal charsetNm As String, ByVal bomFlg As Boolean)
+    '●ファイル書込用
     Dim stream As Object: Set stream = CreateObject("ADODB.Stream")
     Dim binStream As Object
     Dim byteData() As Byte
+    Dim bomLen As Integer: bomLen = GetBomLen(charsetNm)
 
     '末尾付与
     If Right$(filePath, 1) <> "\" Then filePath = filePath & "\"
@@ -1806,7 +1811,7 @@ Private Sub CreateCsvUTF8(ByVal filePath As String, ByVal fileNm As String, ByVa
 
     With stream
         .Type = 2
-        .Charset = "UTF-8"
+        .Charset = charsetNm
         .Open
         .WriteText contents
         .SaveToFile filePath & fileNm, 2 '既存ファイル上書き設定
@@ -1814,15 +1819,15 @@ Private Sub CreateCsvUTF8(ByVal filePath As String, ByVal fileNm As String, ByVa
     End With
     Set stream = Nothing
 
-    'BOMなしの場合、先頭3バイト(BOM)除去で作り直す
-    If Not bomFlg Then
+    'BOMなしの場合、先頭nバイト(BOM)除去で作り直す
+    If Not bomFlg And 0 < bomLen Then
         '===== 読込 =====
         Set binStream = CreateObject("ADODB.Stream")
         With binStream
             .Type = 1
             .Open
             .LoadFromFile filePath & fileNm
-            .Position = 3
+            .Position = bomLen
             byteData = .Read
             .Close
         End With
@@ -1837,6 +1842,24 @@ Private Sub CreateCsvUTF8(ByVal filePath As String, ByVal fileNm As String, ByVa
         Set binStream = Nothing
     End If
 End Sub
+'------------------------------------------------------------
+'概要 : 文字コード名のBOMバイト数を取得する
+'引数 : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Function GetBomLen(ByVal charsetNm As String) As Integer
+    Select Case UCase$(charsetNm)
+        Case "UTF-8"
+            GetBomLen = 3
+        Case "UTF-16", "UNICODE", "UTF-16LE", "UTF-16BE"
+            GetBomLen = 2
+        Case "UTF-32"
+            GetBomLen = 4
+        Case Else
+            GetBomLen = 0
+    End Select
+End Function
 '------------------------------------------------------------
 '概要 : Excelファイル作成
 '     : 対象月の勤務表をExcelファイルで、このExcelファイルと同じ場所に作成する

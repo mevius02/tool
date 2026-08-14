@@ -181,8 +181,6 @@ Private Sub Btn_CreateSheet_ResultPattern()
 
     'Sheet設定
     With newWs
-        '太字
-        .Columns("A").Font.Bold = True
         '文字揃え
         .Cells.VerticalAlignment = xlTop
         .Cells.HorizontalAlignment = xlLeft
@@ -191,6 +189,8 @@ Private Sub Btn_CreateSheet_ResultPattern()
         '列幅
         .Columns("A").ColumnWidth = 8
         .Columns("B:" & GetColNm(writeEndColIdx + 1)).ColumnWidth = 15
+        '背景色
+        .Range("A1:A" & writeEndRowIdx + 1).Interior.Color = RGB(217, 217, 217) '#D9D9D9
     End With
     'テーブルスタイル
     Call ApplyTableStyle_01(newWs, newWs.Range("A1:" & GetColNm(writeEndColIdx + 1) & (writeEndRowIdx + 1)), 2)
