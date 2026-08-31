@@ -2,17 +2,17 @@
 Option Explicit
 '========== グローバル変数 ==========
 '●ログ出力有無フラグ(True:する / False:しない)
-Public writeLogFlg As Boolean
+Private writeLogFlg As Boolean
 '●ログ出力レベル
-Public writeLogLv As String
+Private writeLogLv As String
 '●ログレベル名
-Const LOGLVNM_DEBUG = "DEBUG"
-Const LOGLVNM_DETAIL = "DETAIL"
-Const LOGLVNM_INFO = "INFO"
-Const LOGLVNM_WARN = "WARN"
-Const LOGLVNM_ERROR = "ERROR"
+Private Const LOGLVNM_DEBUG = "DEBUG"
+Private Const LOGLVNM_DETAIL = "DETAIL"
+Private Const LOGLVNM_INFO = "INFO"
+Private Const LOGLVNM_WARN = "WARN"
+Private Const LOGLVNM_ERROR = "ERROR"
 '●ログレベル
-Public Enum LogLv
+Private Enum LogLv
     DEBUG_lv = 1
     DETAIL_lv = 2
     INFO_lv = 3
@@ -20,9 +20,9 @@ Public Enum LogLv
     ERROR_lv = 5
 End Enum
 '●ログSheet
-Public logWs As Worksheet
+Private logWs As Worksheet
 '●ログ書込行番号
-Public writeLogIdx As Long
+Private writeLogIdx As Long
 '------------------------------------------------------------
 '概要 : テスト用Main処理
 '引数 : -
@@ -57,7 +57,7 @@ Public Sub TestMain()
     'ログ出力
     Call WriteLog(LogLv.INFO_lv, proc, cat1, "START")
     For i = 1 To 10000
-        num = AddFrontChara(i, 5, 0)
+        num = AddFrontCharacter(i, 5, 0)
         text = "処理" & num & "：出力メッセージ" & num
         Call WriteLog(logLvArr((i - 1) Mod 5), proc, cat1, text)
     Next
@@ -134,11 +134,11 @@ End Function
 '戻値 : 文字列
 '備考 : -
 '------------------------------------------------------------
-Private Function AddFrontChara(ByVal str As String, ByVal digitNum As Long, ByVal ch As String) As String
+Private Function AddFrontCharacter(ByVal str As String, ByVal digitNum As Long, ByVal ch As String) As String
     Do While Len(str) < digitNum
         str = ch & str
     Loop
-    AddFrontChara = str
+    AddFrontCharacter = str
 End Function
 '------------------------------------------------------------
 '概要 : ログSheetを準備する
@@ -159,7 +159,7 @@ Private Sub PrepareLog(ByVal newWsFlg As Boolean, ByVal wsNm As String)
         Else
             newWsFlg = True
             'Sheet作成 & Sheet名セット
-            Set logWs = ThisWorkbook.Sheets.Add(before:=ThisWorkbook.Worksheets(1))
+            Set logWs = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
             logWs.Name = ChangeUniqueSheetNm(wsNm)
             'ヘッダー書込
             logWs.Range("A1").Value = "日時"

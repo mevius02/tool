@@ -1,8 +1,26 @@
 '変数未宣言エラー設定ON
 Option Explicit
+'==================================================
+' テーマを追加する場合
+'   1, グローバル変数[テーマ]に１行追加
+'   2, GetThemePreset_(01 & 02)に1Case追加
+'   (RGB値はSheet情で、セルの(背景色 or 文字色) → [その他の色] → [ユーザー設定]タブ から確認可能)
+'   画像や写真の色を取得したい場合、フリーソフト[ColorPicker]等がおすすめ
+'==================================================
 '========== グローバル変数 ==========
+'●テーマ
+Private Const THEME_01 = "1：Standard"
+Private Const THEME_02 = "2：Light"
+Private Const THEME_03 = "3：Dark"
+Private Const THEME_04 = "4：Sweets"
+Private Const THEME_05 = "5：Chiikawa"
+Private Const THEME_06 = "6：Ocean"
+Private Const THEME_07 = "7：LaundryRoom"
+Private Const THEME_08 = "8：Ocha"
+Private Const THEME_09 = "9：Feminine"
 '●テーマプリセット[時間]
-Public Type ThemePreset_01
+Private Type ThemePreset_01
+    ThemeNm As String           'テーマ名
     Font_All As String          '[フォント]全体
     FontColor_All As Long       '[文字色]全体
     FontColor_Header As Long    '[文字色]ヘッダー
@@ -26,7 +44,8 @@ Public Type ThemePreset_01
     BtnBgColor_Excel As Long    '[ボタン]背景色(Excel)
 End Type
 '●テーマプリセット[時間数]
-Public Type ThemePreset_02
+Private Type ThemePreset_02
+    ThemeNm As String         'テーマ名
     Font_All As String        '[フォント]全体
     FontSize_All As Long      '[フォント]サイズ
     FontColor_All As Long     '[文字色]全体
@@ -42,6 +61,413 @@ Public Type ThemePreset_02
     BorderColor_Biko As Long  '[罫線色]備考
 End Type
 '------------------------------------------------------------
+'概要 : テーマプリセットを取得する[01]
+'引数 : themeNo : テーマ番号
+'戻値 : テーマセット
+'備考 : -
+'------------------------------------------------------------
+Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
+    Dim result As ThemePreset_01
+    Select Case themeNo
+        Case Split(THEME_01, "：")(0)
+            result.ThemeNm = Split(THEME_01, "：")(1)       'テーマ名
+            result.Font_All = "游ゴシック"                  '[フォント]全体
+            result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
+            result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト2
+            result.BgColor_All = RGB(250, 250, 250)         '#FAFAFA [背景色]全体
+            result.BgColor_Header = RGB(218, 242, 208)      '#DAF2D0 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(238, 242, 228)     '#EEF2E4 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(242, 242, 242)    '#F2F2F2 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(217, 217, 217)    '#D9D9D9 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(218, 233, 248)    '#DAE9F8 [背景色]土曜
+            result.BgColor_Sunday = RGB(251, 226, 213)      '#FBE2D5 [背景色]日曜
+            result.BgColor_Holiday = RGB(240, 144, 144)     '#F09090 [背景色]祝日
+            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
+            result.BorderColor_TopCont = RGB(218, 242, 208) '#DAF2D0 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "游ゴシック"                   '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(250, 250, 250)    '#FAFAFA [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(250, 250, 250)  '#FAFAFA [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(220, 220, 0)        '#DCDC00 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
+        Case Split(THEME_02, "：")(0)
+            result.ThemeNm = Split(THEME_02, "：")(1)       'テーマ名
+            result.Font_All = "游ゴシック"                  '[フォント]全体
+            result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
+            result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト2
+            result.BgColor_All = RGB(250, 251, 253)         '#FAFBFD [背景色]全体
+            result.BgColor_Header = RGB(219, 255, 255)      '#DBFFFF [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(245, 255, 255)     '#F5FFFF [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(238, 243, 247)    '#EEF3F7 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(211, 223, 235)    '#D3DFEB [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(170, 255, 255)    '#AAFFFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 180, 0)        '#FFB400 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 50, 50)       '#FF3232 [背景色]祝日
+            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
+            result.BorderColor_TopCont = RGB(219, 255, 255) '#DBFFFF [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Comic Sans MS"                '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(100, 245, 245)    '#64F5F5 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(255, 255, 255)  '#FFFFFF [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(255, 255, 0)        '#FFFF00 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(114, 213, 96)     '#72D560 [ボタン]背景色(Excel)
+        Case Split(THEME_03, "：")(0)
+            result.ThemeNm = Split(THEME_03, "：")(1)       'テーマ名
+            result.Font_All = "游ゴシック"                  '[フォント]全体
+            result.FontColor_All = RGB(250, 250, 250)       '#FAFAFA [文字色]全体
+            result.FontColor_Header = RGB(250, 250, 250)    '#FAFAFA [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(166, 166, 166)  '#A6A6A6 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(166, 166, 166)  '#A6A6A6 [文字色]グレーアウト2
+            result.BgColor_All = RGB(128, 128, 128)         '#808080 [背景色]全体
+            result.BgColor_Header = RGB(41, 41, 41)         '#292929 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(110, 110, 110)     '#6E6E6E [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(89, 89, 89)       '#595959 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(69, 69, 69)       '#454545 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(100, 160, 200)    '#64A0C8 [背景色]土曜
+            result.BgColor_Sunday = RGB(190, 100, 0)        '#BE6400 [背景色]日曜
+            result.BgColor_Holiday = RGB(220, 0, 0)         '#DC0000 [背景色]祝日
+            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
+            result.BorderColor_TopCont = RGB(0, 0, 0)       '#000000 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "游ゴシック"                   '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(250, 250, 250)    '#FAFAFF [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(250, 250, 250)  '#FAFAFF [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(170, 170, 0)        '#AAAA00 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
+        Case Split(THEME_04, "：")(0)
+            result.ThemeNm = Split(THEME_04, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(120, 0, 0)           '#780000 [文字色]全体
+            result.FontColor_Header = RGB(90, 0, 0)         '#5A0000 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(230, 180, 180)  '#E6B4B4 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(230, 180, 180)  '#E6B4B4 [文字色]グレーアウト2
+            result.BgColor_All = RGB(255, 255, 230)         '#FFFFE6 [背景色]全体
+            result.BgColor_Header = RGB(255, 200, 255)      '#FFC8FF [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(255, 255, 255)     'FFFFFFF [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(255, 255, 180)    '#FFFFB4 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(255, 255, 150)    '#FFFF96 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(190, 255, 255)    '#BEFFFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 200, 100)      '#FFC864 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 140, 140)     '#FF8C8C [背景色]祝日
+            result.BorderColor_Cont = RGB(120, 0, 0)        '#780000 [罫線色]行間
+            result.BorderColor_TopCont = RGB(255, 200, 255) '#FFC8FF [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Broadway"                     '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(120, 0, 0)        '#780000 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(255, 240, 210)  '#FFF0D2 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(255, 240, 210)      '#FFF0D2 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(120, 0, 0)        '#780000 [ボタン]背景色(Excel)
+        Case Split(THEME_05, "：")(0)
+            result.ThemeNm = Split(THEME_05, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(70, 46, 49)          '#462E31 [文字色]全体
+            result.FontColor_Header = RGB(250, 248, 247)    '#FAF8F7 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(152, 197, 133)  '#98C585 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(152, 197, 133)  '#98C585 [文字色]グレーアウト2
+            result.BgColor_All = RGB(248, 248, 240)         '#F8F8F0 [背景色]全体
+            result.BgColor_Header = RGB(123, 166, 196)      '#7BA6C4 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(250, 248, 247)     '#FAF8F7 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(219, 235, 196)    '#DBEBC4 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(202, 229, 181)    '#CAE5B5 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(198, 232, 243)    '#C6E8F3 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 241, 203)      '#FFF1CB [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 194, 202)     '#FFC2CA [背景色]祝日
+            result.BorderColor_Cont = RGB(146, 192, 126)    '#92C07E [罫線色]行間
+            result.BorderColor_TopCont = RGB(123, 166, 196) '#7BA6C4 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Noto Sans JP"                 '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(118, 140, 132)    '#768C84 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(118, 140, 132)  '#768C84 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(251, 237, 200)      '#FBEDC8 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(199, 240, 182)    '#C7F0B6 [ボタン]背景色(Excel)
+        Case Split(THEME_06, "：")(0)
+            result.ThemeNm = Split(THEME_06, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(0, 30, 150)          '#001E96 [文字色]全体
+            result.FontColor_Header = RGB(242, 242, 242)    '#F2F2F2 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(140, 170, 255)  '#8CAAFF [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(140, 170, 255)  '#8CAAFF [文字色]グレーアウト2
+            result.BgColor_All = RGB(210, 230, 255)         '#D2E6FF [背景色]全体
+            result.BgColor_Header = RGB(90, 110, 255)       '#5A6EFF [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(235, 245, 255)     '#EBF5FF [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(190, 220, 255)    '#BEDCFF [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(180, 210, 255)    '#B4D2FF [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(180, 210, 255)    '#B4D2FF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 230, 170)      '#FFE6AA [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 160, 160)     '#FFA0A0 [背景色]祝日
+            result.BorderColor_Cont = RGB(0, 30, 150)       '#001E98 [罫線色]行間
+            result.BorderColor_TopCont = RGB(90, 110, 255)  '#5A6EFF [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Magneto"                      '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(64, 64, 64)       '#404040 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(64, 64, 64)     '#404040 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(240, 240, 160)      '#F0F0A0 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(100, 220, 100)    '#64DC64 [ボタン]背景色(Excel)
+        Case Split(THEME_07, "：")(0)
+            result.ThemeNm = Split(THEME_07, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(105, 60, 40)         '#693C28 [文字色]全体
+            result.FontColor_Header = RGB(105, 60, 40)      '#693C28 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(160, 160, 160)  '#A0A0A0 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(160, 160, 160)  '#A0A0A0 [文字色]グレーアウト2
+            result.BgColor_All = RGB(225, 225, 225)         '#E1E1E1 [背景色]全体
+            result.BgColor_Header = RGB(235, 235, 235)      '#EBEBEB [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(245, 245, 245)     '#F5F5F5 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(210, 210, 210)    '#D2D2D2 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(195, 195, 195)    '#C3C3C3 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(190, 210, 250)    '#BED2FA [背景色]土曜
+            result.BgColor_Sunday = RGB(240, 225, 150)      '#F0E196 [背景色]日曜
+            result.BgColor_Holiday = RGB(230, 150, 150)     '#E69696 [背景色]祝日
+            result.BorderColor_Cont = RGB(105, 60, 40)      '#693C28 [罫線色]行間
+            result.BorderColor_TopCont = RGB(235, 235, 235) '#EBEBEB [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Mistral"                      '[ボタン]フォント
+            result.BtnFontSize = 16                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(64, 64, 64)       '#404040 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(64, 64, 64)     '#404040 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(235, 235, 180)      '#EBEBB4 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(150, 180, 150)    '#96B496 [ボタン]背景色(Excel)
+        Case Split(THEME_08, "：")(0)
+            result.ThemeNm = Split(THEME_08, "：")(1)       'テーマ名
+            result.Font_All = "HG正楷書体-PRO"              '[フォント]全体
+            result.FontColor_All = RGB(95, 110, 17)         '#5F6E11 [文字色]全体
+            result.FontColor_Header = RGB(95, 110, 17)      '#5F6E11 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(153, 171, 78)   '#99AB4E [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(224, 235, 175)  '#E0EBAF [文字色]グレーアウト2
+            result.BgColor_All = RGB(224, 235, 175)         '#E0EBAF [背景色]全体
+            result.BgColor_Header = RGB(170, 207, 83)       '#AACF53 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(216, 230, 152)     '#D8E698 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(199, 220, 104)    '#C7DC68 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(153, 171, 78)     '#99AB4E [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(137, 195, 235)    '#89C3EB [背景色]土曜
+            result.BgColor_Sunday = RGB(215, 207, 58)       '#D7CF3A [背景色]日曜
+            result.BgColor_Holiday = RGB(205, 140, 92)      '#CD8C5C [背景色]祝日
+            result.BorderColor_Cont = RGB(95, 110, 17)      '#5F6E11 [罫線色]行間
+            result.BorderColor_TopCont = RGB(170, 207, 83)  '#AACF53 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "HG行書体"                     '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(71, 89, 80)       '#475950 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(71, 89, 80)     '#475950 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(166, 148, 37)       '#A69425 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(131, 155, 92)     '#839B5C [ボタン]背景色(Excel)
+        Case Split(THEME_09, "：")(0)
+            result.ThemeNm = Split(THEME_09, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(95, 65, 143)         '#5F418F [文字色]全体
+            result.FontColor_Header = RGB(95, 65, 143)      '#5F418F [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(198, 185, 209)  '#C6B9D1 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(198, 185, 209)  '#C6B9D1 [文字色]グレーアウト2
+            result.BgColor_All = RGB(255, 255, 255)         '#FFFFFF [背景色]全体
+            result.BgColor_Header = RGB(211, 208, 232)      '#D3D0E8 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(235, 235, 245)     '#EBEBF5 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(234, 246, 236)    '#EAF6EC [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(220, 240, 223)    '#DCF0DF [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(216, 237, 244)    '#D8EDF4 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 247, 201)      '#FFF7C9 [背景色]日曜
+            result.BgColor_Holiday = RGB(246, 214, 238)     '#F6D6EE [背景色]祝日
+            result.BorderColor_Cont = RGB(95, 65, 143)      '#5F418F [罫線色]行間
+            result.BorderColor_TopCont = RGB(211, 208, 232) '#D3D0E8 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Script MT Bold"               '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(95, 65, 143)      '#5F418F [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(95, 65, 143)    '#5F418F [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(255, 247, 201)      '#FFF7C9 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(220, 240, 223)    '#DCF0DF [ボタン]背景色(Excel)
+    End Select
+    GetThemePreset_01 = result
+End Function
+'------------------------------------------------------------
+'概要 : テーマプリセットを取得する[02]
+'引数 : themeNo : テーマ番号
+'戻値 : テーマセット
+'備考 : -
+'------------------------------------------------------------
+Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
+    Dim result As ThemePreset_02
+    Select Case themeNo
+        Case Split(THEME_01, "：")(0)
+            result.ThemeNm = Split(THEME_01, "：")(1)     'テーマ名
+            result.Font_All = "游ゴシック"                '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
+            result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.BgColor_All = RGB(250, 250, 250)       '#FAFAFA [背景色]全体
+            result.BgColor_Header = RGB(218, 242, 208)    '#DAF2D0 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(250, 250, 250)      '#FAFAFA [背景色]備考
+            result.BgColor_GrayOut = RGB(217, 217, 217)   '#D9D9D9 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(218, 233, 248)  '#DAE9F8 [背景色]土曜
+            result.BgColor_Sunday = RGB(251, 226, 213)    '#FBE2D5 [背景色]日曜
+            result.BgColor_Holiday = RGB(240, 144, 144)   '#F09090 [背景色]祝日
+            result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
+        Case Split(THEME_02, "：")(0)
+            result.ThemeNm = Split(THEME_02, "：")(1)     'テーマ名
+            result.Font_All = "游ゴシック"                '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
+            result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.BgColor_All = RGB(250, 251, 253)       '#FAFBFD [背景色]全体
+            result.BgColor_Header = RGB(219, 255, 255)    '#DBFFFF [背景色]ヘッダー
+            result.BgColor_Biko = RGB(255, 255, 255)      '#FFFFFF [背景色]備考
+            result.BgColor_GrayOut = RGB(238, 243, 247)   '#EEF3F7 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(170, 255, 255)  '#AAFFFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 180, 0)      '#FFB400 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 50, 50)     '#FF3232 [背景色]祝日
+            result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
+        Case Split(THEME_03, "：")(0)
+            result.ThemeNm = Split(THEME_03, "：")(1)     'テーマ名
+            result.Font_All = "游ゴシック"                '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(250, 250, 250)     '#FAFAFA [文字色]全体
+            result.FontColor_Header = RGB(250, 250, 250)  '#FAFAFA [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(166, 166, 166) '#A6A6A6 [文字色]グレーアウト
+            result.BgColor_All = RGB(128, 128, 128)       '#808080 [背景色]全体
+            result.BgColor_Header = RGB(41, 41, 41)       '#292929 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(89, 89, 89)         '#595959 [背景色]備考
+            result.BgColor_GrayOut = RGB(89, 89, 89)      '#595959 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(100, 160, 200)  '#64A0C8 [背景色]土曜
+            result.BgColor_Sunday = RGB(190, 100, 0)      '#BE6400 [背景色]日曜
+            result.BgColor_Holiday = RGB(220, 0, 0)       '#DC0000 [背景色]祝日
+            result.BorderColor_Biko = RGB(255, 255, 255)  '#FFFFFF [罫線色]備考
+        Case Split(THEME_04, "：")(0)
+            result.ThemeNm = Split(THEME_04, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(120, 0, 0)         '#780000 [文字色]全体
+            result.FontColor_Header = RGB(120, 0, 0)      '#780000 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(230, 180, 180) '#E6B4B4 [文字色]グレーアウト
+            result.BgColor_All = RGB(255, 255, 230)       '#FFFFE6 [背景色]全体
+            result.BgColor_Header = RGB(255, 200, 255)    '#FFC8FF [背景色]ヘッダー
+            result.BgColor_Biko = RGB(255, 255, 180)      '#FFFFB4 [背景色]備考
+            result.BgColor_GrayOut = RGB(255, 255, 150)   '#FFFF96 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(190, 255, 255)  '#BEFFFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 200, 100)    '#FFC864 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 140, 140)   '#FF8C8C [背景色]祝日
+            result.BorderColor_Biko = RGB(120, 0, 0)      '#780000 [罫線色]備考
+        Case Split(THEME_05, "：")(0)
+            result.ThemeNm = Split(THEME_05, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(70, 46, 49)        '#462E31 [文字色]全体
+            result.FontColor_Header = RGB(250, 248, 247)  '#FAF8F7 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.BgColor_All = RGB(250, 248, 247)       '#FAF8F7 [背景色]全体
+            result.BgColor_Header = RGB(123, 166, 196)    '#7BA6C4 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(211, 236, 191)      '#D3ECBF [背景色]備考
+            result.BgColor_GrayOut = RGB(212, 212, 204)   '#D4D4CC [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(198, 232, 243)  '#C6E8F3 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 241, 203)    '#FFF1CB [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 194, 202)   '#FFC2CA [背景色]祝日
+            result.BorderColor_Biko = RGB(99, 133, 108)   '#63856C [罫線色]備考
+        Case Split(THEME_06, "：")(0)
+            result.ThemeNm = Split(THEME_06, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(0, 30, 150)        '#001E96 [文字色]全体
+            result.FontColor_Header = RGB(242, 242, 242)  '#F2F2F2 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(140, 170, 255) '#8CAAFF [文字色]グレーアウト
+            result.BgColor_All = RGB(210, 230, 255)       '#D2E6FF [背景色]全体
+            result.BgColor_Header = RGB(90, 110, 255)     '#5A6EFF [背景色]ヘッダー
+            result.BgColor_Biko = RGB(180, 210, 255)      '#B4D2FF [背景色]備考
+            result.BgColor_GrayOut = RGB(190, 220, 255)   '#BEDCFF [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(180, 210, 255)  '#B4D2FF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 230, 170)    '#FFE6AA [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 160, 160)   '#FFA0A0 [背景色]祝日
+            result.BorderColor_Biko = RGB(0, 30, 150)     '#001E96 [罫線色]備考
+        Case Split(THEME_07, "：")(0)
+            result.ThemeNm = Split(THEME_07, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(105, 60, 40)       '#693C28 [文字色]全体
+            result.FontColor_Header = RGB(105, 60, 40)    '#693C28 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(160, 160, 160) '#A0A0A0 [文字色]グレーアウト
+            result.BgColor_All = RGB(225, 225, 225)       '#E1E1E1 [背景色]全体
+            result.BgColor_Header = RGB(235, 235, 235)    '#EBEBEB [背景色]ヘッダー
+            result.BgColor_Biko = RGB(245, 245, 245)      '#F5F5F5 [背景色]備考
+            result.BgColor_GrayOut = RGB(210, 210, 210)   '#D2D2D2 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(190, 210, 250)  '#BED2FA [背景色]土曜
+            result.BgColor_Sunday = RGB(240, 225, 150)    '#F0E196 [背景色]日曜
+            result.BgColor_Holiday = RGB(230, 150, 150)   '#E69696 [背景色]祝日
+            result.BorderColor_Biko = RGB(180, 180, 180)  '#B4B4B4 [罫線色]備考
+        Case Split(THEME_08, "：")(0)
+            result.ThemeNm = Split(THEME_08, "：")(1)     'テーマ名
+            result.Font_All = "HG正楷書体-PRO"            '[フォント]全体
+            result.FontSize_All = 12                      '[フォント]サイズ
+            result.FontColor_All = RGB(95, 110, 17)       '#5F6E11 [文字色]全体
+            result.FontColor_Header = RGB(95, 110, 17)    '#5F6E11 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(153, 171, 78)  '#99AB4E [文字色]グレーアウト
+            result.BgColor_All = RGB(224, 235, 175)       '#E0EBAF [背景色]全体
+            result.BgColor_Header = RGB(170, 207, 83)     '#AACF53 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(153, 171, 78)       '#99AB4E [背景色]備考
+            result.BgColor_GrayOut = RGB(199, 220, 104)   '#C7DC68 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(137, 195, 235)  '#89C3EB [背景色]土曜
+            result.BgColor_Sunday = RGB(215, 207, 58)     '#D7CF3A [背景色]日曜
+            result.BgColor_Holiday = RGB(205, 140, 92)    '#CD8C5C [背景色]祝日
+            result.BorderColor_Biko = RGB(199, 220, 104)  '#C7DC68 [罫線色]備考
+        Case Split(THEME_09, "：")(0)
+            result.ThemeNm = Split(THEME_09, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(95, 65, 143)       '#5F418F [文字色]全体
+            result.FontColor_Header = RGB(95, 65, 143)    '#5F418F [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(198, 185, 209) '#C6B9D1 [文字色]グレーアウト
+            result.BgColor_All = RGB(255, 255, 255)       '#FFFFFF [背景色]全体
+            result.BgColor_Header = RGB(211, 208, 232)    '#D3D0E8 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(220, 240, 223)      '#DCF0DF [背景色]備考
+            result.BgColor_GrayOut = RGB(234, 246, 236)   '#EAF6EC [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(216, 237, 244)  '#D8EDF4 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 247, 201)    '#FFF7C9 [背景色]日曜
+            result.BgColor_Holiday = RGB(246, 214, 238)   '#F6D6EE [背景色]祝日
+            result.BorderColor_Biko = RGB(198, 185, 209)  '#C6B9D1 [罫線色]備考
+    End Select
+    GetThemePreset_02 = result
+End Function
+'------------------------------------------------------------
+'概要 : Sheet[テーマサンプル]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_ThemeSample()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim ws As Worksheet   'Sheet
+    Dim wsNm As String    'Sheet名
+    Dim endRowIdx As Long '終了行
+    Dim rng As Range      '範囲
+    '●祝日辞書(検索用)
+    Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
+    '●作成年(1年前～10年後)
+    Dim minYear As Double: minYear = Year(Now) - 1
+    Dim maxYear As Double: maxYear = Year(Now) + 10
+
+    '========== Sheet[祝日]作成 (存在する場合、既存セット) ==========
+    wsNm = "祝日"
+    If IsExistsSheet(wsNm) Then
+        Set ws = Sheets(wsNm)
+    Else
+        Set ws = CreateSheet_Holiday(wsNm, minYear, maxYear)
+    End If
+
+    '========== 祝日辞書 作成 ==========
+    endRowIdx = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    For Each rng In ws.Range("B2:B" & endRowIdx)
+        If IsDate(rng.Value) Then holidayDict(CLng(CDate(rng.Value))) = True
+    Next
+
+    '========== Sheet[テーマサンプル]作成 ==========
+    Call CreateSheet_ThemeSample_02(holidayDict) '時間数入力タイプ
+    Call CreateSheet_ThemeSample_01(holidayDict) '時間入力タイプ
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
 '概要 : Sheet[勤務表/祝日]を作成する
 '引数 : -
 '戻値 : -
@@ -51,20 +477,14 @@ Public Sub CreateSheet_WorkSchedule()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-    '●開始行/開始列/終了行/終了列
-    Dim startRowIdx As Long
-    Dim startColIdx As Long
-    Dim endRowIdx As Long
-    Dim endColIdx As Long
-    '●範囲
-    Dim rng As Range
-
-    '●新規Sheet/Sheet名
-    Dim newSheet As Worksheet
-    Dim newSheetNm As String
-
+    Dim ws As Worksheet   'Sheet
+    Dim wsNm As String    'Sheet名
+    Dim endRowIdx As Long '終了行
+    Dim rng As Range      '範囲
+    '●テーマリスト/テーマ
+    Dim themeList As Variant: themeList = Array(THEME_01, THEME_02, THEME_03, THEME_04, THEME_05, THEME_06, THEME_07, THEME_08, THEME_09)
+    Dim theme As Variant
+    '==================== 入力受付系 ====================
     '●入力受付Form表示内容
     Dim title As String
     Dim msg As String
@@ -96,13 +516,14 @@ Public Sub CreateSheet_WorkSchedule()
     Dim maxHr As Double: maxHr = 24
     '●[テーマ]入力値/初期値/入力可能範囲
     Dim inputThemeNo As Long
-    Dim initThemeNo As Double: initThemeNo = 1
-    Dim minThemeNo As Double: minThemeNo = 1
-    Dim maxThemeNo As Double: maxThemeNo = 9
-
+    Dim initThemeNo As Double: initThemeNo = Split(THEME_01, "：")(0)
+    Dim minThemeNo As Double: minThemeNo = Split(THEME_01, "：")(0)
+    Dim maxThemeNo As Double: maxThemeNo = UBound(themeList)
+    '====================================================
     '●祝日辞書(検索用)
     Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
 
+    '=== 入力受付 ====================
     '▼入力受付[Sheetタイプ]
     title = "作成する勤務表タイプを数字で選択して下さい"
     msg = "1：[開始/終了]時間入力タイプ" & vbCrLf & _
@@ -143,34 +564,29 @@ Public Sub CreateSheet_WorkSchedule()
     End Select
     '▼入力受付[テーマ]
     title = "作成するSheetのテーマを数字で選択して下さい"
-    msg = "1：Standard" & vbCrLf & _
-          "2：Light" & vbCrLf & _
-          "3：Dark" & vbCrLf & _
-          "4：Sweets" & vbCrLf & _
-          "5：Chiikawa" & vbCrLf & _
-          "6：Ocean" & vbCrLf & _
-          "7：LaundryRoom" & vbCrLf & _
-          "8：Ocha" & vbCrLf & _
-          "9：Feminine"
+    For Each theme In themeList
+        msg = msg & theme & vbCrLf
+    Next
+    '末尾除去
+    msg = Left(msg, Len(msg) - Len(vbCrLf))
     inputThemeNo = Int(InputForm_Num(title, msg, initThemeNo, minThemeNo, maxThemeNo))
     If inputThemeNo = -1 Then Exit Sub
 
-    '========== Sheet[祝日]作成 ==========
-    '(存在する場合、既存セット)
-    newSheetNm = "祝日"
-    If IsExistsSheet(newSheetNm) Then
-        Set newSheet = Sheets(newSheetNm)
+    '=== Sheet[祝日]作成 (存在する場合、既存セット) ====================
+    wsNm = "祝日"
+    If IsExistsSheet(wsNm) Then
+        Set ws = Sheets(wsNm)
     Else
-        Set newSheet = CreateSheet_Holiday(newSheetNm, minYear, maxYear)
+        Set ws = CreateSheet_Holiday(wsNm, minYear, maxYear)
     End If
 
-    '========== 祝日辞書 作成 ==========
-    endRowIdx = newSheet.Cells(newSheet.Rows.Count, "B").End(xlUp).Row
-    For Each rng In newSheet.Range("B2:B" & endRowIdx)
+    '=== 祝日辞書 作成 ====================
+    endRowIdx = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    For Each rng In ws.Range("B2:B" & endRowIdx)
         If IsDate(rng.Value) Then holidayDict(CLng(CDate(rng.Value))) = True
     Next
 
-    '========== Sheet[勤務表]作成 ==========
+    '=== Sheet[勤務表]作成 ====================
     Select Case inputSheetType
         Case "1"
             Call CreateSheet_WorkSchedule_01(holidayDict, inputYear, inputWhStartTime, inputWhEndTime, inputBtStartTime, inputBtEndTime, inputThemeNo)
@@ -416,354 +832,6 @@ Private Sub ApplyLineStyle_01(ByRef ws As Worksheet, ByRef rng As Range, ByVal c
         End If
     Next
 End Sub
-'------------------------------------------------------------
-'概要 : テーマプリセットを取得する[01]
-'引数 : themeNo : テーマ番号
-'戻値 : テーマセット
-'備考 : -
-'------------------------------------------------------------
-Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
-    Dim result As ThemePreset_01
-    Select Case themeNo
-        Case "1" '========== Standard ==========
-            result.Font_All = "游ゴシック"                  '[フォント]全体
-            result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
-            result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト2
-            result.BgColor_All = RGB(250, 250, 250)         '#FAFAFA [背景色]全体
-            result.BgColor_Header = RGB(218, 242, 208)      '#DAF2D0 [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(238, 242, 228)     '#EEF2E4 [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(242, 242, 242)    '#F2F2F2 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(217, 217, 217)    '#D9D9D9 [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(218, 233, 248)    '#DAE9F8 [背景色]土曜
-            result.BgColor_Sunday = RGB(251, 226, 213)      '#FBE2D5 [背景色]日曜
-            result.BgColor_Holiday = RGB(240, 144, 144)     '#F09090 [背景色]祝日
-            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
-            result.BorderColor_TopCont = RGB(218, 242, 208) '#DAF2D0 [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "游ゴシック"                   '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(250, 250, 250)    '#FAFAFA [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(250, 250, 250)  '#FAFAFA [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(220, 220, 0)        '#DCDC00 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
-        Case "2" '========== Light ==========
-            result.Font_All = "游ゴシック"                  '[フォント]全体
-            result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
-            result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(128, 128, 128)  '#808080 [文字色]グレーアウト2
-            result.BgColor_All = RGB(250, 251, 253)         '#FAFBFD [背景色]全体
-            result.BgColor_Header = RGB(219, 255, 255)      '#DBFFFF [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(245, 255, 255)     '#F5FFFF [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(238, 243, 247)    '#EEF3F7 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(211, 223, 235)    '#D3DFEB [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(170, 255, 255)    '#AAFFFF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 180, 0)        '#FFB400 [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 50, 50)       '#FF3232 [背景色]祝日
-            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
-            result.BorderColor_TopCont = RGB(219, 255, 255) '#DBFFFF [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Comic Sans MS"                '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(100, 245, 245)    '#64F5F5 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(255, 255, 255)  '#FFFFFF [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(255, 255, 0)        '#FFFF00 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(114, 213, 96)     '#72D560 [ボタン]背景色(Excel)
-        Case "3" '========== Dark ==========
-            result.Font_All = "游ゴシック"                  '[フォント]全体
-            result.FontColor_All = RGB(250, 250, 250)       '#FAFAFA [文字色]全体
-            result.FontColor_Header = RGB(250, 250, 250)    '#FAFAFA [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(166, 166, 166)  '#A6A6A6 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(166, 166, 166)  '#A6A6A6 [文字色]グレーアウト2
-            result.BgColor_All = RGB(128, 128, 128)         '#808080 [背景色]全体
-            result.BgColor_Header = RGB(41, 41, 41)         '#292929 [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(110, 110, 110)     '#6E6E6E [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(89, 89, 89)       '#595959 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(69, 69, 69)       '#454545 [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(100, 160, 200)    '#64A0C8 [背景色]土曜
-            result.BgColor_Sunday = RGB(190, 100, 0)        '#BE6400 [背景色]日曜
-            result.BgColor_Holiday = RGB(220, 0, 0)         '#DC0000 [背景色]祝日
-            result.BorderColor_Cont = RGB(0, 0, 0)          '#000000 [罫線色]行間
-            result.BorderColor_TopCont = RGB(0, 0, 0)       '#000000 [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "游ゴシック"                   '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(250, 250, 250)    '#FAFAFF [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(250, 250, 250)  '#FAFAFF [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(170, 170, 0)        '#AAAA00 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
-        Case "4" '========== Sweets ==========
-            result.Font_All = "Noto Sans JP"                '[フォント]全体
-            result.FontColor_All = RGB(120, 0, 0)           '#780000 [文字色]全体
-            result.FontColor_Header = RGB(90, 0, 0)         '#5A0000 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(230, 180, 180)  '#E6B4B4 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(230, 180, 180)  '#E6B4B4 [文字色]グレーアウト2
-            result.BgColor_All = RGB(255, 255, 230)         '#FFFFE6 [背景色]全体
-            result.BgColor_Header = RGB(255, 200, 255)      '#FFC8FF [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(255, 255, 255)     'FFFFFFF [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(255, 255, 180)    '#FFFFB4 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(255, 255, 150)    '#FFFF96 [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(190, 255, 255)    '#BEFFFF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 200, 100)      '#FFC864 [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 140, 140)     '#FF8C8C [背景色]祝日
-            result.BorderColor_Cont = RGB(120, 0, 0)        '#780000 [罫線色]行間
-            result.BorderColor_TopCont = RGB(255, 200, 255) '#FFC8FF [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Broadway"                     '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(120, 0, 0)        '#780000 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(255, 240, 210)  '#FFF0D2 [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(255, 240, 210)      '#FFF0D2 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(120, 0, 0)        '#780000 [ボタン]背景色(Excel)
-        Case "5" '========== Chiikawa ==========
-            result.Font_All = "Noto Sans JP"                '[フォント]全体
-            result.FontColor_All = RGB(70, 46, 49)          '#462E31 [文字色]全体
-            result.FontColor_Header = RGB(250, 248, 247)    '#FAF8F7 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(152, 197, 133)  '#98C585 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(152, 197, 133)  '#98C585 [文字色]グレーアウト2
-            result.BgColor_All = RGB(248, 248, 240)         '#F8F8F0 [背景色]全体
-            result.BgColor_Header = RGB(123, 166, 196)      '#7BA6C4 [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(250, 248, 247)     '#FAF8F7 [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(219, 235, 196)    '#DBEBC4 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(202, 229, 181)    '#CAE5B5 [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(198, 232, 243)    '#C6E8F3 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 241, 203)      '#FFF1CB [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 194, 202)     '#FFC2CA [背景色]祝日
-            result.BorderColor_Cont = RGB(146, 192, 126)    '#92C07E [罫線色]行間
-            result.BorderColor_TopCont = RGB(123, 166, 196) '#7BA6C4 [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Noto Sans JP"                 '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(118, 140, 132)    '#768C84 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(118, 140, 132)  '#768C84 [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(251, 237, 200)      '#FBEDC8 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(199, 240, 182)    '#C7F0B6 [ボタン]背景色(Excel)
-        Case "6" '========== Ocean ==========
-            result.Font_All = "Noto Sans JP"                '[フォント]全体
-            result.FontColor_All = RGB(0, 30, 150)          '#001E96 [文字色]全体
-            result.FontColor_Header = RGB(242, 242, 242)    '#F2F2F2 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(140, 170, 255)  '#8CAAFF [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(140, 170, 255)  '#8CAAFF [文字色]グレーアウト2
-            result.BgColor_All = RGB(210, 230, 255)         '#D2E6FF [背景色]全体
-            result.BgColor_Header = RGB(90, 110, 255)       '#5A6EFF [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(235, 245, 255)     '#EBF5FF [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(190, 220, 255)    '#BEDCFF [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(180, 210, 255)    '#B4D2FF [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(180, 210, 255)    '#B4D2FF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 230, 170)      '#FFE6AA [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 160, 160)     '#FFA0A0 [背景色]祝日
-            result.BorderColor_Cont = RGB(0, 30, 150)       '#001E98 [罫線色]行間
-            result.BorderColor_TopCont = RGB(90, 110, 255)  '#5A6EFF [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Magneto"                      '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(64, 64, 64)       '#404040 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(64, 64, 64)     '#404040 [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(240, 240, 160)      '#F0F0A0 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(100, 220, 100)    '#64DC64 [ボタン]背景色(Excel)
-        Case "7" '========== LaundryRoom ==========
-            result.Font_All = "Noto Sans JP"                '[フォント]全体
-            result.FontColor_All = RGB(105, 60, 40)         '#693C28 [文字色]全体
-            result.FontColor_Header = RGB(105, 60, 40)      '#693C28 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(160, 160, 160)  '#A0A0A0 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(160, 160, 160)  '#A0A0A0 [文字色]グレーアウト2
-            result.BgColor_All = RGB(225, 225, 225)         '#E1E1E1 [背景色]全体
-            result.BgColor_Header = RGB(235, 235, 235)      '#EBEBEB [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(245, 245, 245)     '#F5F5F5 [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(210, 210, 210)    '#D2D2D2 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(195, 195, 195)    '#C3C3C3 [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(190, 210, 250)    '#BED2FA [背景色]土曜
-            result.BgColor_Sunday = RGB(240, 225, 150)      '#F0E196 [背景色]日曜
-            result.BgColor_Holiday = RGB(230, 150, 150)     '#E69696 [背景色]祝日
-            result.BorderColor_Cont = RGB(105, 60, 40)      '#693C28 [罫線色]行間
-            result.BorderColor_TopCont = RGB(235, 235, 235) '#EBEBEB [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Mistral"                      '[ボタン]フォント
-            result.BtnFontSize = 16                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(64, 64, 64)       '#404040 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(64, 64, 64)     '#404040 [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(235, 235, 180)      '#EBEBB4 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(150, 180, 150)    '#96B496 [ボタン]背景色(Excel)
-        Case "8" '========== Ocha ==========
-            result.Font_All = "HG正楷書体-PRO"              '[フォント]全体
-            result.FontColor_All = RGB(95, 110, 17)         '#5F6E11 [文字色]全体
-            result.FontColor_Header = RGB(95, 110, 17)      '#5F6E11 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(153, 171, 78)   '#99AB4E [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(224, 235, 175)  '#E0EBAF [文字色]グレーアウト2
-            result.BgColor_All = RGB(224, 235, 175)         '#E0EBAF [背景色]全体
-            result.BgColor_Header = RGB(170, 207, 83)       '#AACF53 [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(216, 230, 152)     '#D8E698 [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(199, 220, 104)    '#C7DC68 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(153, 171, 78)     '#99AB4E [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(137, 195, 235)    '#89C3EB [背景色]土曜
-            result.BgColor_Sunday = RGB(215, 207, 58)       '#D7CF3A [背景色]日曜
-            result.BgColor_Holiday = RGB(205, 140, 92)      '#CD8C5C [背景色]祝日
-            result.BorderColor_Cont = RGB(95, 110, 17)      '#5F6E11 [罫線色]行間
-            result.BorderColor_TopCont = RGB(170, 207, 83)  '#AACF53 [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "HG行書体"                     '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(71, 89, 80)       '#475950 [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(71, 89, 80)     '#475950 [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(166, 148, 37)       '#A69425 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(131, 155, 92)     '#839B5C [ボタン]背景色(Excel)
-        Case "9" '========== Feminine ==========
-            result.Font_All = "Noto Sans JP"                '[フォント]全体
-            result.FontColor_All = RGB(95, 65, 143)         '#5F418F [文字色]全体
-            result.FontColor_Header = RGB(95, 65, 143)      '#5F418F [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(198, 185, 209)  '#C6B9D1 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(198, 185, 209)  '#C6B9D1 [文字色]グレーアウト2
-            result.BgColor_All = RGB(255, 255, 255)         '#FFFFFF [背景色]全体
-            result.BgColor_Header = RGB(211, 208, 232)      '#D3D0E8 [背景色]ヘッダー
-            result.BgColor_TopCont = RGB(235, 235, 245)     '#EBEBF5 [背景色]上部コンテンツ
-            result.BgColor_GrayOut1 = RGB(234, 246, 236)    '#EAF6EC [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(220, 240, 223)    '#DCF0DF [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(216, 237, 244)    '#D8EDF4 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 247, 201)      '#FFF7C9 [背景色]日曜
-            result.BgColor_Holiday = RGB(246, 214, 238)     '#F6D6EE [背景色]祝日
-            result.BorderColor_Cont = RGB(95, 65, 143)      '#5F418F [罫線色]行間
-            result.BorderColor_TopCont = RGB(211, 208, 232) '#D3D0E8 [罫線色]上部コンテンツ(下/右)
-            result.BtnFont = "Script MT Bold"               '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
-            result.BtnFontColor_Csv = RGB(95, 65, 143)      '#5F418F [ボタン]文字色(CSV)
-            result.BtnFontColor_Excel = RGB(95, 65, 143)    '#5F418F [ボタン]文字色(Excel)
-            result.BtnBgColor_Csv = RGB(255, 247, 201)      '#FFF7C9 [ボタン]背景色(CSV)
-            result.BtnBgColor_Excel = RGB(220, 240, 223)    '#DCF0DF [ボタン]背景色(Excel)
-    End Select
-    GetThemePreset_01 = result
-End Function
-'------------------------------------------------------------
-'概要 : テーマプリセットを取得する[02]
-'引数 : themeNo : テーマ番号
-'戻値 : テーマセット
-'備考 : -
-'------------------------------------------------------------
-Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
-    Dim result As ThemePreset_02
-    Select Case themeNo
-        Case "1" '========== Standard ==========
-            result.Font_All = "游ゴシック"                '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
-            result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
-            result.BgColor_All = RGB(250, 250, 250)       '#FAFAFA [背景色]全体
-            result.BgColor_Header = RGB(218, 242, 208)    '#DAF2D0 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(250, 250, 250)      '#FAFAFA [背景色]備考
-            result.BgColor_GrayOut = RGB(217, 217, 217)   '#D9D9D9 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(218, 233, 248)  '#DAE9F8 [背景色]土曜
-            result.BgColor_Sunday = RGB(251, 226, 213)    '#FBE2D5 [背景色]日曜
-            result.BgColor_Holiday = RGB(240, 144, 144)   '#F09090 [背景色]祝日
-            result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
-        Case "2" '========== Light ==========
-            result.Font_All = "游ゴシック"                '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
-            result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
-            result.BgColor_All = RGB(250, 251, 253)       '#FAFBFD [背景色]全体
-            result.BgColor_Header = RGB(219, 255, 255)    '#DBFFFF [背景色]ヘッダー
-            result.BgColor_Biko = RGB(255, 255, 255)      '#FFFFFF [背景色]備考
-            result.BgColor_GrayOut = RGB(238, 243, 247)   '#EEF3F7 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(170, 255, 255)  '#AAFFFF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 180, 0)      '#FFB400 [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 50, 50)     '#FF3232 [背景色]祝日
-            result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
-        Case "3" '========== Dark ==========
-            result.Font_All = "游ゴシック"                '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(250, 250, 250)     '#FAFAFA [文字色]全体
-            result.FontColor_Header = RGB(250, 250, 250)  '#FAFAFA [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(166, 166, 166) '#A6A6A6 [文字色]グレーアウト
-            result.BgColor_All = RGB(128, 128, 128)       '#808080 [背景色]全体
-            result.BgColor_Header = RGB(41, 41, 41)       '#292929 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(89, 89, 89)         '#595959 [背景色]備考
-            result.BgColor_GrayOut = RGB(89, 89, 89)      '#595959 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(100, 160, 200)  '#64A0C8 [背景色]土曜
-            result.BgColor_Sunday = RGB(190, 100, 0)      '#BE6400 [背景色]日曜
-            result.BgColor_Holiday = RGB(220, 0, 0)       '#DC0000 [背景色]祝日
-            result.BorderColor_Biko = RGB(255, 255, 255)  '#FFFFFF [罫線色]備考
-        Case "4" '========== Sweets ==========
-            result.Font_All = "Noto Sans JP"              '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(120, 0, 0)         '#780000 [文字色]全体
-            result.FontColor_Header = RGB(120, 0, 0)      '#780000 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(230, 180, 180) '#E6B4B4 [文字色]グレーアウト
-            result.BgColor_All = RGB(255, 255, 230)       '#FFFFE6 [背景色]全体
-            result.BgColor_Header = RGB(255, 200, 255)    '#FFC8FF [背景色]ヘッダー
-            result.BgColor_Biko = RGB(255, 255, 180)      '#FFFFB4 [背景色]備考
-            result.BgColor_GrayOut = RGB(255, 255, 150)   '#FFFF96 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(190, 255, 255)  '#BEFFFF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 200, 100)    '#FFC864 [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 140, 140)   '#FF8C8C [背景色]祝日
-            result.BorderColor_Biko = RGB(120, 0, 0)      '#780000 [罫線色]備考
-        Case "5" '========== Chiikawa ==========
-            result.Font_All = "Noto Sans JP"              '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(70, 46, 49)        '#462E31 [文字色]全体
-            result.FontColor_Header = RGB(250, 248, 247)  '#FAF8F7 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
-            result.BgColor_All = RGB(250, 248, 247)       '#FAF8F7 [背景色]全体
-            result.BgColor_Header = RGB(123, 166, 196)    '#7BA6C4 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(211, 236, 191)      '#D3ECBF [背景色]備考
-            result.BgColor_GrayOut = RGB(212, 212, 204)   '#D4D4CC [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(198, 232, 243)  '#C6E8F3 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 241, 203)    '#FFF1CB [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 194, 202)   '#FFC2CA [背景色]祝日
-            result.BorderColor_Biko = RGB(99, 133, 108)   '#63856C [罫線色]備考
-        Case "6" '========== Ocean ==========
-            result.Font_All = "Noto Sans JP"              '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(0, 30, 150)        '#001E96 [文字色]全体
-            result.FontColor_Header = RGB(242, 242, 242)  '#F2F2F2 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(140, 170, 255) '#8CAAFF [文字色]グレーアウト
-            result.BgColor_All = RGB(210, 230, 255)       '#D2E6FF [背景色]全体
-            result.BgColor_Header = RGB(90, 110, 255)     '#5A6EFF [背景色]ヘッダー
-            result.BgColor_Biko = RGB(180, 210, 255)      '#B4D2FF [背景色]備考
-            result.BgColor_GrayOut = RGB(190, 220, 255)   '#BEDCFF [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(180, 210, 255)  '#B4D2FF [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 230, 170)    '#FFE6AA [背景色]日曜
-            result.BgColor_Holiday = RGB(255, 160, 160)   '#FFA0A0 [背景色]祝日
-            result.BorderColor_Biko = RGB(0, 30, 150)     '#001E96 [罫線色]備考
-        Case "7" '========== LaundryRoom ==========
-            result.Font_All = "Noto Sans JP"              '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(105, 60, 40)       '#693C28 [文字色]全体
-            result.FontColor_Header = RGB(105, 60, 40)    '#693C28 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(160, 160, 160) '#A0A0A0 [文字色]グレーアウト
-            result.BgColor_All = RGB(225, 225, 225)       '#E1E1E1 [背景色]全体
-            result.BgColor_Header = RGB(235, 235, 235)    '#EBEBEB [背景色]ヘッダー
-            result.BgColor_Biko = RGB(245, 245, 245)      '#F5F5F5 [背景色]備考
-            result.BgColor_GrayOut = RGB(210, 210, 210)   '#D2D2D2 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(190, 210, 250)  '#BED2FA [背景色]土曜
-            result.BgColor_Sunday = RGB(240, 225, 150)    '#F0E196 [背景色]日曜
-            result.BgColor_Holiday = RGB(230, 150, 150)   '#E69696 [背景色]祝日
-            result.BorderColor_Biko = RGB(180, 180, 180)  '#B4B4B4 [罫線色]備考
-        Case "8" '========== Ocha ==========
-            result.Font_All = "HG正楷書体-PRO"            '[フォント]全体
-            result.FontSize_All = 12                      '[フォント]サイズ
-            result.FontColor_All = RGB(95, 110, 17)       '#5F6E11 [文字色]全体
-            result.FontColor_Header = RGB(95, 110, 17)    '#5F6E11 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(153, 171, 78)  '#99AB4E [文字色]グレーアウト
-            result.BgColor_All = RGB(224, 235, 175)       '#E0EBAF [背景色]全体
-            result.BgColor_Header = RGB(170, 207, 83)     '#AACF53 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(153, 171, 78)       '#99AB4E [背景色]備考
-            result.BgColor_GrayOut = RGB(199, 220, 104)   '#C7DC68 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(137, 195, 235)  '#89C3EB [背景色]土曜
-            result.BgColor_Sunday = RGB(215, 207, 58)     '#D7CF3A [背景色]日曜
-            result.BgColor_Holiday = RGB(205, 140, 92)    '#CD8C5C [背景色]祝日
-            result.BorderColor_Biko = RGB(199, 220, 104)  '#C7DC68 [罫線色]備考
-        Case "9" '========== Feminine ==========
-            result.Font_All = "Noto Sans JP"              '[フォント]全体
-            result.FontSize_All = 11                      '[フォント]サイズ
-            result.FontColor_All = RGB(95, 65, 143)       '#5F418F [文字色]全体
-            result.FontColor_Header = RGB(95, 65, 143)    '#5F418F [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(198, 185, 209) '#C6B9D1 [文字色]グレーアウト
-            result.BgColor_All = RGB(255, 255, 255)       '#FFFFFF [背景色]全体
-            result.BgColor_Header = RGB(211, 208, 232)    '#D3D0E8 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(220, 240, 223)      '#DCF0DF [背景色]備考
-            result.BgColor_GrayOut = RGB(234, 246, 236)   '#EAF6EC [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(216, 237, 244)  '#D8EDF4 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 247, 201)    '#FFF7C9 [背景色]日曜
-            result.BgColor_Holiday = RGB(246, 214, 238)   '#F6D6EE [背景色]祝日
-            result.BorderColor_Biko = RGB(198, 185, 209)  '#C6B9D1 [罫線色]備考
-    End Select
-    GetThemePreset_02 = result
-End Function
 '------------------------------------------------------------
 '概要 : 入力受付Form(数値)
 '     : (キャンセル選択 or 範囲外エラーの場合 -1を返す)
@@ -1112,6 +1180,528 @@ Private Sub SortHolidayMap(ByRef holidayMap As Collection)
     For i = 1 To UBound(holidayArr)
         holidayMap.Add holidayArr(i)
     Next
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[テーマサンプル(時間タイプ)]を作成する
+'引数 : holidayDict : 祝日辞書
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet_ThemeSample_01(ByVal holidayDict As Object)
+    Dim ws As Worksheet      'Sheet
+    Dim wsNm As String       'Sheet名
+    Dim i As Long, j As Long 'Loopカウンタ
+    Dim rowIdx As Long       '行
+    Dim colIdx As Long       '列
+    Dim endRowIdx As Long    '終了行
+    Dim endColIdx As Long    '終了列
+    Dim rng As Range         '範囲
+    Dim tmpDate1 As Date
+    Dim tmpDate2 As String
+    '図形/サイズ(横/縦)
+    Dim shp As Shape
+    Dim shpWidth As Double: shpWidth = 2.5
+    Dim shpHeight As Double: shpHeight = 1
+    '罫線位置区分
+    Dim borderType As Variant
+    '●年末年始
+    Dim newYearSeasonDict As Object: Set newYearSeasonDict = CreateObject("Scripting.Dictionary")
+    newYearSeasonDict("1-1") = True
+    newYearSeasonDict("1-2") = True
+    newYearSeasonDict("1-3") = True
+    newYearSeasonDict("12-29") = True
+    newYearSeasonDict("12-30") = True
+    newYearSeasonDict("12-31") = True
+    '●一括セット用
+    Dim balkSetWorkType1(1 To 31, 1 To 1) As Variant   '出リ
+    Dim balkSetWorkType2(1 To 1, 1 To 31) As Variant   '出リ
+    Dim balkSetActWhStart(1 To 31, 1 To 1) As Variant  '実績(勤務[開始])
+    Dim balkSetActWhEnd(1 To 31, 1 To 1) As Variant    '実績(勤務[終了])
+    Dim balkSetActBtStart(1 To 31, 1 To 1) As Variant  '実績(休憩[開始])
+    Dim balkSetActBtEnd(1 To 31, 1 To 1) As Variant    '実績(休憩[終了])
+    Dim balkSetPlanWhStart(1 To 31, 1 To 1) As Variant '予定(勤務[開始])
+    Dim balkSetPlanWhEnd(1 To 31, 1 To 1) As Variant   '予定(勤務[終了])
+    Dim balkSetPlanBtStart(1 To 31, 1 To 1) As Variant '予定(休憩[開始])
+    Dim balkSetPlanBtEnd(1 To 31, 1 To 1) As Variant   '予定(休憩[終了])
+    Dim balkSetWeek(1 To 1, 1 To 31) As Variant        '曜日
+    Dim balkSetDate(1 To 1, 1 To 31) As Variant        '日付
+    Dim balkSetPlan(1 To 1, 1 To 31) As Variant        '予
+    Dim balkSetAct(1 To 1, 1 To 31) As Variant         '実
+
+    '●1年前～10年後
+    Dim minYear As Double: minYear = Year(Now) - 1
+    Dim maxYear As Double: maxYear = Year(Now) + 10
+    '●テーマ番号/テーマ
+    Dim themeNo As Long
+    Dim theme01 As ThemePreset_01
+    Dim theme02 As ThemePreset_02
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("① テーマSAMPLE(時間入力タイプ)")
+
+    'Sheet設定1
+    ws.Activate
+    ws.Cells.VerticalAlignment = xlTop    '文字揃え
+    ws.Cells.HorizontalAlignment = xlLeft
+    ActiveWindow.DisplayGridlines = False '目盛線
+
+    '初期化
+    themeNo = 0
+    colIdx = 0
+
+    '全テーマ数分Loop
+    Do While True
+        'テーマプリセット取得
+        themeNo = themeNo + 1
+        theme01 = GetThemePreset_01(themeNo)
+        '終了条件
+        If theme01.BtnFontSize = 0 Then Exit Do
+        'インクリメント
+        colIdx = colIdx + 16
+        '書込
+        With ws
+            .Range("B1").Offset(0, colIdx).Value = "1 月 (" & Format(Date, "ggge" & "年)")
+            .Range("B3").Offset(0, colIdx).Value = "出社日数"
+            .Range("E3").Offset(0, colIdx).Formula2R1C1 = "=COUNTIF(R[7]C[-1]:R[37]C[-1],""出"")"
+            .Range("G3").Offset(0, colIdx).Value = "実績(合計)"
+            .Range("J3").Offset(0, colIdx).Value = "予定(合計)"
+            .Range("B4").Offset(0, colIdx).Value = "リモ日数"
+            .Range("E4").Offset(0, colIdx).Formula2R1C1 = "=COUNTIF(R[6]C[-1]:R[36]C[-1],""リ"")"
+            .Range("G4").Offset(0, colIdx).Value = "日数"
+            .Range("H4").Offset(0, colIdx).Value = "時間数"
+            .Range("J4").Offset(0, colIdx).Value = "日数"
+            .Range("K4").Offset(0, colIdx).Value = "時間数"
+            .Range("B5").Offset(0, colIdx).Value = "出社率"
+            .Range("E5").Offset(0, colIdx).Formula2R1C1 = "=R[-2]C/(R[-2]C+R[-1]C)"
+            .Range("G5").Offset(0, colIdx).Formula2R1C1 = "=COUNT(R[5]C[-1]:R[35]C[-1])"
+            .Range("H5").Offset(0, colIdx).Formula2R1C1 = "=LET(a,R[5]C[1]:R[35]C[1],b,SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(a&"""") ,"" "",""""),""h"","""")),0)),IF(b=INT(b),TEXT(b,""0"")&"" h"",TEXT(b,""0.###"")&"" h""))"
+            .Range("J5").Offset(0, colIdx).Formula2R1C1 = "=COUNT(R[5]C:R[35]C)"
+            .Range("K5").Offset(0, colIdx).Formula2R1C1 = "=LET(a,R[5]C[3]:R[35]C[3],b,SUMPRODUCT(IFERROR(VALUE(SUBSTITUTE(SUBSTITUTE(LOWER(a&"""") ,"" "",""""),""h"","""")),0)),IF(b=INT(b),TEXT(b,""0"")&"" h"",TEXT(b,""0.###"")&"" h""))"
+            .Range("A8").Offset(0, colIdx).Value = DateSerial(Year(Date), 1, 1)
+            .Range("E8").Offset(0, colIdx).Value = "実績"
+            .Range("G8").Offset(0, colIdx).Value = "休憩"
+            .Range("J8").Offset(0, colIdx).Value = "予定"
+            .Range("L8").Offset(0, colIdx).Value = "休憩"
+            .Range("D9").Offset(0, colIdx).Value = "出リ"
+            .Range("E9").Offset(0, colIdx).Value = "開始"
+            .Range("F9").Offset(0, colIdx).Value = "終了"
+            .Range("G9").Offset(0, colIdx).Value = "開始"
+            .Range("H9").Offset(0, colIdx).Value = "終了"
+            .Range("I9").Offset(0, colIdx).Value = "時間数"
+            .Range("J9").Offset(0, colIdx).Value = "開始"
+            .Range("K9").Offset(0, colIdx).Value = "終了"
+            .Range("L9").Offset(0, colIdx).Value = "開始"
+            .Range("M9").Offset(0, colIdx).Value = "終了"
+            .Range("N9").Offset(0, colIdx).Value = "時間数"
+            .Range("O9").Offset(0, colIdx).Value = "備考"
+            .Range("B10").Offset(0, colIdx).Formula2R1C1 = "=R[-2]C[-1]"
+            '31日分 書込
+            For j = 1 To 31
+                '初期化
+                balkSetWorkType1(j, 1) = ""
+                balkSetActWhStart(j, 1) = ""
+                balkSetActWhEnd(j, 1) = ""
+                balkSetActBtStart(j, 1) = ""
+                balkSetActBtEnd(j, 1) = ""
+                balkSetPlanWhStart(j, 1) = ""
+                balkSetPlanWhEnd(j, 1) = ""
+                balkSetPlanBtStart(j, 1) = ""
+                balkSetPlanBtEnd(j, 1) = ""
+                '平日の場合
+                tmpDate1 = DateSerial(Year(Date), 1, j)
+                If weekday(tmpDate1, vbMonday) <= 5 Then
+                    '年末年始でない場合
+                    tmpDate2 = Format(tmpDate1, "M-d")
+                    If Not newYearSeasonDict.exists(tmpDate2) Then
+                        '祝日でない場合
+                        If Not holidayDict.exists(tmpDate1) Then
+                            balkSetWorkType1(j, 1) = "リ"
+                            balkSetActWhStart(j, 1) = "9:00"
+                            balkSetActWhEnd(j, 1) = "18:00"
+                            balkSetActBtStart(j, 1) = "12:00"
+                            balkSetActBtEnd(j, 1) = "13:00"
+                            balkSetPlanWhStart(j, 1) = "9:00"
+                            balkSetPlanWhEnd(j, 1) = "18:00"
+                            balkSetPlanBtStart(j, 1) = "12:00"
+                            balkSetPlanBtEnd(j, 1) = "13:00"
+                        Else
+                            balkSetWorkType1(j, 1) = "祝"
+                        End If
+                    End If
+                End If
+            Next
+            '書込
+            .Range("C10").Offset(0, colIdx).Resize(31, 1).Formula2R1C1 = "=TEXT(RC[-1],""aaa"")"
+            .Range("D10").Offset(0, colIdx).Resize(31, 1).Value = balkSetWorkType1
+            .Range("E10").Offset(0, colIdx).Resize(31, 1).Value = balkSetActWhStart
+            .Range("F10").Offset(0, colIdx).Resize(31, 1).Value = balkSetActWhEnd
+            .Range("G10").Offset(0, colIdx).Resize(31, 1).Value = balkSetActBtStart
+            .Range("H10").Offset(0, colIdx).Resize(31, 1).Value = balkSetActBtEnd
+            .Range("I10").Offset(0, colIdx).Resize(31, 1).Formula2R1C1 = "=LET(ws,RC[-4],we,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(we-ws-bt)*24,IF(OR(ws="""",we=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
+            .Range("J10").Offset(0, colIdx).Resize(31, 1).Value = balkSetPlanWhStart
+            .Range("K10").Offset(0, colIdx).Resize(31, 1).Value = balkSetPlanWhEnd
+            .Range("L10").Offset(0, colIdx).Resize(31, 1).Value = balkSetPlanBtStart
+            .Range("M10").Offset(0, colIdx).Resize(31, 1).Value = balkSetPlanBtEnd
+            .Range("N10").Offset(0, colIdx).Resize(31, 1).Formula2R1C1 = "=LET(ws,RC[-4],we,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(we-ws-bt)*24,IF(OR(ws="""",we=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
+            .Range("O10:O40").Offset(0, colIdx).Value = "テーマ：" & theme01.ThemeNm
+            .Range("B11").Offset(0, colIdx).Resize(30, 1).Formula2R1C1 = "=IF(R[-1]C="""","""",IF(R[-1]C+1<=EOMONTH(R8C" & colIdx + GetColIdx("A") & ",0),R[-1]C+1,""""))"
+        End With
+
+        'Sheet設定2
+        With ws
+            'タブ色
+            .Tab.Color = RGB(218, 242, 208) '#DAF2D0
+            .Range("A1:P40").Offset(0, colIdx).Cells.Font.Name = theme01.Font_All
+            '文字サイズ
+            .Range("A8").Offset(0, colIdx).Font.Size = 9.5
+            '太字
+            .Range("B1").Offset(0, colIdx).Font.Bold = True
+            .Range("A8").Offset(0, colIdx).Font.Bold = True
+            '文字色
+            .Range("A1:P40").Offset(0, colIdx).Font.Color = theme01.FontColor_All
+            .Range("B1:O1").Offset(0, colIdx).Font.Color = theme01.FontColor_Header
+            .Range("A1:A40").Offset(0, colIdx).Font.Color = theme01.FontColor_Header
+            .Range("G8:H40").Offset(0, colIdx).Font.Color = theme01.FontColor_GrayOut1
+            .Range("J8:N40").Offset(0, colIdx).Font.Color = theme01.FontColor_GrayOut2
+            '背景色
+            .Range("A1:P40").Offset(0, colIdx).Interior.Color = theme01.BgColor_All
+            .Range("A1:O1").Offset(0, colIdx).Interior.Color = theme01.BgColor_Header
+            .Range("A2:A40").Offset(0, colIdx).Interior.Color = theme01.BgColor_Header
+            .Range("B2:O6").Offset(0, colIdx).Interior.Color = theme01.BgColor_TopCont
+            .Range("G8:H40").Offset(0, colIdx).Interior.Color = theme01.BgColor_GrayOut1
+            .Range("J8:N40").Offset(0, colIdx).Interior.Color = theme01.BgColor_GrayOut2
+            '行幅
+            .Rows(1).RowHeight = 18
+            .Rows(2).RowHeight = 6
+            .Rows("3:5").RowHeight = 18
+            .Rows("6:7").RowHeight = 6
+            '列幅
+            .Columns("A").Offset(0, colIdx).ColumnWidth = 4
+            .Range("B:D").Offset(0, colIdx).ColumnWidth = 3
+            .Range("E:N").Offset(0, colIdx).ColumnWidth = 6
+            .Columns("O").Offset(0, colIdx).ColumnWidth = 20
+            .Columns("P").Offset(0, colIdx).ColumnWidth = 2
+            'セル結合
+            .Range("B1:O1").Offset(0, colIdx).Merge
+            .Range("B3:D5").Offset(0, colIdx).Merge Across:=True
+            .Range("G3:H3").Offset(0, colIdx).Merge
+            .Range("J3:K3").Offset(0, colIdx).Merge
+            .Range("A8:A9").Offset(0, colIdx).Merge
+            .Range("E8:F8").Offset(0, colIdx).Merge
+            .Range("G8:H8").Offset(0, colIdx).Merge
+            .Range("J8:K8").Offset(0, colIdx).Merge
+            .Range("L8:M8").Offset(0, colIdx).Merge
+            '月 + 和暦
+            .Range("B1").Offset(0, colIdx).NumberFormatLocal = "m"" 月 (""ggge""年)""" '表示形式
+            .Range("A10").Offset(0, colIdx).Value = Format(DateSerial(Year(Date), 1, 1), "(ggge年)") '値
+            .Range("A10:A15").Offset(0, colIdx).Merge 'セル結合
+            .Range("A10").Offset(0, colIdx).Font.Size = 10 '文字サイズ
+            .Range("A10").Offset(0, colIdx).Font.Bold = True '太字
+            .Range("A10").Offset(0, colIdx).HorizontalAlignment = xlCenter '文字揃え
+            .Range("A10").Offset(0, colIdx).Orientation = xlVertical '縦書き
+            .Range("A10").Offset(0, colIdx).WrapText = True '折返し
+            '表示形式
+            .Range("A8").Offset(0, colIdx).NumberFormatLocal = "m" & Chr(10) & "月"
+            .Range("A8").Offset(0, colIdx).WrapText = True
+            .Range("E3:E4").Offset(0, colIdx).NumberFormatLocal = "0"" 日"""
+            .Range("G5").Offset(0, colIdx).NumberFormatLocal = "0"" 日"""
+            .Range("J5").Offset(0, colIdx).NumberFormatLocal = "0"" 日"""
+            .Range("E5").Offset(0, colIdx).NumberFormatLocal = "0 %"
+            .Range("B10:B40").Offset(0, colIdx).NumberFormatLocal = "d"
+            .Range("E10:H40").Offset(0, colIdx).NumberFormatLocal = "h:mm"
+            .Range("J10:M40").Offset(0, colIdx).NumberFormatLocal = "h:mm"
+            .Range("I10:I40").Offset(0, colIdx).NumberFormatLocal = "0.###"" h"""
+            .Range("N10:N40").Offset(0, colIdx).NumberFormatLocal = "0.###"" h"""
+            '文字揃え
+            .Range("B1").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("B1").Offset(0, colIdx).VerticalAlignment = xlCenter
+            .Range("B3:O5").Offset(0, colIdx).VerticalAlignment = xlCenter
+            .Range("A8").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("A10").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("E3:E5").Offset(0, colIdx).HorizontalAlignment = xlRight
+            .Range("G3:H4").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("J3:K4").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("G5:H5").Offset(0, colIdx).HorizontalAlignment = xlRight
+            .Range("J5:K5").Offset(0, colIdx).HorizontalAlignment = xlRight
+            .Range("D8:O9").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("B10:D40").Offset(0, colIdx).HorizontalAlignment = xlCenter
+            .Range("E10:N40").Offset(0, colIdx).HorizontalAlignment = xlRight
+            'グループ化
+            .Columns("B:P").Offset(0, colIdx).Group
+            '条件付き書式(背景色)
+            .Range("B10:O40").Offset(0, colIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=$" & GetColNm(GetColIdx("B") + colIdx) & "10=""""").Interior.Color = theme01.BgColor_GrayOut2
+            .Range("C10:C40").Offset(0, colIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B," & GetColNm(GetColIdx("B") + colIdx) & "10)>0").Interior.Color = theme01.BgColor_Holiday
+            .Range("C10:C40").Offset(0, colIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(GetColIdx("B") + colIdx) & "10,2)=7").Interior.Color = theme01.BgColor_Sunday
+            .Range("C10:C40").Offset(0, colIdx).FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(" & GetColNm(GetColIdx("B") + colIdx) & "10,2)=6").Interior.Color = theme01.BgColor_Saturday
+            '折り返して表示
+            .Range("O10:O40").Offset(0, colIdx).WrapText = True
+            '罫線(上部コンテンツ)
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeRight).LineStyle = xlContinuous
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeRight).Weight = xlThick
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeRight).Color = theme01.BorderColor_TopCont
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeBottom).LineStyle = xlContinuous
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeBottom).Weight = xlThick
+            .Range("B1:O6").Offset(0, colIdx).Borders(xlEdgeBottom).Color = theme01.BorderColor_TopCont
+            '罫線(内容)
+            .Range("B3:E5").Offset(0, colIdx).Borders(xlInsideHorizontal).Weight = xlHairline
+            .Range("B3:E5").Offset(0, colIdx).Borders(xlInsideHorizontal).Color = theme01.BorderColor_Cont
+            .Range("G4:H5").Offset(0, colIdx).Borders(xlInsideHorizontal).Weight = xlHairline
+            .Range("G4:H5").Offset(0, colIdx).Borders(xlInsideHorizontal).Color = theme01.BorderColor_Cont
+            .Range("J4:K5").Offset(0, colIdx).Borders(xlInsideHorizontal).Weight = xlHairline
+            .Range("J4:K5").Offset(0, colIdx).Borders(xlInsideHorizontal).Color = theme01.BorderColor_Cont
+            .Range("B9:O40").Offset(0, colIdx).Borders(xlInsideHorizontal).Weight = xlHairline
+            .Range("B9:O40").Offset(0, colIdx).Borders(xlInsideHorizontal).Color = theme01.BorderColor_Cont
+        End With
+
+        'マクロボタン(CSV & Excel) 作成
+        Dim btnNm As Variant: btnNm = Array("CSV", "Excel")
+        Dim btnColor As Variant: btnColor = Array(theme01.BtnBgColor_Csv, theme01.BtnBgColor_Excel)
+        Dim btnFontColor As Variant: btnFontColor = Array(theme01.BtnFontColor_Csv, theme01.BtnFontColor_Excel)
+        Dim topPos As Variant: topPos = Array(3, 34)
+        'CSV / Excel
+        For i = 0 To 1
+            Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
+            With shp
+                .Fill.ForeColor.RGB = btnColor(i)                                '塗りつぶし色
+                .line.ForeColor.RGB = btnColor(i)                                '枠線色
+                .TextFrame2.TextRange.text = btnNm(i)                            '表示文字列
+                .TextFrame2.TextRange.Font.Name = theme01.BtnFont                'フォント(EN)
+                .TextFrame2.TextRange.Font.Size = theme01.BtnFontSize            '文字サイズ
+                .TextFrame2.TextRange.Font.Bold = True                           '太字
+                .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = btnFontColor(i)  '文字色
+                .TextFrame2.VerticalAnchor = msoAnchorMiddle                     '文字揃え(横)
+                .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter '文字揃え(縦)
+                .Top = ws.Range("O2").Offset(0, colIdx).Top + topPos(i)          '配置場所(縦)
+                .Left = ws.Range("O2").Offset(0, colIdx).Left + 50               '配置場所(横)
+            End With
+        Next
+    Loop
+
+    '列 削除
+    ws.Columns("A:P").Delete
+    '削除状態更新
+    ActiveSheet.UsedRange
+
+    'Sheet設定3
+    ws.Rows("2:7").Group   'グループ化
+    ws.Range("A10").Select 'ウィンドウ枠の固定
+    ActiveWindow.FreezePanes = True
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[テーマサンプル(時間数タイプ)]を作成する
+'引数 : holidayDict : 祝日辞書
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet_ThemeSample_02(ByVal holidayDict As Object)
+    Dim ws As Worksheet      'Sheet
+    Dim wsNm As String       'Sheet名
+    Dim i As Long, j As Long 'Loopカウンタ
+    Dim rowIdx As Long       '行
+    Dim colIdx As Long       '列
+    Dim endRowIdx As Long    '終了行
+    Dim endColIdx As Long    '終了列
+    Dim rng As Range         '範囲
+    Dim tmpDate1 As Date
+    Dim tmpDate2 As String
+    '図形/サイズ(横/縦)
+    Dim shp As Shape
+    Dim shpWidth As Double: shpWidth = 2.5
+    Dim shpHeight As Double: shpHeight = 1
+    '罫線位置区分
+    Dim borderType As Variant
+    '●年末年始
+    Dim newYearSeasonDict As Object: Set newYearSeasonDict = CreateObject("Scripting.Dictionary")
+    newYearSeasonDict("1-1") = True
+    newYearSeasonDict("1-2") = True
+    newYearSeasonDict("1-3") = True
+    newYearSeasonDict("12-29") = True
+    newYearSeasonDict("12-30") = True
+    newYearSeasonDict("12-31") = True
+    '●一括セット用
+    Dim balkSetWorkType1(1 To 31, 1 To 1) As Variant   '出リ
+    Dim balkSetWorkType2(1 To 1, 1 To 31) As Variant   '出リ
+    Dim balkSetActWhStart(1 To 31, 1 To 1) As Variant  '実績(勤務[開始])
+    Dim balkSetActWhEnd(1 To 31, 1 To 1) As Variant    '実績(勤務[終了])
+    Dim balkSetActBtStart(1 To 31, 1 To 1) As Variant  '実績(休憩[開始])
+    Dim balkSetActBtEnd(1 To 31, 1 To 1) As Variant    '実績(休憩[終了])
+    Dim balkSetPlanWhStart(1 To 31, 1 To 1) As Variant '予定(勤務[開始])
+    Dim balkSetPlanWhEnd(1 To 31, 1 To 1) As Variant   '予定(勤務[終了])
+    Dim balkSetPlanBtStart(1 To 31, 1 To 1) As Variant '予定(休憩[開始])
+    Dim balkSetPlanBtEnd(1 To 31, 1 To 1) As Variant   '予定(休憩[終了])
+    Dim balkSetWeek(1 To 1, 1 To 31) As Variant        '曜日
+    Dim balkSetDate(1 To 1, 1 To 31) As Variant        '日付
+    Dim balkSetPlan(1 To 1, 1 To 31) As Variant        '予
+    Dim balkSetAct(1 To 1, 1 To 31) As Variant         '実
+
+    '●1年前～10年後
+    Dim minYear As Double: minYear = Year(Now) - 1
+    Dim maxYear As Double: maxYear = Year(Now) + 10
+    '●テーマ番号/テーマ
+    Dim themeNo As Long
+    Dim theme01 As ThemePreset_01
+    Dim theme02 As ThemePreset_02
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("② テーマSAMPLE(時間数入力タイプ)")
+
+    'Sheet設定1
+    ws.Activate
+    ActiveWindow.DisplayGridlines = False '目盛線
+    ws.Cells.VerticalAlignment = xlCenter '文字揃え
+    ws.Cells.HorizontalAlignment = xlCenter
+
+    '初期化
+    themeNo = 0
+    rowIdx = 0
+
+    '全テーマ数分Loop
+    Do While True
+        'テーマプリセット取得
+        themeNo = themeNo + 1
+        theme02 = GetThemePreset_02(themeNo)
+        '終了条件
+        If theme02.FontSize_All = 0 Then Exit Do
+        'インクリメント
+        rowIdx = rowIdx + 12
+        '書込
+        With ws
+            .Range("A3").Offset(rowIdx, 0).Value = "予"
+            .Range("A4").Offset(rowIdx, 0).Value = "実"
+            .Range("A5").Offset(rowIdx, 0).Value = "出"
+            .Range("A6").Offset(rowIdx, 0).Value = "備"
+            .Range("C" & rowIdx).Value = DateSerial(Year(Date), 1, 1)
+            .Range("C6").Offset(rowIdx, 0).Value = "テーマ：" & theme02.ThemeNm
+            .Range("S6").Offset(rowIdx, 0).Value = "テーマ：" & theme02.ThemeNm
+            .Range("AI1").Offset(rowIdx, 0).Value = "予定(日)"
+            .Range("AI2").Offset(rowIdx, 0).Value = "予定(時)"
+            .Range("AI3").Offset(rowIdx, 0).Value = "実績(日)"
+            .Range("AI4").Offset(rowIdx, 0).Value = "実績(時)"
+            .Range("AI5").Offset(rowIdx, 0).Value = "出社"
+            .Range("AI6").Offset(rowIdx, 0).Value = "リモート"
+            .Range("AI7").Offset(rowIdx, 0).Value = "出社率"
+            .Range("AJ1").Offset(rowIdx, 0).Formula2R1C1 = "=COUNT(R[2]C[-33]:R[2]C[-3])"
+            .Range("AJ2").Offset(rowIdx, 0).Formula2R1C1 = "=LET(v,SUM(R[1]C[-33]:R[1]C[-3]),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
+            .Range("AJ3").Offset(rowIdx, 0).Formula2R1C1 = "=COUNT(R[1]C[-33]:R[1]C[-3])"
+            .Range("AJ4").Offset(rowIdx, 0).Formula2R1C1 = "=LET(v,SUM(RC[-33]:RC[-3]),IF(v=INT(v),TEXT(v,""0"")&"" h"",TEXT(v,""0.###"")&"" h""))"
+            .Range("AJ5").Offset(rowIdx, 0).Formula2R1C1 = "=COUNTIF(RC[-33]:RC[-3],""出"")"
+            .Range("AJ6").Offset(rowIdx, 0).Formula2R1C1 = "=COUNTIF(R[-1]C[-33]:R[-1]C[-3],""リ"")"
+            .Range("AJ7").Offset(rowIdx, 0).Formula2R1C1 = "=R[-2]C/(R[-2]C+R[-1]C)"
+            .Range("C2").Offset(rowIdx, 0).Formula2R1C1 = "=R[-2]C"
+            '31日分 書込
+            For j = 1 To 31
+                '初期化
+                balkSetWeek(1, j) = ""
+                balkSetDate(1, j) = ""
+                balkSetPlan(1, j) = ""
+                balkSetAct(1, j) = ""
+                balkSetWorkType2(1, j) = ""
+                balkSetWeek(1, j) = "=TEXT(R[1]C,""aaa"")"
+                balkSetDate(1, j) = "=IF(RC[-1]="""","""",IF(RC[-1]+1<=EOMONTH(R[-2]C3,0),RC[-1]+1,""""))"
+                '平日の場合、[勤務時間/出リ] 書込
+                tmpDate1 = DateSerial(Year(Date), 1, j)
+                If weekday(tmpDate1, vbMonday) <= 5 Then
+                    '年末年始でない場合
+                    tmpDate2 = Format(tmpDate1, "M-d")
+                    If Not newYearSeasonDict.exists(tmpDate2) Then
+                        '祝日でない場合
+                        If Not holidayDict.exists(tmpDate1) Then
+                            balkSetPlan(1, j) = "8"
+                            balkSetAct(1, j) = "8"
+                            balkSetWorkType2(1, j) = "リ"
+                        End If
+                    End If
+                End If
+            Next
+            .Range("C1").Offset(rowIdx, 0).Resize(1, 31).Formula2R1C1 = balkSetWeek
+            .Range("D2").Offset(rowIdx, 0).Resize(1, 30).Formula2R1C1 = balkSetDate
+            .Range("C3").Offset(rowIdx, 0).Resize(1, 31).Value = balkSetPlan
+            .Range("C4").Offset(rowIdx, 0).Resize(1, 31).Value = balkSetAct
+            .Range("C5").Offset(rowIdx, 0).Resize(1, 31).Value = balkSetWorkType2
+        End With
+
+        'Sheet設定2
+        With ws
+            'タブ色
+            .Tab.Color = RGB(218, 242, 208) '#DAF2D0
+            'フォント
+            .Range("A" & rowIdx & ":AJ" & rowIdx + 11).Cells.Font.Name = theme02.Font_All
+            'フォントサイズ
+            .Range("A" & rowIdx & ":AJ" & rowIdx + 11).Cells.Font.Size = theme02.FontSize_All
+            '文字色
+            .Range("A" & rowIdx & ":AJ" & rowIdx + 11).Font.Color = theme02.FontColor_All
+            .Range("C" & rowIdx & ":AG" & rowIdx).Font.Color = theme02.FontColor_Header
+            .Range("AI1:AJ2").Offset(rowIdx, 0).Font.Color = theme02.FontColor_GrayOut
+            .Range("C3:AG3").Offset(rowIdx, 0).Font.Color = theme02.FontColor_GrayOut
+            '太字
+            .Range("C" & rowIdx).Font.Bold = True
+            '背景色
+            .Range("A" & rowIdx & ":AJ" & rowIdx + 11).Interior.Color = theme02.BgColor_All
+            .Range("A3").Offset(rowIdx, 0).Interior.Color = theme02.BgColor_GrayOut
+            .Range("C" & rowIdx).Interior.Color = theme02.BgColor_Header
+            .Range("C6:Q10").Offset(rowIdx, 0).Interior.Color = theme02.BgColor_Biko
+            .Range("S6:AG10").Offset(rowIdx, 0).Interior.Color = theme02.BgColor_Biko
+            .Range("C3:AG3").Offset(rowIdx, 0).Interior.Color = theme02.BgColor_GrayOut
+            .Range("AI1:AJ2").Offset(rowIdx, 0).Interior.Color = theme02.BgColor_GrayOut
+            '行幅
+            .Rows.RowHeight = 18
+            '列幅
+            .Columns("A").ColumnWidth = 3
+            .Columns("B").ColumnWidth = 0.5
+            .Columns("C:AG").ColumnWidth = 3
+            .Columns("AH").ColumnWidth = 0.5
+            .Columns("AI:AJ").ColumnWidth = 8
+            'セル結合
+            .Range("C" & rowIdx & ":AG" & rowIdx).Merge Across:=True
+            .Range("C6:Q10").Offset(rowIdx, 0).Merge
+            .Range("S6:AG10").Offset(rowIdx, 0).Merge
+            .Range("A3:A6").Offset(rowIdx, 0).HorizontalAlignment = xlCenter
+            .Range("C" & rowIdx & ":AG" & rowIdx + 5).HorizontalAlignment = xlCenter
+            .Range("AI1:AI7").Offset(rowIdx, 0).HorizontalAlignment = xlCenter
+            .Range("AJ1:AJ7").Offset(rowIdx, 0).HorizontalAlignment = xlRight
+            .Range("C6:Q10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            .Range("S6:AG10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            '表示形式
+            .Range("C" & rowIdx).NumberFormatLocal = "m"" 月 (""ggge""年)"""
+            .Range("C2:AG2").Offset(rowIdx, 0).NumberFormatLocal = "d"
+            .Range("AJ1").Offset(rowIdx, 0).NumberFormatLocal = "0"" 日"""
+            .Range("AJ3").Offset(rowIdx, 0).NumberFormatLocal = "0"" 日"""
+            .Range("AJ5").Offset(rowIdx, 0).NumberFormatLocal = "0"" 日"""
+            .Range("AJ6").Offset(rowIdx, 0).NumberFormatLocal = "0"" 日"""
+            .Range("AJ7").Offset(rowIdx, 0).NumberFormatLocal = "0 %"
+            '文字揃え
+            .Range("C6:Q10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            .Range("C6:Q10").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
+            .Range("S6:AG10").Offset(rowIdx, 0).VerticalAlignment = xlTop
+            .Range("S6:AG10").Offset(rowIdx, 0).HorizontalAlignment = xlLeft
+            '備考枠線
+            For j = 1 To 2
+                If j = 1 Then Set rng = .Range("C6:Q10").Offset(rowIdx, 0)
+                If j = 2 Then Set rng = .Range("S6:AG10").Offset(rowIdx, 0)
+                For Each borderType In Array(xlEdgeTop, xlEdgeBottom, xlEdgeLeft, xlEdgeRight, xlInsideHorizontal, xlInsideVertical)
+                    rng.Borders(borderType).Weight = xlThin
+                    rng.Borders(borderType).Color = theme02.BorderColor_Biko
+                Next
+            Next
+            'グループ化
+            .Range("A1:A11").Offset(rowIdx, 0).EntireRow.Group
+            '条件付き書式(背景色)
+            .Range("C1:AG5").Offset(rowIdx, 0).FormatConditions.Add(Type:=xlExpression, Formula1:="=C$" & rowIdx + 2 & "=""""").Interior.Color = theme02.BgColor_GrayOut
+            .Range("C1:AG1").Offset(rowIdx, 0).FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B,C" & rowIdx + 2 & ")>0").Interior.Color = theme02.BgColor_Holiday
+            .Range("C1:AG1").Offset(rowIdx, 0).FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowIdx + 2 & ",2)=7").Interior.Color = theme02.BgColor_Sunday
+            .Range("C1:AG1").Offset(rowIdx, 0).FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(C" & rowIdx + 2 & ",2)=6").Interior.Color = theme02.BgColor_Saturday
+            '折り返して表示
+            .Range("C6:Q10").Offset(rowIdx, 0).WrapText = True
+            .Range("S6:AG10").Offset(rowIdx, 0).WrapText = True
+        End With
+    Loop
+
+    '行 削除
+    ws.Rows("1:11").Delete
+    '削除状態更新
+    ActiveSheet.UsedRange
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[勤務表(時間タイプ)]を作成する

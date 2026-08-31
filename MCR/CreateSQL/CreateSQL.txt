@@ -1,862 +1,1020 @@
 '変数未宣言エラー設定ON
 Option Explicit
+'●DB種別(Oracle/PostgreSQL/SQLServer)
+Private Const ORACLE = "Oracle"
+Private Const POSTGRESQL = "PostgreSQL"
+Private Const SQLSERVER = "SQLServer"
+'●Oracleキャラクタセット(True:AL32UTF8 / False:JA16SJIS)
+Private Const IS_AL32UTF8 As Boolean = True
+'●A5M2緑色
+Private Const COLOR_A5M2 As Long = 135 + 231 * 256& + 173 * 65536 'RGB(135, 231, 173) #87E7AD
 '------------------------------------------------------------
-'概要 : Sheet[SQL]作成
+'概要 : Sheet[Sheet作成/TBL1～5/SQL]を作成する
+'     : 最初に実行するマクロ
+'     : SQL作成に必要なSheetを全て作成する
 '引数 : -
 '戻値 : -
-'備考 : DBスナップ取得SQLを作成するマクロ
+'備考 : -
 '------------------------------------------------------------
-Sub CreateSheet_Sql()
+Public Sub CreateSheet_Init()
     '処理中描画OFF設定
-    SetDrawProcess False
+    Call SettingRenderingProcess(False)
 
-    '●作成Sheet
-    Dim newSheet As Variant
-    '●作成Sheet名
-    Dim newSheetNm As String: newSheetNm = "SQL"
-    '●範囲
-    Dim rng As Range
-    '●A5M2色(#87E7AD)
-    Dim colorA5M2 As Long: colorA5M2 = RGB(135, 231, 173)
-
-    '■■■■■ Sheet存在チェック ■■■■■
-    If IsExistsSheet(newSheetNm) Then
-        MsgBox "すでにSheet [" & newSheetNm & "] が存在します"
-        Exit Sub
-    End If
-
-    '■■■■■ Sheet作成 & 詳細設定(1) ■■■■■
-    Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    With newSheet
-        '●Sheet名
-        .Name = newSheetNm
-        '●Tab色
-        .Tab.Color = colorA5M2
-        '●Cell固定文字列
-        .Range("A1").Value = "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"
-        .Range("A2").Value = "--   テーブル情報 取得"
-        .Range("A3").Value = "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"
-        .Range("A4").Value = "SELECT"
-        .Range("A5").Value = "    DENSE_RANK() OVER (ORDER BY TBL.table_name) AS ""TBL-No"""
-        .Range("A6").Value = "    , NVL(TBL_ALIAS.comments, '') AS ""TBL(論理)"""
-        .Range("A7").Value = "    , NVL(TBL.table_name, '') AS ""TBL(物理)"""
-        .Range("A8").Value = "    , NVL(TO_CHAR(COL.column_id), '') AS ""COL-No"""
-        .Range("A9").Value = "    , CASE"
-        .Range("A10").Value = "        WHEN PK.column_name IS NOT NULL"
-        .Range("A11").Value = "            THEN 'Y'"
-        .Range("A12").Value = "        ELSE 'N'"
-        .Range("A13").Value = "        END AS ""PK"""
-        .Range("A14").Value = "    , NVL(COL_ALIAS.comments, '') AS ""COL(論理)"""
-        .Range("A15").Value = "    , NVL(COL.column_name, '') AS ""COL(物理)"""
-        .Range("A16").Value = "    , NVL(COL.data_type, '') AS ""型"""
-        .Range("A17").Value = "    , CASE"
-        .Range("A18").Value = "        WHEN COL.data_type IN('CHAR', 'VARCHAR2', 'NCHAR', 'NVARCHAR2')"
-        .Range("A19").Value = "            THEN NVL(TO_CHAR(COL.data_length), '')"
-        .Range("A20").Value = "        WHEN COL.data_type IN('NUMBER', 'NUMERIC', 'INTEGER')"
-        .Range("A21").Value = "            THEN NVL(TO_CHAR(COL.data_precision), '') || ',' NVL(TO_CHAR(COL.data_scale), '')"
-        .Range("A22").Value = "        ELSE ''"
-        .Range("A23").Value = "        END AS ""桁"""
-        .Range("A24").Value = "    , CASE"
-        .Range("A25").Value = "        WHEN COL.nullable = 'N'"
-        .Range("A26").Value = "            THEN 'Y'"
-        .Range("A27").Value = "        ELSE 'N'"
-        .Range("A28").Value = "        END AS ""NULL不可"""
-        .Range("A29").Value = "FROM"
-        .Range("A30").Value = "    all_tables TBL"
-        .Range("A31").Value = "    INNER JOIN all_tab_columns COL"
-        .Range("A32").Value = "        ON TBL.owner = COL.table_name"
-        .Range("A33").Value = "        AND TBL.table_name = COL.table_name"
-        .Range("A34").Value = "    LEFT JOIN("
-        .Range("A35").Value = "        SELECT"
-        .Range("A36").Value = "            const_col.owner"
-        .Range("A37").Value = "            , const_col.table_name"
-        .Range("A38").Value = "            , const_col.column_name"
-        .Range("A39").Value = "        FROM"
-        .Range("A40").Value = "            all_constraints const"
-        .Range("A41").Value = "            INNER JOIN all_cons_columns const_col"
-        .Range("A42").Value = "                ON const.owner = const_col.owner"
-        .Range("A43").Value = "                AND const.constraint_name = const_col.constraint_name"
-        .Range("A44").Value = "        WHERE"
-        .Range("A45").Value = "            const.constraint_type P"
-        .Range("A46").Value = "    ) PK"
-        .Range("A47").Value = "        ON COL.owner = PK.owner"
-        .Range("A48").Value = "        AND COL.table_name - PK.table_name"
-        .Range("A49").Value = "        AND COL.column_name - PK.column_name"
-        .Range("A50").Value = "    LEFT JOIN all_tab_comments TBL_ALIAS"
-        .Range("A51").Value = "        ON TBL.owner = TBL_ALIAS.owner"
-        .Range("A52").Value = "        AND TBL.table_name = TBL_ALIAS.table_name"
-        .Range("A53").Value = "    LEFT JOIN all_col_comments COL_ALIAS"
-        .Range("A54").Value = "        ON COL.owner = COL_ALIAS.owner"
-        .Range("A55").Value = "        AND COL.table_name = COL_ALIAS.table_name"
-        .Range("A56").Value = "        AND COL.column_name - COL_ALIAS.column_name"
-        .Range("A57").Value = "WHERE"
-        .Range("A58").Value = "    TBL.owner = 'SCHEMA_NAME'            --★★★ スキーマ名指定 ★★★"
-        .Range("A59").Value = "    AND TBL.table_name LIKE '%TBL_NAME%' --★★★ テーブル名指定 ★★★"
-        .Range("A60").Value = "ORDER RY"
-        .Range("A61").Value = "    TBL.table_name"
-        .Range("A62").Value = "    , COL.column_id"
-        .Range("A63").Value = ";"
-        '●フォント
-        .Cells.Font.Name = "HGゴシックM"
-        '●文字サイズ
-        .Range("A1:A63").Font.Size = 10
-        '●列幅
-        .Columns("A").ColumnWidth = 100
-    End With
-
-    '■■■■■ 詳細設定(2) ■■■■■
-    '文字色
-    For Each rng In newSheet.Range("A1:A63")
-        If 0 < LenB(CStr(rng.Value2)) Then
-            ColorTheSqlText rng
-        End If
-    Next rng
-
-    '●目盛線
-    ActiveWindow.DisplayGridlines = False
+    '========== Sheet作成 ==========
+    'SQL
+    'CreateSheet_GetTblInfoSql
+    'TBL1～5
+    'CreateSheet_TblInfo
+    'Sheet作成
+    CreateSheet_CreateTemplateSql
 
     '処理中描画ON設定
-    SetDrawProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : Sheet［Sheet作成］作成
+'概要 : Sheet[SQL]を作成する
 '引数 : -
 '戻値 : -
-'備考 : 最初にSheetを作成するマクロ
+'備考 : TBL情報を取得するSQLが書かれているSheet
 '------------------------------------------------------------
-Sub CreateSheet_CreateTemplateSql()
-    '処理中描画OFF設定
-    SetDrawProcess False
+Private Sub CreateSheet_GetTblInfoSql()
+    Dim i As Long         'Loopカウンタ
+    Dim ws As Worksheet   'Sheet
+    Dim rng As Range      '範囲
+    Dim endRowIdx As Long '終了行
+    '●SQL
+    Dim sqlList As New Collection
+    '●グループ化行数(開始/終了)
+    Dim startRowIdxOra As Long '開始行(Oracle)
+    Dim startRowIdxPos As Long '開始行(PostgreSQL)
+    Dim startRowIdxSql As Long '開始行(SQLServer)
+    Dim endRowIdxOra As Long   '終了行(Oracle)
+    Dim endRowIdxPos As Long   '終了行(PostgreSQL)
+    Dim endRowIdxSql As Long   '終了行(SQLServer)
 
-    '●作成Sheet
-    Dim newSheet As Variant
-    '●作成Sheet名
-    Dim newSheetNm As String: newSheetNm = "Sheet作成"
-    '●範囲
-    Dim rng As Range
-    '●図形
-    Dim shp As Shape
-    '●存在有無
-    Dim exists As Boolean
-    '●A5M2色(#87E7AD)
-    Dim colorA5M2 As Long: colorA5M2 = RGB(135, 231, 173)
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("SQL")
 
-    '■■■■■ Sheet存在チェック■■■■■
-    If IsExistsSheet(newSheetNm) Then
-        MsgBox "すでにSheet［" & newSheetNm & "]が存在します"
-        Exit Sub
-    End If
+    'SQL準備 & グループ化行数セット
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    sqlList.Add ("'--   テーブル情報 取得(" & ORACLE & ")")
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    '▼行数
+    startRowIdxOra = sqlList.Count + 1
+    sqlList.Add ("SELECT")
+    sqlList.Add ("    DENSE_RANK() OVER (ORDER BY TBL.TABLE_NAME) AS ""TBL-No""")
+    sqlList.Add ("    , NVL(TBL_ALIAS.COMMENTS, ' ') AS ""TBL(論理)""")
+    sqlList.Add ("    , NVL(TBL.TABLE_NAME, ' ') AS ""TBL(物理)""")
+    sqlList.Add ("    , NVL(TO_CHAR(COL.COLUMN_ID), ' ') AS ""COL-No""")
+    sqlList.Add ("    , CASE WHEN PK.COLUMN_NAME IS NOT NULL THEN 'Y' ELSE 'N' END AS ""PK""")
+    sqlList.Add ("    , NVL(COL_ALIAS.COMMENTS, ' ') AS ""COL(論理)""")
+    sqlList.Add ("    , NVL(COL.COLUMN_NAME, ' ') AS ""COL(物理)""")
+    sqlList.Add ("    , NVL(COL.DATA_TYPE, ' ') AS ""型""")
+    sqlList.Add ("    , CASE")
+    sqlList.Add ("        WHEN COL.DATA_TYPE IN ('CHAR', 'VARCHAR2', 'NCHAR', 'NVARCHAR2')")
+    sqlList.Add ("            THEN NVL(TO_CHAR(COL.DATA_LENGTH), ' ')")
+    sqlList.Add ("        WHEN COL.DATA_TYPE IN ('NUMBER')")
+    sqlList.Add ("            THEN NVL(TO_CHAR(COL.DATA_PRECISION), ' ') || ',' || NVL(TO_CHAR(COL.DATA_SCALE), ' ')")
+    sqlList.Add ("        ELSE ' '")
+    sqlList.Add ("        END AS ""桁""")
+    sqlList.Add ("    , CASE WHEN COL.NULLABLE = 'N' THEN 'Y' ELSE 'N' END AS ""NULL不可""")
+    sqlList.Add ("    , COL.DATA_DEFAULT AS ""初期値""")
+    sqlList.Add ("FROM")
+    sqlList.Add ("    ALL_TABLES TBL")
+    sqlList.Add ("    INNER JOIN ALL_TAB_COLUMNS COL")
+    sqlList.Add ("        ON TBL.OWNER = COL.OWNER")
+    sqlList.Add ("        AND TBL.TABLE_NAME = COL.TABLE_NAME")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            CONST_COL.OWNER")
+    sqlList.Add ("            , CONST_COL.TABLE_NAME")
+    sqlList.Add ("            , CONST_COL.COLUMN_NAME")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            ALL_CONSTRAINTS CONST")
+    sqlList.Add ("            INNER JOIN ALL_CONS_COLUMNS CONST_COL")
+    sqlList.Add ("                ON CONST.OWNER = CONST_COL.OWNER")
+    sqlList.Add ("                AND CONST.CONSTRAINT_NAME = CONST_COL.CONSTRAINT_NAME")
+    sqlList.Add ("        WHERE")
+    sqlList.Add ("            CONST.CONSTRAINT_TYPE = 'P'")
+    sqlList.Add ("    ) PK")
+    sqlList.Add ("        ON COL.OWNER = PK.OWNER")
+    sqlList.Add ("        AND COL.TABLE_NAME = PK.TABLE_NAME")
+    sqlList.Add ("        AND COL.COLUMN_NAME = PK.COLUMN_NAME")
+    sqlList.Add ("    LEFT JOIN ALL_TAB_COMMENTS TBL_ALIAS")
+    sqlList.Add ("        ON TBL.OWNER = TBL_ALIAS.OWNER")
+    sqlList.Add ("        AND TBL.TABLE_NAME = TBL_ALIAS.TABLE_NAME")
+    sqlList.Add ("    LEFT JOIN ALL_COL_COMMENTS COL_ALIAS")
+    sqlList.Add ("        ON COL.OWNER = COL_ALIAS.OWNER")
+    sqlList.Add ("        AND COL.TABLE_NAME = COL_ALIAS.TABLE_NAME")
+    sqlList.Add ("        AND COL.COLUMN_NAME = COL_ALIAS.COLUMN_NAME")
+    sqlList.Add ("WHERE")
+    sqlList.Add ("    TBL.OWNER = 'SCHEMA_NAME'           --★★★ スキーマ名指定 ★★★")
+    sqlList.Add ("    AND TBL.TABLE_NAME LIKE 'TBL_NAME%' --★★★ テーブル名指定 ★★★")
+    sqlList.Add ("ORDER BY")
+    sqlList.Add ("    TBL.TABLE_NAME")
+    sqlList.Add ("    , COL.COLUMN_ID;")
+    '▲行数
+    endRowIdxOra = sqlList.Count
+    sqlList.Add ("")
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    sqlList.Add ("'--   テーブル情報 取得(" & POSTGRESQL & ")")
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    '▼行数
+    startRowIdxPos = sqlList.Count + 1
+    sqlList.Add ("SELECT")
+    sqlList.Add ("    DENSE_RANK() OVER (ORDER BY tbl.table_name) AS ""TBL-No""")
+    sqlList.Add ("    , COALESCE(tbl_alias.description, '') AS ""TBL(論理)""")
+    sqlList.Add ("    , COALESCE(tbl.table_name, '') AS ""TBL(物理)""")
+    sqlList.Add ("    , COALESCE(col.ordinal_position ::text, '') AS ""COL-No""")
+    sqlList.Add ("    , CASE WHEN pk.column_name IS NOT NULL THEN 'Y' ELSE 'N' END AS ""PK""")
+    sqlList.Add ("    , COALESCE(col_alias.description, '') AS ""COL(論理)""")
+    sqlList.Add ("    , COALESCE(col.column_name, '') AS ""COL(物理)""")
+    sqlList.Add ("    , COALESCE(col.data_type, '') AS ""型""")
+    sqlList.Add ("    , CASE")
+    sqlList.Add ("        WHEN col.data_type IN ('character', 'character varying')")
+    sqlList.Add ("            THEN COALESCE(col.character_maximum_length ::text, '')")
+    sqlList.Add ("        WHEN col.data_type IN ('numeric')")
+    sqlList.Add ("            THEN COALESCE(col.numeric_precision ::text, '') || ',' || COALESCE(col.numeric_scale ::text, '')")
+    sqlList.Add ("        ELSE ''")
+    sqlList.Add ("        END AS ""桁""")
+    sqlList.Add ("    , CASE WHEN col.is_nullable = 'NO' THEN 'Y' ELSE 'N' END AS ""NULL不可""")
+    sqlList.Add ("    , COALESCE(col.column_default, '') AS ""初期値""")
+    sqlList.Add ("FROM")
+    sqlList.Add ("    information_schema.tables tbl")
+    sqlList.Add ("    INNER JOIN information_schema.columns col")
+    sqlList.Add ("        ON tbl.table_schema = col.table_schema")
+    sqlList.Add ("        AND tbl.table_name = col.table_name")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            kcu.table_schema")
+    sqlList.Add ("            , kcu.table_name")
+    sqlList.Add ("            , kcu.column_name")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            information_schema.table_constraints tbl_const")
+    sqlList.Add ("            INNER JOIN information_schema.key_column_usage kcu")
+    sqlList.Add ("                ON tbl_const.constraint_schema = kcu.constraint_schema")
+    sqlList.Add ("                AND tbl_const.constraint_name = kcu.constraint_name")
+    sqlList.Add ("                AND tbl_const.table_schema = kcu.table_schema")
+    sqlList.Add ("                AND tbl_const.table_name = kcu.table_name")
+    sqlList.Add ("        WHERE")
+    sqlList.Add ("            tbl_const.constraint_type = 'PRIMARY KEY'")
+    sqlList.Add ("    ) pk")
+    sqlList.Add ("        ON col.table_schema = pk.table_schema")
+    sqlList.Add ("        AND col.table_name = pk.table_name")
+    sqlList.Add ("        AND col.column_name = pk.column_name")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            nm.nspname AS table_schema")
+    sqlList.Add ("            , cls.relname AS table_name")
+    sqlList.Add ("            , OBJ_DESCRIPTION(cls.oid, 'pg_class') AS description")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            pg_class cls")
+    sqlList.Add ("            INNER JOIN pg_namespace nm")
+    sqlList.Add ("                ON cls.relnamespace = nm.oid")
+    sqlList.Add ("        WHERE")
+    sqlList.Add ("            cls.relkind IN ('r', 'p')")
+    sqlList.Add ("    ) tbl_alias")
+    sqlList.Add ("        ON tbl.table_schema = tbl_alias.table_schema")
+    sqlList.Add ("        AND tbl.table_name = tbl_alias.table_name")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            nm.nspname AS table_schema")
+    sqlList.Add ("            , cls.relname AS table_name")
+    sqlList.Add ("            , att.attname AS column_name")
+    sqlList.Add ("            , COL_DESCRIPTION(cls.oid, att.attnum) AS description")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            pg_class cls")
+    sqlList.Add ("            INNER JOIN pg_namespace nm")
+    sqlList.Add ("                ON cls.relnamespace = nm.oid")
+    sqlList.Add ("            INNER JOIN pg_attribute att")
+    sqlList.Add ("                ON cls.oid = att.attrelid")
+    sqlList.Add ("        WHERE")
+    sqlList.Add ("            0 < att.attnum")
+    sqlList.Add ("            AND NOT att.attisdropped")
+    sqlList.Add ("    ) col_alias")
+    sqlList.Add ("        ON col.table_schema = col_alias.table_schema")
+    sqlList.Add ("        AND col.table_name = col_alias.table_name")
+    sqlList.Add ("        AND col.column_name = col_alias.column_name")
+    sqlList.Add ("WHERE")
+    sqlList.Add ("    tbl.table_type = 'BASE TABLE'")
+    sqlList.Add ("    AND tbl.table_schema = 'schema_name' --★★★ スキーマ名指定 ★★★")
+    sqlList.Add ("    AND tbl.table_name LIKE 'tbl_name%'  --★★★ テーブル名指定 ★★★")
+    sqlList.Add ("ORDER BY")
+    sqlList.Add ("    tbl.table_name")
+    sqlList.Add ("    , col.ordinal_position;")
+    '▲行数
+    endRowIdxPos = sqlList.Count
+    sqlList.Add ("")
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    sqlList.Add ("'--   テーブル情報 取得(" & SQLSERVER & ")")
+    sqlList.Add ("'-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    '▼行数
+    startRowIdxSql = sqlList.Count + 1
+    sqlList.Add ("SELECT")
+    sqlList.Add ("    DENSE_RANK() OVER (ORDER BY tbl.name) AS [TBL-No]")
+    sqlList.Add ("    , ISNULL(tbl_alias.description, '') AS [TBL(論理)]")
+    sqlList.Add ("    , ISNULL(tbl.name, '') AS [TBL(物理)]")
+    sqlList.Add ("    , ISNULL(CONVERT(VARCHAR, col.column_id), '') AS [COL-No]")
+    sqlList.Add ("    , CASE WHEN pk.column_id IS NOT NULL THEN 'Y' ELSE 'N' END AS [PK]")
+    sqlList.Add ("    , ISNULL(col_alias.description, '') AS [COL(論理)]")
+    sqlList.Add ("    , ISNULL(col.name, '') AS [COL(物理)]")
+    sqlList.Add ("    , ISNULL(type_info.name, '') AS [型]")
+    sqlList.Add ("    , CASE")
+    sqlList.Add ("        WHEN type_info.name IN ('char', 'varchar', 'nchar', 'nvarchar')")
+    sqlList.Add ("            THEN")
+    sqlList.Add ("                CASE")
+    sqlList.Add ("                    WHEN col.max_length = - 1")
+    sqlList.Add ("                        THEN 'MAX'")
+    sqlList.Add ("                    WHEN type_info.name IN ('nchar', 'nvarchar')")
+    sqlList.Add ("                        THEN CONVERT(VARCHAR, col.max_length / 2)")
+    sqlList.Add ("                    ELSE CONVERT(VARCHAR, col.max_length)")
+    sqlList.Add ("                    END")
+    sqlList.Add ("        WHEN type_info.name IN ('decimal', 'numeric')")
+    sqlList.Add ("            THEN CONVERT(VARCHAR, col.PRECISION) + ',' + CONVERT(VARCHAR, col.scale)")
+    sqlList.Add ("        ELSE ''")
+    sqlList.Add ("        END AS [桁]")
+    sqlList.Add ("    , CASE WHEN col.is_nullable = 0 THEN 'Y' ELSE 'N' END AS [NULL不可]")
+    sqlList.Add ("    , ISNULL(def_const.definition, '') AS [初期値]")
+    sqlList.Add ("FROM")
+    sqlList.Add ("    sys.tables tbl")
+    sqlList.Add ("    INNER JOIN sys.columns col")
+    sqlList.Add ("        ON tbl.object_id = col.object_id")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            ic.object_id")
+    sqlList.Add ("            , ic.column_id")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            sys.indexes idx")
+    sqlList.Add ("            INNER JOIN sys.index_columns ic")
+    sqlList.Add ("                ON idx.object_id = ic.object_id")
+    sqlList.Add ("                AND idx.index_id = ic.index_id")
+    sqlList.Add ("        WHERE")
+    sqlList.Add ("            idx.is_primary_key = 1")
+    sqlList.Add ("    ) pk")
+    sqlList.Add ("        ON col.object_id = pk.object_id")
+    sqlList.Add ("        AND col.column_id = pk.column_id")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            tbl.object_id")
+    sqlList.Add ("            , CAST(ep.value AS NVARCHAR(4000)) AS description")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            sys.tables tbl")
+    sqlList.Add ("            LEFT JOIN sys.extended_properties ep")
+    sqlList.Add ("                ON tbl.object_id = ep.major_id")
+    sqlList.Add ("                AND ep.minor_id = 0")
+    sqlList.Add ("                AND ep.name = 'MS_Description'")
+    sqlList.Add ("    ) tbl_alias")
+    sqlList.Add ("        ON tbl.object_id = tbl_alias.object_id")
+    sqlList.Add ("    LEFT JOIN (")
+    sqlList.Add ("        SELECT")
+    sqlList.Add ("            col.object_id")
+    sqlList.Add ("            , col.column_id")
+    sqlList.Add ("            , CAST(ep.value AS NVARCHAR(4000)) AS description")
+    sqlList.Add ("        FROM")
+    sqlList.Add ("            sys.columns col")
+    sqlList.Add ("            LEFT JOIN sys.extended_properties ep")
+    sqlList.Add ("                ON col.object_id = ep.major_id")
+    sqlList.Add ("                AND col.column_id = ep.minor_id")
+    sqlList.Add ("                AND ep.name = 'MS_Description'")
+    sqlList.Add ("    ) col_alias")
+    sqlList.Add ("        ON col.object_id = col_alias.object_id")
+    sqlList.Add ("        AND col.column_id = col_alias.column_id")
+    sqlList.Add ("    INNER JOIN sys.types type_info")
+    sqlList.Add ("        ON col.user_type_id = type_info.user_type_id")
+    sqlList.Add ("        AND col.system_type_id = type_info.system_type_id")
+    sqlList.Add ("    LEFT JOIN sys.default_constraints def_const")
+    sqlList.Add ("        ON col.default_object_id = def_const.object_id")
+    sqlList.Add ("WHERE")
+    sqlList.Add ("    SCHEMA_NAME(tbl.schema_id) = 'schema_name' --★★★ スキーマ名指定 ★★★")
+    sqlList.Add ("    AND tbl.name LIKE 'tbl_name%'              --★★★ テーブル名指定 ★★★")
+    sqlList.Add ("ORDER BY")
+    sqlList.Add ("    tbl.name")
+    sqlList.Add ("    , col.column_id;")
+    '▲行数
+    endRowIdxSql = sqlList.Count
 
-    '■■■■■ Sheet作成&詳細設定(1) ■■■■■
-    Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    With newSheet
-        '●Sheet名
-        .Name = newSheetNm
-        '●Tab色
-        .Tab.Color = colorA5M2
-        '●Cell固定文字列
-        .Range("A1").Value = "No"
-        .Range("B1").Value = "TBL論理名"
-        .Range("C1").Value = "TBL物理名"
-        .Range("D1").Value = "参照Sheet名"
-        .Range("E1").Value = "Schema名(任意)"
-        .Range("A2:A31").FormulaR1C1 = "=ROW()-1"
-        .Range("B2:B31").FormulaR1C1 = "=LET(tblNm,RC[1],sheetNm,RC[2],XLOOKUP(tblNm,INDIRECT(""'" & """&sheetNm&""" & "'!C:C""),INDIRECT(""'" & """&sheetNm&""" & "'!B:B""),""""))"
-        '●太字
-        .Range("A1:E1").Font.Bold = True
-        .Range("A2:A31").Font.Bold = True
-        '●Cell背景色
-        .Range("A1:E1").Interior.Color = colorA5M2
-        .Range("B2:B31").Interior.Color = RGB(217, 217, 217) '#D9D9D9
-        '●文字揃え
-        .Columns("A").HorizontalAlignment = xlCenter   '文字揃え(横)
-        .Range("B1:E1").HorizontalAlignment = xlCenter '文字揃え(横)
-        '●列幅
-        .Columns("A").ColumnWidth = 4
-        .Range("B:C").ColumnWidth = 60
-        .Range("D:F").ColumnWidth = 20
-        '●行幅
-        .Rows(1).RowHeight = 35
+    '書込
+    For i = 1 To sqlList.Count
+        ws.Cells(i, "A").Value = CStr(sqlList(i))
+    Next
+
+    '終了行 取得
+    endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    'Sheet設定
+    ws.Activate
+    With ws
+        'SQL文字色
+        For Each rng In .Range("A1:A" & endRowIdx)
+            If 0 < LenB(rng.Value2) Then Call ColorTheSql(rng)
+        Next
+        'フォント
+        .Cells.Font.Name = "HGｺﾞｼｯｸM"
+        '列幅
+        .Columns("A").ColumnWidth = 110
+        'グループ化
+        .Rows(startRowIdxOra & ":" & endRowIdxOra).Group
+        .Rows(startRowIdxPos & ":" & endRowIdxPos).Group
+        .Rows(startRowIdxSql & ":" & endRowIdxSql).Group
     End With
-
-    '■■■■■ 詳細設定(2) ■■■■■
-    '●目盛線
+    '目盛線
     ActiveWindow.DisplayGridlines = False
-    '●罫線
-    With newSheet.Range("A1:E31")
-        '囲み線
-        With .Borders(xlEdgeLeft)
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With .Borders(xlEdgeRight)
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With .Borders(xlEdgeTop)
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With .Borders(xlEdgeBottom)
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        '中横線
-        With .Borders(xlInsideHorizontal)
-            .Weight = xlHairline
-            .ColorIndex = xlAutomatic
-        End With
-        '中縦線
-        With .Borders(xlInsideVertical)
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-    End With
-    '●ウィンドウ枠の固定
-    newSheet.Range("C2").Select
-    ActiveWindow.FreezePanes = True
-    '●表示倍率
-    ActiveWindow.Zoom = 90
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[TBL情報(空)]を作成する
+'引数 : -
+'戻値 : -
+'備考 : TBL情報取得SQLで、取得した結果をコピペするSheet
+'------------------------------------------------------------
+Private Sub CreateSheet_TblInfo()
+    Dim i As Long       'Lopカウンタ
+    Dim ws As Worksheet 'Sheet
 
-    '■■■■■ マクロボタン 作成 ■■■■■
-    Set shp = newSheet.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(4), Application.CentimetersToPoints(0.85))
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("TBL5")
+
+    '書込
+    With ws
+        .Range("A1").Value = "TBL-No"
+        .Range("B1").Value = "TBL(論理)"
+        .Range("C1").Value = "TBL(物理)"
+        .Range("D1").Value = "COL-No"
+        .Range("E1").Value = "PK"
+        .Range("F1").Value = "COL(論理)"
+        .Range("G1").Value = "COL(物理)"
+        .Range("H1").Value = "型"
+        .Range("I1").Value = "桁"
+        .Range("J1").Value = "NULL不可"
+        .Range("K1").Value = "初期値"
+        .Range("A2").Value = "↑ 検索結果をA1に貼り付け"
+    End With
+
+    'Sheet設定
+    ws.Activate
+    With ws
+        .Tab.Color = COLOR_A5M2                     'Tab色
+        .Range("A1:K1").Interior.Color = COLOR_A5M2 '背景色
+        .Range("A1:K1").Font.Bold = True            '太字
+        .Cells.VerticalAlignment = xlTop            '文字揃え
+        .Cells.HorizontalAlignment = xlLeft
+        Call DrawRuledLine_Grid(.Range("A1:K4"))    '罫線
+        .Columns("A").ColumnWidth = 10              '列幅
+        .Columns("B:C").ColumnWidth = 30
+        .Columns("D").ColumnWidth = 10
+        .Columns("E").ColumnWidth = 5
+        .Columns("F:G").ColumnWidth = 30
+        .Columns("H").ColumnWidth = 20
+        .Columns("I").ColumnWidth = 10
+        .Columns("J").ColumnWidth = 12
+        .Columns("K").ColumnWidth = 20
+        .Rows(1).AutoFilter                         'フィルター
+    End With
+    ActiveWindow.DisplayGridlines = False           '目盛線
+    ActiveWindow.Zoom = 85                          '表示倍率
+    ws.Range("B2").Select                           'ウィンドウ枠の固定
+    ActiveWindow.FreezePanes = True
+
+    '1～4 コピー作成
+    For i = 4 To 1 Step -1
+        ws.Copy Before:=ThisWorkbook.Sheets(1)
+        ThisWorkbook.Sheets(1).Name = ChangeUniqueSheetNm("TBL" & i)
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[Sheet作成]を作成する
+'引数 : -
+'戻値 : -
+'備考 : 作成するSQLの値を入力するSheetを作成するためのSheet
+'------------------------------------------------------------
+Private Sub CreateSheet_CreateTemplateSql()
+    Dim i As Long         'Lopカウンタ
+    Dim ws As Worksheet   'Sheet
+    Dim rng As Range      '範囲
+    Dim endRowIdx As Long '終了行
+    '●図形/サイズ(横/縦)
+    Dim shp As Shape
+    Dim shpWidth As Double: shpWidth = 4
+    Dim shpHeight As Double: shpHeight = 1
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("Sheet作成")
+
+    '書込
+    With ws
+        .Range("A2").Value = "No"
+        .Range("B2").Value = "TBL論理名"
+        .Range("C2").Value = "TBL物理名"
+        .Range("D2").Value = "参照Sheet名"
+        .Range("E2").Value = "DB"
+        .Range("F2").Value = "Schema名(任意)"
+        .Range("G2").Value = "作成Sheet名(任意)"
+        .Range("A3:A32").Formula2 = "=ROW()-2"
+        .Range("B3:B32").Formula2R1C1 = "=IF(OR(TRIM(RC[1])="""",TRIM(RC[2])=""""),"""",IFERROR(LET(tblNm,RC[1],sheetNm,RC[2],searchRng,INDIRECT(""'""&sheetNm&""'!C:C""),returnRng,INDIRECT(""'""&sheetNm&""'!B:B""),XLOOKUP(tblNm,searchRng,returnRng,""※TBL物理名が存在しません"")),""※参照Sheet名が存在しません""))"
+        .Range("E3:E32").Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=ORACLE & "," & POSTGRESQL & "," & SQLSERVER
+    End With
+
+    'Sheet設定
+    ws.Activate
+    With ws
+        'Tab色
+        .Tab.Color = COLOR_A5M2
+        '太字
+        .Range("A2:G2").Font.Bold = True
+        '背景色
+        .Range("A2:G2").Interior.Color = COLOR_A5M2
+        .Range("B3:B32").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Range("A2:G2").HorizontalAlignment = xlCenter
+        .Range("A2:G2").VerticalAlignment = xlCenter
+        .Range("A3:A32").HorizontalAlignment = xlCenter
+        '列幅
+        .Columns("A").ColumnWidth = 4
+        .Columns("B").ColumnWidth = 55
+        .Columns("C").ColumnWidth = 60
+        .Range("D:G").ColumnWidth = 20
+        '行幅
+        .Rows(1).RowHeight = 36
+        '罫線
+        .Range("A2:G32").BorderAround LineStyle:=xlContinuous, Weight:=xlThin '外
+        .Range("A2:G32").Borders(xlInsideHorizontal).Weight = xlHairline      '内
+        .Range("A2:G32").Borders(xlInsideVertical).Weight = xlHairline
+        '条件付き書式
+        .Range("A3:A32").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        .Range("C3:G32").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        'グループ化
+        .Rows("1").Group
+        '折り返して表示
+        .Range("B3:G32").WrapText = True
+    End With
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    'ウィンドウ枠の固定
+    ws.Range("C3").Select
+    ActiveWindow.FreezePanes = True
+
+    'マクロボタン作成
+    Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
     With shp
-        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '塗りつぶし色 #5B9BD5
-        .Line.ForeColor.RGB = RGB(91, 155, 213)                            '枠線色 #5B9BD5
-        .Line.Weight = 1                                                   '枠線太さ
-        .TextFrame2.TextRange.Text = newSheetNm                            '表示文字列
-        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック本文"          'フォント
-        .TextFrame2.TextRange.Font.Name = "Yu Gothic"                      'フォント
-        .TextFrame2.TextRange.Font.Size = 10                               '文字サイズ
-        .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
-        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(189, 215, 238) '文字色 #BDD7EE
+        .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 塗りつぶし色
+        .line.ForeColor.RGB = RGB(91, 155, 213)                            '#5B9BD5 枠線色
+        .TextFrame2.TextRange.Text = "Sheet作成"                           '表示文字列
+        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント(JP)
+        .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント(EN)
+        .TextFrame2.TextRange.Font.Size = 14                               '文字サイズ
+        .TextFrame2.TextRange.Font.Bold = True                             '太字
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '文字色
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-        .OnAction = "CreateSheet_TemplateSql"                              'マクロ登録
-        .Top = 6                                                           '配置場所(縦)
-        .Left = 1010                                                       '配置場所(横)
+        .OnAction = "Btn_CreateSheet_InputSql"                             'マクロ登録
+        .Top = ws.Range("B1").Top + 4                                      '配置場所(縦)
+        .Left = ws.Range("B1").Left                                        '配置場所(横)
     End With
-
-    '処理中描画ON設定
-    SetDrawProcess True
 End Sub
 '------------------------------------------------------------
-'概要 : Sheet［SQLテンプレート］作成
+'概要 : Sheet[SQL入力]を作成する
 '引数 : -
 '戻値 : -
-'備考 : -
+'備考 : 作成するSQLの値を入力するSheet
 '------------------------------------------------------------
-Sub CreateSheet_TemplateSql()
+Private Sub Btn_CreateSheet_InputSql()
     '処理中描画OFF設定
-    SetDrawProcess False
+    Call SettingRenderingProcess(False)
 
-    '●列Index
-    Dim colIdx As Long
-    '●行Index
-    Dim rowIdx As Long
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-    '●タイムスタンプ
-    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
-    '●現在日付(yyyy-MM-dd)
-    Dim crntDate As String: crntDate = Format(Now, "yyyy-MM-dd")
-    '●一時保持用(String)
-    Dim tmpStr As String
-
-    '●Sheet
-    Dim ws As Worksheet
-    '●Sheet名
-    Dim wsNm As String
-    '●Index(開始列/開始行/終了列/終了行)
-    Dim colStartIdx As Long
-    Dim rowStartIdx As Long
-    Dim colEndIdx As Long
-    Dim rowEndIdx As Long
-    '●範囲
-    Dim rng As Range
-    '●Cell範囲データ
-    Dim rngVals As Variant
-    '●図形
-    Dim shp As Shape
-
-    '●新規Sheet
-    Dim newSheet As Variant
-    '●新規Sheet名
-    Dim newSheetNm As String
-
-    '●Sheet[Sheet作成]
-    Dim wsCrat As Worksheet: Set wsCrat = ThisWorkbook.Sheets("Sheet作成")
-    '●Sheet[参照Sheet］
-    Dim wsRef As Worksheet
-
+    Dim i As Long          'Loopカウンタ
+    Dim refWs As Worksheet '参照Sheet
+    Dim rngVals As Variant '範囲データ
+    Dim rowIdx As Long     '行
+    Dim endRowIdx As Long  '終了行
+    Dim endRowIdx1 As Long '終了行1
+    Dim endRowIdx2 As Long '終了行2
+    Dim endRowIdx3 As Long '終了行3
+    '●メッセージ内容
+    Dim msg As String
+    '●入力値配列リスト/入力値配列
+    Dim inputArrCol As Collection: Set inputArrCol = New Collection
+    Dim inputArr As Variant
+    Dim lineNo As String        '行No
+    Dim inputTblNm As String    '入力TBL名
+    Dim inputRefWsNm As String  '入力参照Sheet名
+    Dim inputDbNm As String     '入力DB名
+    Dim inputSchemaNm As String '入力Schema名
+    Dim inputCratWsNm As String '入力作成Sheet名
     '●TBL名
     Dim tblNm As String
-    '●参照Sheet名
-    Dim refSheetNm As String
-    '●Schema名
-    Dim schemaNm As String
-    '●TBL名List
-    Dim tblNmList As Object
-    '●作成TBL名Map行
-    Dim cratTblNmArr As Variant
-    '●作成TBL名Map(TBL名/参照Sheet名/Schema名)
-    Dim cratTblNmMap As Collection: Set cratTblNmMap = New Collection
-    '●項目番号
-    Dim colNo As Long
+    '●存在フラグ
+    Dim existsFlg As Boolean
 
-    '●PK
-    Dim pk As String
-    '●項目名
-    Dim colNm As String
-    '●型
-    Dim colType As String
-    '●桁
-    Dim colLen As Variant
-    '●NOT NULL
-    Dim notNull As String
-
-    '●TBL論理名セット済フラグ
-    Dim alreadySet As Boolean
-
-    '●シリアルNo
-    Dim serialNo As String: serialNo = "00001"
-    '●テスト文字列(半角)
-    Dim testStrHarfWid As String
-    tmpStr = "ABCDEFGHIJKLMNOPQRSTUVWXY"
-    For i = 1 To 2
-        For j = 1 To Len(tmpStr)
-            testStrHarfWid = testStrHarfWid & String(10, Mid$(tmpStr, j, 1))
-        Next j
-    Next i
-    '●テスト文字列(全角)
-    Dim testStrFullWid As String
-    tmpStr = "あいうえおかきくけこさしすせそたちつてとなにぬねの"
-    For i = 1 To 4
-        For j = 1 To Len(tmpStr)
-            testStrFullWid = testStrFullWid & String(5, Mid$(tmpStr, j, 1))
-        Next j
-    Next i
-
-    '■■■■■ 作成TBL名 入力チェック ■■■■■
-    'C2入力無しの場合
-    If IsEmpty(Trim$(wsCrat.Range("C2").Value2)) Then
-        MsgBox "作成するテーブル物理名を入力してください"
+    '========== ▼入力チェック[TBL物理名] ==========
+    '終了行 取得
+    endRowIdx1 = ActiveSheet.Cells(ActiveSheet.Rows.Count, "C").End(xlUp).Row
+    If endRowIdx1 <= 1 Then
+        msg = "[TBL物理名] を入力して下さい"
+        Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
 
-    '■■■■■ 作成TBL名Map 作成 & 参照Sheet名 入力チェック & TBL名 重複チェック ■■■■■
-    'TBL名List(重複チェック用)
-    Set tblNmList = CreateObject("Scripting.Dictionary")
-    '大文宇小文字 区別OFF設定
-    tblNmList.CompareMode = vbTextCompare
-    'C2から入力末行まで
-    rowEndIdx = wsCrat.Cells(wsCrat.Rows.Count, "C").End(xlUp).Row
-    rngVals = wsCrat.Range("C2", wsCrat.Cells(rowEndIdx, "E")).Value2
-    For i = 1 To UBound(rngVals, 1)
+    '========== ▼入力チェック[参照Sheet名] ==========
+    '終了行 取得
+    endRowIdx2 = ActiveSheet.Cells(ActiveSheet.Rows.Count, "D").End(xlUp).Row
+    If endRowIdx2 <= 1 Then
+        msg = "[参照Sheet名] を入力して下さい"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+
+    '========== 入力値配列リスト 作成(空行除去) ==========
+    endRowIdx = IIf(endRowIdx1 < endRowIdx2, endRowIdx2, endRowIdx1)
+    For rowIdx = 3 To endRowIdx
         '入力値 取得
-        tblNm = Trim$(CStr(rngVals(i, 1)))      '●TBL名
-        refSheetNm = Trim$(CStr(rngVals(i, 2))) '●参照Sheet名
-        schemaNm = Trim$(CStr(rngVals(i, 3)))   '●Schema名
+        lineNo = ActiveSheet.Cells(rowIdx, "A").Value2        '行No
+        inputTblNm = ActiveSheet.Cells(rowIdx, "C").Value2    '入力TBL物理名
+        inputRefWsNm = ActiveSheet.Cells(rowIdx, "D").Value2  '入力参照Sheet名
+        inputDbNm = ActiveSheet.Cells(rowIdx, "E").Value2     '入力DB名
+        inputSchemaNm = ActiveSheet.Cells(rowIdx, "F").Value2 '入力Schema名
+        inputCratWsNm = ActiveSheet.Cells(rowIdx, "G").Value2 '入力作成Sheet名
+        'いずれか入力有の場合、入力値配列リストに追加
+        If LenB(inputTblNm) <> 0 Or LenB(inputRefWsNm) <> 0 Then
+            inputArrCol.Add (Array(lineNo, inputTblNm, inputRefWsNm, inputDbNm, inputSchemaNm, inputCratWsNm))
+        End If
+    Next
 
-        '========== TBL名が空の場合 終了 ==========
-        If IsEmpty(tblNm) Then Exit For
-
-        '========== 参照Sheet名が空の場合 ==========
-        If IsEmpty(refSheetNm) Then
-            MsgBox "TBL [" & tblNm & "］の参照Sheet名を入力してください"
+    '========== ▼入力 & 存在チェック[TBL物理名 & 参照Sheet名 & DB] ==========
+    For Each inputArr In inputArrCol
+        lineNo = CStr(inputArr(0))       '行No
+        inputTblNm = CStr(inputArr(1))   '入力TBL物理名
+        inputRefWsNm = CStr(inputArr(2)) '入力参照Sheet名
+        inputDbNm = CStr(inputArr(3))    '入力DB名
+        'メッセージ準備
+        msg = lineNo & "行目："
+        '=== [TBL物理名]が未入力の場合 ==========
+        If LenB(inputTblNm) = 0 Then
+            msg = msg & "[TBL物理名] を入力して下さい"
+            Call MsgBox(msg, vbCritical, "")
             Exit Sub
         End If
-
-        '========== TBL名が重複の場合 ==========
-        If tblNmList.exists(tblNm) Then
-            MsgBox "TBL [" & tblNm & "] が重複しています"
+        '=== [参照Sheet名]が未入力の場合 ==========
+        If LenB(inputRefWsNm) = 0 Then
+            msg = msg & "[参照Sheet名] を入力して下さい"
+            Call MsgBox(msg, vbCritical, "")
             Exit Sub
         End If
-        'TBL名List 追加
-        tblNmList.Add tblNm, 0
-        '作成TBL名Map追加
-        cratTblNmMap.Add Array(tblNm, refSheetNm, schemaNm)
-    Next i
-
-    '■■■■■ 参照Sheet & TBL名 存在チェック ■■■■■
-    For Each cratTblNmArr In cratTblNmMap
-        refSheetNm = cratTblNmArr(1) '●参照Sheet名
-
-        '========== 参照Sheet 存在チェック ==========
-        '存在しない場合 終了
-        If Not IsExistsSheet(refSheetNm) Then
-            MsgBox "Sheet [" & refSheetNm & "] が存在しません"
+        '=== [DB]が未選択の場合 ==========
+        If LenB(inputDbNm) = 0 Then
+            msg = msg & "[DB] を選択して下さい"
+            Call MsgBox(msg, vbCritical, "")
             Exit Sub
         End If
-
-        '========== 参照SheetのTBL名 存在チェック ==========
-        '参照Sheet取得
-        Set wsRef = ThisWorkbook.Sheets(refSheetNm)
-        'TBL名リスト取得(C列値リスト(重複除外))
-        Set tblNmList = CreateObject("Scripting.Dictionary")
-        rowEndIdx = wsRef.Cells(wsRef.Rows.Count, "C").End(xlUp).Row
-        rngVals = wsRef.Range("C2", wsRef.Cells(rowEndIdx, "C")).Value2
+        '=== [参照Sheet名]のSheetが存在しない場合 ==========
+        If Not IsExistsSheet(inputRefWsNm) Then
+            msg = msg & "参照Sheet名 [" & inputRefWsNm & "] が存在しません"
+            Call MsgBox(msg, vbCritical, "")
+            Exit Sub
+        End If
+        '=== [参照Sheet名]のSheetの中身が空の場合 ==========
+        '参照Sheet 取得
+        Set refWs = ThisWorkbook.Sheets(inputRefWsNm)
+        endRowIdx = refWs.Cells(refWs.Rows.Count, "C").End(xlUp).Row
+        If endRowIdx <= 1 Then
+            msg = msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません"
+            Call MsgBox(msg, vbCritical, "")
+            Exit Sub
+        End If
+        'TBL(物理) 取得
+        existsFlg = False
+        rngVals = refWs.Range("C2:C" & endRowIdx).Value2
+        '大文字統一
+        tblNm = UCase$(inputTblNm)
+        '存在チェック
         For i = 1 To UBound(rngVals, 1)
-            tblNm = Trim$(CStr(rngVals(i, 1)))
-            If Not IsEmpty(tblNm) Then
-                If Not tblNmList.exists(tblNm) Then
-                    tblNmList.Add tblNm, 0
-                End If
+            If UCase$(rngVals(i, 1)) = tblNm Then
+                existsFlg = True
+                Exit For
             End If
-        Next i
-        '参照SheetのC列(TBL物理)に存在しない場合 終了
-        tblNm = cratTblNmArr(0) '●TBL名
-        If Not tblNmList.exists(tblNm) Then
-            MsgBox "Sheet [" & refSheetNm & "] にTBL [" & tblNm & "] が存在しません"
+        Next
+        '=== 参照Sheetに[TBL物理名]が存在しない場合 ==========
+        If Not existsFlg Then
+            msg = msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません"
+            Call MsgBox(msg, vbCritical, "")
             Exit Sub
         End If
-    Next cratTblNmArr
+    Next
 
-    '■■■■■ Sheet 作成 ■■■■■
-    '作成TBL分Loop (TBL名入力末尾から処理)
-    For i = cratTblNmMap.Count To 1 Step -1
-        tblNm = cratTblNmMap(i)(0) '●TBL名
-        refSheetNm = cratTblNmMap(i)(1) '●参照Sheet名
-        schemaNm = cratTblNmMap(i)(2) '●Schema名
-        '参照Sheet取得
-        Set wsRef = ThisWorkbook.Sheets(refSheetNm)
-
-        '========== 新規Sheet名 作成(最初のアンダーバー手前まで切り抜き) ==========
-        j = InStr(1, tblNm, "_")
-        'アンダーバー無い場合 そのまま
-        If j = 0 Then
-            newSheetNm = tblNm
-        Else
-            newSheetNm = Left$(tblNm, j - 1)
-        End If
-
-        '■■■■■■■■■■■■■■■■■■■■
-        '  DELETE Sheet 作成
-        '■■■■■■■■■■■■■■■■■■■■
-        '========== Sheet名 存在チェック ==========
-        '存在する場合 タイムスタンプ付与
-        If IsExistsSheet("D-" + newSheetNm) Then
-            newSheetNm = newSheetNm & "_" & timestamp
-        End If
-
-        '========== Sheet 作成 & 詳細設定(1) ==========
-        Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-        With newSheet
-            '●Sheet名
-            .Name = "D-" + newSheetNm
-            '●Tab色
-            .Tab.Color = RGB(237, 125, 49) '#ED7D31
-            '●Cell固定文字列
-            .Range("A1").Value = "SCM"
-            .Range("A2").Value = "TBL"
-            .Range("A13").Value = "No"
-            .Range("A14:A113").FormulaR1C1 = "=ROW()-13"
-            .Range("B1").Value = schemaNm
-            .Range("B3").Value = tblNm
-            .Range("B9").Value = "備考1"
-            .Range("B10").Value = "備考2"
-            .Range("B11").Value = "備考3"
-            .Range("B12").Value = "備考4"
-            .Range("B13").Value = "備考5"
-            .Range("C1").Value = "No"
-            .Range("C2").Value = "PK"
-            .Range("C3").Value = "論理"
-            .Range("C4").Value = "物理"
-            .Range("C5").Value = "型"
-            .Range("C6").Value = "桁"
-            .Range("C7").Value = "NULL不可"
-            .Range("C8").Value = "初期値"
-            '●Cell背景色
-            .Range("A1:A3").Interior.Color = RGB(255, 192, 0)     '#FFC000
-            .Range("B1:B3").Interior.Color = RGB(255, 242, 204)   '#FFF2CC
-            .Range("A4:B8").Interior.Color = RGB(128, 128, 128)   '#808080
-            .Range("A9:A113").Interior.Color = RGB(217, 217, 217) '#D9D9D9
-            .Range("B9:B13").Interior.Color = RGB(217, 217, 217)  '#D9D9D9
-            .Range("C1:C13").Interior.Color = RGB(217, 217, 217)  '#D9D9D9
-        End With
-
-        '========== TBL情報 転記 ==========
-        colNo = 0          '●項目番号
-        colIdx = 4         '●列Index(D列)
-        alreadySet = False '●TBL論理名セット済フラグ
-
-        '作成TBL名を、参照SheetのC列上から検索
-        rowEndIdx = wsRef.Cells(wsRef.Rows.Count, "C").End(xlUp).Row
-        rngVals = wsRef.Range("C1", wsRef.Cells(rowEndIdx, "C")).Value2
-        For j = 1 To UBound(rngVals, 1)
-            '見つけた場合
-            If tblNm = Trim$(CStr(rngVals(j, 1))) Then
-                'B1に(TBL論理名)セット(1回だけ処理)
-                If Not alreadySet Then newSheet.Range("B2").Value = wsRef.Cells(j, "B").Value2
-                alreadySet = True
-                '項目情報コピー(PK項目のみ)
-                colNo = colNo + 1
-                pk = Trim$(wsRef.Cells(j, "E").Value2) 'PK
-                'PKの場合
-                If pk = "Y" Then
-                    newSheet.Cells(1, colIdx).Value = colNo                             'No
-                    newSheet.Cells(2, colIdx).Value = pk                                'PK
-                    newSheet.Cells(3, colIdx).Value = Trim$(wsRef.Cells(j, "F").Value2) '項目論理名
-                    newSheet.Cells(4, colIdx).Value = Trim$(wsRef.Cells(j, "G").Value2) '項目物理名
-                    newSheet.Cells(5, colIdx).Value = Trim$(wsRef.Cells(j, "H").Value2) '型
-                    newSheet.Cells(6, colIdx).Value = Trim$(wsRef.Cells(j, "I").Value2) '桁
-                    notNull = Trim$(wsRef.Cells(j, "J").Value2)                         'NULL不可(Yのみ記載)
-                    If notNull = "Y" Then newSheet.Cells(7, colIdx).Value = notNull
-                    colIdx = colIdx + 1
-                End If
-            '見つからない & 既にセット済の場合
-            ElseIf alreadySet Then
-                Exit For
-            End If
-        Next j
-
-        '========== Index セット ==========
-        colStartIdx = 4
-        colEndIdx = newSheet.Cells(1, newSheet.Columns.Count).End(xlToLeft).Column
-
-        '========== 詳細設定(2) ==========
-        newSheet.Activate
-        ActiveWindow.Zoom = 70 '表示倍率
-        ActiveWindow.DisplayGridlines = False '目盛線
-        With newSheet
-            .Columns("A").ColumnWidth = 4                   '列幅[A]
-            .Columns("B").ColumnWidth = 20                  '列幅[B]
-            .Columns("C").ColumnWidth = 8                   '列幅C］
-            .Cells.VerticalAlignment = xlTop                '上揃え
-            .Cells.HorizontalAlignment = xlLeft             '左揃え
-            .Columns("A").HorizontalAlignment = xlCenter    '文字揃え(横)
-            .Range("B9:B13").HorizontalAlignment = xlCenter '文字揃え(横)
-            .Columns("C").HorizontalAlignment = xlCenter    '文字揃之(横)
-            'D1から終了列の8行目まで 中央揃え(横)
-            .Range(newSheet.Cells(1, 4), newSheet.Cells(8, colEndIdx)).HorizontalAlignment = xlCenter
-            .Range("B1:B1").EntireColumn.Group              '列グループ化
-            .Cells.Font.Name = "HGSｺﾞｼｯｸM"                  'フォント
-            .Range("B9:C113").Merge Across:=True            'Cell結合(横)
-        End With
-        '●D列から終了列まで(列幅/背景色/文字色/太字)
-        For colIdx = 4 To colEndIdx
-            '列幅
-            newSheet.Columns(colIdx).ColumnWidth = 15
-            '2行目(背景色/太字)
-            With newSheet.Cells(2, colIdx)
-                .Interior.Color = RGB(255, 0, 0)
-                .Font.Bold = True
-            End With
-            '7行目(文字色/太字)
-            With newSheet.Cells(7, colIdx)
-                .Font.Color = RGB(255, 0, 0)
-                .Font.Bold = True
-            End With
-        Next colIdx
-        '●罫線
-        Set rng = Range(newSheet.Cells(9, "B"), newSheet.Cells(13, colEndIdx))
-        With rng.Borders(xlInsideHorizontal)
-            .Weight = xlHairline
-            .ColorIndex = xlAutomatic
-        End With
-        Set rng = Range(newSheet.Cells(14, "B"), newSheet.Cells(113, colEndIdx))
-        With rng.Borders(xlInsideHorizontal)
-            .Weight = xlHairline
-            .ColorIndex = xlAutomatic
-        End With
-        '●ウィンドウ枠の固定
-        newSheet.Range("D14").Select
-        ActiveWindow.FreezePanes = True
-        '●条件付き書式(奇数行背景色)
-        Set rng = Range(newSheet.Cells(14, "B"), newSheet.Cells(113, colEndIdx))
-        rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-
-        '========== マクロボタン 作成 ==========
-        Set shp = newSheet.Shapes.AddShape(msoShapeBevel, newSheet.Range("B5").Left, newSheet.Range("B5").Top, Application.CentimetersToPoints(4), Application.CentimetersToPoints(1.4))
-        With shp
-            .Fill.ForeColor.RGB = RGB(197, 90, 17)                             '塗りつぶし色 #C55A11
-            .Line.ForeColor.RGB = RGB(197, 90, 17)                             '枠線色 #C55A11
-            .Line.Weight = 1                                                   '枠線太さ
-            .TextFrame2.TextRange.Text = "SQL作成"                             '表示文字列
-            .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック本文"          'フォント
-            .TextFrame2.TextRange.Font.Name = "Yu Gothic"                      'フォント
-            .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
-            .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
-            .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(248, 208, 173) '文字色 #F8CBAD
-            .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
-            .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
-            .OnAction = "CreateSqlFile"                                        'マクロ登録
-        End With
-
-        '■■■■■■■■■■■■■■■■■■■■
-        '  INSERT Sheet 作成
-        '■■■■■■■■■■■■■■■■■■■■
-        '========== Sheet名 存在チェック ==========
-        '存在する場合 タイムスタンプ付与
-        If IsExistsSheet("I-" + newSheetNm) Then
-            newSheetNm = newSheetNm & "_" & timestamp
-        End If
-
-        '========== Sheet 作成 & 詳細設定(1) ==========
-        Set newSheet = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-        With newSheet
-            '●Sheet名
-            .Name = "I-" + newSheetNm
-            '●Tab色
-            .Tab.Color = RGB(189, 215, 238) '#BDD7EE
-            '●Cell固定文字列
-            .Range("A1").Value = "SCM"
-            .Range("A2").Value = "TBL"
-            .Range("A13").Value = "No"
-            .Range("A14:A113").FormulaR1C1 = "=ROW()-13"
-            .Range("B1").Value = schemaNm
-            .Range("B3").Value = tblNm
-            .Range("B9").Value = "備考1"
-            .Range("B10").Value = "備考2"
-            .Range("B11").Value = "備考3"
-            .Range("B12").Value = "備考4"
-            .Range("B13").Value = "備考5"
-            .Range("C1").Value = "No"
-            .Range("C2").Value = "PK"
-            .Range("C3").Value = "論理"
-            .Range("C4").Value = "物理"
-             Range("C5").Value = "型"
-            .Range("C6").Value = "桁"
-            .Range("C7").Value = "NULL不可"
-            .Range("C8").Value = "初期値"
-            '●Cell背景色
-            .Range("A1:A3").Interior.Color = RGB(255, 192, 0)     '#FFC000
-            .Range("B1:B3").Interior.Color = RGB(255, 242, 204)   '#FFF2CC
-            .Range("A4:B8").Interior.Color = RGB(128, 128, 128)   '#808080
-            .Range("A9:A113").Interior.Color = RGB(217, 217, 217) '#D9D9D9
-            .Range("B9:B13").Interior.Color = RGB(217, 217, 217)  '#D9D9D9
-            .Range("C1:C13").Interior.Color = RGB(217, 217, 217)  '#D9D9D9
-        End With
-
-        '========== TBL情報 転記 ==========
-        colNo = 0          '●項目番号
-        colIdx = 4         '●列Index(D列)
-        alreadySet = False '●TBL論理名セット済フラグ
-
-        '作成TBL名を 参照SheetのC列上から検索
-        rowEndIdx = wsRef.Cells(wsRef.Rows.Count, "C").End(xlUp).Row
-        rngVals = wsRef.Range("C1", wsRef.Cells(rowEndIdx, "C")).Value2
-        For j = 1 To UBound(rngVals, 1)
-            '見つけた場合
-            If tblNm = Trim$(CStr(rngVals(j, 1))) Then
-                'B1に(TBL論理名)セット(1回だけ処理)
-                If Not alreadySet Then newSheet.Range("B2").Value = wsRef.Cells(j, "B").Value2
-                alreadySet = True
-                '項目情報コピー
-                colNo = colNo + 1
-                newSheet.Cells(1, colIdx).Value = colNo                             'No
-                pk = Trim$(wsRef.Cells(j, "E").Value2)                              'PK(Yのみ記載)
-                If pk = "Y" Then newSheet.Cells(2, colIdx).Value = pk
-                newSheet.Cells(3, colIdx).Value = Trim$(wsRef.Cells(j, "F").Value2) '項目論理名
-                newSheet.Cells(4, colIdx).Value = Trim$(wsRef.Cells(j, "G").Value2) '項目物理名
-                newSheet.Cells(5, colIdx).Value = Trim$(wsRef.Cells(j, "H").Value2) '型
-                newSheet.Cells(6, colIdx).Value = Trim$(wsRef.Cells(j, "I").Value2) '桁
-                notNull = Trim$(wsRef.Cells(j, "J").Value2)                         'NULL不可(Yのみ記載)
-                If notNull = "Y" Then newSheet.Cells(7, colIdx).Value = notNull
-                colIdx = colIdx + 1
-            '見つからない & 既にセット済の場合
-            ElseIf alreadySet Then
-                Exit For
-            End If
-        Next j
- 
-        '========== Index セット ==========
-        colStartIdx = 4
-        colEndIdx = newSheet.Cells(1, newSheet.Columns.Count).End(xlToLeft).Column
-        rowEndIdx = 113
-
-        '========== ユーザー名 作成(PC名) ==========
-        Dim testUserNm As String: testUserNm = Environ("COMPUTERNAME")
-        If IsEmpty(testUserNm) Then
-            testUserNm = "TEST_UNKNOWN"
-        Else
-            testUserNm = "TEST_" + Right(testUserNm, newSheet.Range("G6").Value2 - 5)
-        End If
-
-        '========== テストデータ セット ==========
-        newSheet.Range(Cells(14, colStartIdx), Cells(rowEndIdx, colEndIdx)).NumberFormat = "@" '表示書式[文字列]
-        '■固定文字列
-        With newSheet
-            '[登録日時], [更新日時]
-            .Range("D14:E113").Value = "SYSDATE"
-            '[更新回数]
-            .Range("F14:F113").Value = 0
-            '[登録ユーザーID], [更新ユーザーID]
-            .Range("G14:H113").Value = testUserNm
-        End With
-
-        '■任意文字列
-        'システム項目除いた列からLoop
-        For colIdx = colStartIdx + 5 To colEndIdx
-            '項目詳細取得
-            rngVals = newSheet.Range(newSheet.Cells(4, colIdx), newSheet.Cells(7, colIdx)).Value2
-            For j = 1 To UBound(rngVals, 1)
-                colNm = CStr(rngVals(1, 1))   '●項目物理名
-                colType = CStr(rngVals(2, 1)) '●型
-                colLen = CStr(rngVals(3, 1))  '●桁
-                notNull = CStr(rngVals(4, 1)) '●NULL
-            Next j
-
-            '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
-            If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
-                '桁1の場合
-                If colLen = 1 Then
-                    'NULL不可の場合
-                    If notNull = "Y" Then
-                        newSheet.Range(Cells(14, colIdx), Cells(rowEndIdx, colIdx)).Value = "0"
-                    Else
-                        newSheet.Cells(14, colIdx).Value = "O"
-                        newSheet.Range(Cells(15, colIdx), Cells(rowEndIdx, colIdx)).Value = "NULL"
-                    End If
-                ElseIf colLen < Len(serialNo) Then
-                    If notNull = "Y" Then
-                        newSheet.Range(Cells(14, colIdx), Cells(rowEndIdx, colIdx)).Value = Right$(serialNo, colLen)
-                    Else
-                        newSheet.Cells(14, colIdx).Value = Right$(serialNo, colLen)
-                        newSheet.Range(Cells(15, colIdx), Cells(rowEndIdx, colIdx)).Value = "NULL"
-                    End If
-                Else
-                    newSheet.Cells(14, colIdx).Value = Left$(colNm, colLen - Len(serialNo)) & serialNo
-                    newSheet.Cells(15, colIdx).Value = Left$(testStrHarfWid, colLen)
-                    newSheet.Cells(16, colIdx).Value = Left$(testStrFullWid, colLen)
-                    If notNull = "Y" Then
-                        newSheet.Range(Cells(17, colIdx), Cells(rowEndIdx, colIdx)).Value = Left$(colNm, colLen - Len(serialNo)) & serialNo
-                    Else
-                        newSheet.Range(Cells(17, colIdx), Cells(rowEndIdx, colIdx)).Value = "NULL"
-                    End If
-                End If
-
-            '========== NUMBER / NUMERIC / INTEGER ==========
-            ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
-                colLen = Split(colLen, ",")(0) '桁
-                newSheet.Cells(14, colIdx).Value = "O"
-                newSheet.Cells(15, colIdx).Value = String(colLen, "9")
-                'NULL不可の場合
-                If notNull = "Y" Then
-                    newSheet.Range(Cells(16, colIdx), Cells(rowEndIdx, colIdx)).Value = "O"
-                Else
-                    newSheet.Range(Cells(16, colIdx), Cells(rowEndIdx, colIdx)).Value = "NULL"
-                End If
-
-            '========== TIMESTAMP / DATE ==========
-            ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
-                newSheet.Cells(14, colIdx).Value = crntDate '現在日付(yyyy-MM-dd)
-                'NULL不可の場合
-                If notNull = "Y" Then
-                    newSheet.Range(Cells(15, colIdx), Cells(rowEndIdx, colIdx)).Value = crntDate
-                Else
-                    newSheet.Range(Cells(15, colIdx), Cells(rowEndIdx, colIdx)).Value = "NULL"
-                End If
-
-            '========== その他の型 ==========
-            Else
-                newSheet.Range(Cells(14, colIdx), Cells(rowEndIdx, colIdx)).Value = "O"
-            End If
-        Next colIdx
-
-        '========== 詳細設定(2) ==========
-        newSheet.Activate
-        ActiveWindow.Zoom = 70 '表示倍率
-        ActiveWindow.DisplayGridlines = False '目盛線
-            With newSheet
-            .Columns("A").ColumnWidth = 4                   '列幅[A]
-            .Columns("B").ColumnWidth = 20                  '列幅[B]
-            .Columns("C").ColumnWidth = 8                   '列幅[C]
-            .Cells.VerticalAlignment = xlTop                '上揃え
-            .Cells.HorizontalAlignment = xlLeft             '左揃え
-            .Columns("A").HorizontalAlignment = xlCenter    '文字揃え(横)
-            .Range("B9:B13").HorizontalAlignment = xlCenter '文字揃え(横)
-            .Columns("C").HorizontalAlignment = xlCenter    '文字揃え(横)
-            'D1から終了列の8行目まで 中央揃え(横)
-            .Range(newSheet.Cells(1, 4), newSheet.Cells(8, colEndIdx)).HorizontalAlignment = xlCenter
-            .Range("B1:B1").EntireColumn.Group              '列グループ化
-            .Cells.Font.Name = "HGSｺﾞｼｯｸM"                  'フォント
-            .Range("B9:C113").Merge Across:=True            'Cell結合(横)
-        End With
-        '●NUMBER型 右寄せ
-        colStartIdx = 4
-        For colIdx = colStartIdx To colEndIdx
-            colType = newSheet.Cells(5, colIdx).Value2
-            If Left$(colType, 6) = "NUMBER" Then
-                newSheet.Range(newSheet.Cells(14, colIdx), newSheet.Cells(rowEndIdx, colIdx)).HorizontalAlignment = xlRight
-            End If
-        Next colIdx
-        '●D列から終了列まで(列幅/背景色/文字色/太字)
-        For colIdx = 4 To colEndIdx
-            '列幅
-            newSheet.Columns(colIdx).ColumnWidth = 15
-            '2行目(背景色/太字)
-            If Not IsEmpty(newSheet.Cells(2, colIdx).Value2) Then
-                With newSheet.Cells(2, colIdx)
-                    .Interior.Color = RGB(255, 0, 0)
-                    .Font.Bold = True
-                End With
-            End If
-            '17行目(文字色/太字)
-            If Not IsEmpty(newSheet.Cells(7, colIdx).Value2) Then
-                With newSheet.Cells(7, colIdx)
-                    .Font.Color = RGB(255, 0, 0)
-                    .Font.Bold = True
-                End With
-            End If
-        Next colIdx
-        '●罫線
-        Set rng = Range(newSheet.Cells(9, "B"), newSheet.Cells(13, colEndIdx))
-        With rng.Borders(xlInsideHorizontal)
-            .Weight = xlHairline
-            .ColorIndex = xlAutomatic
-        End With
-        Set rng = Range(newSheet.Cells(14, "B"), newSheet.Cells(113, colEndIdx))
-        With rng.Borders(xlInsideHorizontal)
-            .Weight = xlHairline
-            .ColorIndex = xlAutomatic
-        End With
-        '●ウィンドウ枠の固定
-        newSheet.Range("D14").Select
-        ActiveWindow.FreezePanes = True
-        '●条件付き書式 (奇数行背景色)
-        Set rng = Range(newSheet.Cells(14, "B"), newSheet.Cells(113, colEndIdx))
-        rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-
-        '========== マクロボタン 作成 ==========
-        Set shp = newSheet.Shapes.AddShape(msoShapeBevel, newSheet.Range("B5").Left, newSheet.Range("B5").Top, Application.CentimetersToPoints(4), Application.CentimetersToPoints(1.4))
-        With shp
-            .Fill.ForeColor.RGB = RGB(91, 155, 213)                            '塗りつぶし色 #5B9BD5
-            .Line.ForeColor.RGB = RGB(91, 155, 213)                            '枠線色 #5B9BD5
-            .Line.Weight = 1                                                   '枠線太さ
-            .TextFrame2.TextRange.Text = "SQL作成"                             '表示文字列
-            .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック本文"          'フォント
-            .TextFrame2.TextRange.Font.Name = "Yu Gothic"                      'フォント
-            .TextFrame2.TextRange.Font.Size = 16                               '文字サイズ
-            .TextFrame2.TextRange.Font.Bold = msoTrue                          '太字
-            .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(189, 215, 238) '文字色 #BDD7EE
-            .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
-            .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縱)
-            .OnAction = "CreateSqlFile"                                        'マクロ登録
-        End With
-    Next i
-
-    MsgBox "テンプレートSheetを作成しました"
+    '========== 末尾からSheet作成(DELETE & INSERT) ==========
+    For i = inputArrCol.Count To 1 Step -1
+        Call CreateSheet_InputSql(True, inputArrCol(i))
+        Call CreateSheet_InputSql(False, inputArrCol(i))
+    Next
 
     '処理中描画ON設定
-    SetDrawProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : SQLファイルと、インポートCSVファイルを作成する
+'概要 : Sheet[SQL入力(INSERT/DELETE)]を作成する
+'引数 : delFlg   : 作成種別フラグ(True=DELETE / False=INSERT)
+'     : inputArr : 入力値配列(No/TBL物理名/参照Sheet名/Schema名/作成Sheet名)
+'戻値 : -
+'備考 : 作成するSQLの値を入力するSheet
+'------------------------------------------------------------
+Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Variant)
+    Dim i As Long, j As Long 'Lopカウンタ
+    Dim ws As Worksheet      'Sheet
+    Dim rng As Range         '範囲
+    Dim rngVals As Variant   '範囲データ
+    '●行/列
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    '●開始/終了(行/列)
+    Dim startRowIdx As Long
+    Dim startColIdx As Long
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
+    '●図形/サイズ(横/縦)
+    Dim shp As Shape
+    Dim shpWidth As Double: shpWidth = 4
+    Dim shpHeight As Double: shpHeight = 1.4
+
+    '●'参照Sheet
+    Dim refWs As Worksheet
+    '●カウント
+    Dim cnt As Long
+    '●セット済フラグ
+    Dim alreadySetFlg As Boolean
+
+    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
+    Dim pk As String
+    Dim colNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    Dim initVal As String
+    Dim intPart As Long
+    Dim dcmlPart As Long
+    '●'TBL名
+    Dim tblNm As String
+
+    '●一括書込範囲(A列/C列)
+    Dim tmpValListA(1 To 113, 1 To 1) As Variant
+    Dim tmpValListC(1 To 13, 1 To 1) As Variant
+
+    '●TBL情報 転記範囲(一括書込用)
+    Dim tblValList As Variant
+
+    '●テストデータ書込範囲(一括書込用)
+    Dim testValList As Variant
+    '●文字列
+    Dim str As String
+    '●テストシリアルNo
+    Dim serialNo As String: serialNo = "00001"
+    '●テスト文字列(半角) (25文字 * 10文字 * 2に倍増し、計500桁)
+    Dim testStrHarfWid As String
+    str = "ABCDEFGHIJKLMNOPQRSTUVWXY"
+    For i = 1 To 2
+        For j = 1 To Len(str)
+            testStrHarfWid = testStrHarfWid & String(10, Mid$(str, j, 1))
+        Next
+    Next
+    '●テスト文字列(全角) (25文字 * 5文字 * 4に倍増し、計500桁)
+    Dim testStrFullWid As String
+    str = "あいうえおかきくけこさしすせそたちつてとなにぬねの"
+    For i = 1 To 4
+        For j = 1 To Len(str)
+            testStrFullWid = testStrFullWid & String(5, Mid$(str, j, 1))
+        Next
+    Next
+    '●テスト日付
+    Dim testDate As Date: testDate = Date
+    '●日付フォーマット
+    Dim fmtDate As String: fmtDate = "yyyy-mm-dd"
+
+    '●入力値配列(No/TBL物理名/参照Sheet名/Schema名/作成Sheet名)
+    Dim inputTblNm As String:    inputTblNm = CStr(inputArr(1))    '入力TBL物理名
+    Dim inputRefWsNm As String:  inputRefWsNm = CStr(inputArr(2))  '入力参照Sheet名
+    Dim inputDbNm As String:     inputDbNm = CStr(inputArr(3))     '入力DB名
+    Dim inputSchemaNm As String: inputSchemaNm = CStr(inputArr(4)) '入力Schema名
+    Dim inputCratWsNm As String: inputCratWsNm = CStr(inputArr(5)) '入力作成Sheet名
+
+    'Sheet作成 & Sheet名セット(作成Sheet名が未入力の場合、テーブル名)
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm(IIf(delFlg, "D", "I") & "-" & IIf(LenB(inputCratWsNm) <> 0, inputCratWsNm, inputTblNm))
+
+    '========== 一括書込 ==========
+    'A列 準備
+    tmpValListA(1, 1) = "作成" & vbCrLf & "FILE名"
+    tmpValListA(3, 1) = "DB"
+    tmpValListA(4, 1) = "SCHEMA"
+    tmpValListA(5, 1) = "TBL論"
+    tmpValListA(6, 1) = "TBL物"
+    tmpValListA(7, 1) = "-"
+    tmpValListA(13, 1) = "No"
+    For i = 14 To 113
+        tmpValListA(i, 1) = "=ROW()-13"
+    Next
+    'C列 準備
+    tmpValListC(1, 1) = "No"
+    tmpValListC(2, 1) = "PK"
+    tmpValListC(3, 1) = "論理名"
+    tmpValListC(4, 1) = "物理名"
+    tmpValListC(5, 1) = "型"
+    tmpValListC(6, 1) = "桁"
+    tmpValListC(7, 1) = "NULL不可"
+    tmpValListC(8, 1) = "初期値"
+    For i = 1 To 5
+        tmpValListC(i + 8, 1) = "備考" & i
+    Next
+    '書込
+    With ws
+        .Range("A1:A113").Value = tmpValListA
+        .Range("B3").Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=ORACLE & "," & POSTGRESQL & "," & SQLSERVER
+        .Range("B3").Value = inputDbNm
+        .Range("B4").Value = inputSchemaNm
+        .Range("B6").Value = inputTblNm
+        .Range("B7").Value = "-"
+        .Range("C1:C13").Value = tmpValListC
+    End With
+
+    'メモ書込
+    ws.Range("A1").AddComment "未入力の場合、Sheet名で作成"
+    ws.Range("A1").Comment.Shape.Width = 150
+    ws.Range("A1").Comment.Shape.Height = 20
+    ws.Range("A1").Comment.Shape.TextFrame.HorizontalAlignment = xlHAlignCenter
+    ws.Range("A1").Comment.Shape.TextFrame.VerticalAlignment = xlVAlignCenter
+    ws.Range("A1").Comment.Visible = False
+
+    '========== TBL情報 転記範囲(一括書込用) 準備 ==========
+    '参照Sheet 取得
+    Set refWs = ThisWorkbook.Sheets(inputRefWsNm)
+    '大文字統一
+    tblNm = UCase$(inputTblNm)
+    '作成TBL名を参照Sheetの上から検索
+    endRowIdx = refWs.Cells(refWs.Rows.Count, "C").End(xlUp).Row
+    rngVals = refWs.Range("C1:C" & endRowIdx).Value2
+    '要素数
+    cnt = 0
+    'TBL物理名検索
+    For rowIdx = 1 To UBound(rngVals, 1)
+        '見つけた場合
+        If tblNm = UCase$(rngVals(rowIdx, 1)) Then
+            cnt = cnt + 1
+        '見つからない & 既にセット済の場合 (TBL情報を全て転記し終わった場合)
+        ElseIf alreadySetFlg Then
+            Exit For
+        End If
+    Next
+    ReDim tblValList(1 To 8, 1 To cnt) As Variant
+
+    '========== TBL情報 転記 ==========
+    colIdx = 1
+    'TBL物理名検索
+    For rowIdx = 1 To UBound(rngVals, 1)
+        '見つけた場合
+        If tblNm = UCase$(rngVals(rowIdx, 1)) Then
+            '(TBL論理名)セット
+            If Not alreadySetFlg Then
+                ws.Range("B5").Value = Trim$(refWs.Cells(rowIdx, "B").Value)
+                alreadySetFlg = True
+            End If
+            'PK/NOT NULL 取得
+            pk = refWs.Cells(rowIdx, "E").Value2
+            notNull = refWs.Cells(rowIdx, "J").Value2
+            'INSERT or DELETE & PK の場合
+            If Not delFlg Or (delFlg And pk = "Y") Then
+                '項目情報コピー
+                tblValList(1, colIdx) = refWs.Cells(rowIdx, "D").Value2       'No
+                tblValList(2, colIdx) = IIf(pk = "Y", "Y", "")                'PK(Yのみ)
+                tblValList(3, colIdx) = Trim$(refWs.Cells(rowIdx, "F").Value) '項目論理名
+                tblValList(4, colIdx) = refWs.Cells(rowIdx, "G").Value2       '項目物理名
+                tblValList(5, colIdx) = refWs.Cells(rowIdx, "H").Value2       '型
+                tblValList(6, colIdx) = Trim$(refWs.Cells(rowIdx, "I").Value) '桁
+                tblValList(7, colIdx) = IIf(notNull = "Y", "Y", "")           'NULL不可(Yのみ)
+                initVal = Trim$(refWs.Cells(rowIdx, "K").Value)               '初期値
+                If 0 < InStr(initVal, " NULL ") Then
+                    initVal = "NULL"
+                ElseIf Left$(initVal, 1) = "'" Then
+                    initVal = "'" & initVal
+                End If
+                tblValList(8, colIdx) = initVal
+                colIdx = colIdx + 1
+            End If
+        '見つからない & 既にセット済の場合 (TBL情報を全て転記し終わった場合)
+        ElseIf alreadySetFlg Then
+            Exit For
+        End If
+    Next
+    '書込
+    ws.Range(ws.Range("D1"), ws.Cells(8, UBound(tblValList, 2) + 3)).Value = tblValList
+
+    '========== Indexセット ==========
+    '開始/終了(行/列)
+    startRowIdx = 14
+    startColIdx = 4
+    endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    endColIdx = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    '========== テストデータ作成 準備 ==========
+    'テストデータ書込範囲(一括書込用) 再設定
+    ReDim testValList(startRowIdx To endRowIdx, startColIdx To endColIdx) As Variant
+    '表示形式(文字列) 設定 (数字のみの前0消失を防止)
+    ws.Range(ws.Cells(startRowIdx, startColIdx), ws.Cells(endRowIdx, endColIdx)).NumberFormat = "@"
+
+    '========== テストデータ作成 / 書込 ==========
+    '1列ずつLoop
+    For colIdx = startColIdx To endColIdx
+        '設定値 取得
+        rngVals = ws.Range(ws.Cells(4, colIdx), ws.Cells(7, colIdx)).Value2
+        colNm = CStr(rngVals(1, 1))   '項目名(物理)
+        colType = CStr(rngVals(2, 1)) '型
+        colLen = CStr(rngVals(3, 1))  '桁
+        notNull = CStr(rngVals(4, 1)) 'NULL不可
+        '■必須項目ではない場合
+        If notNull <> "Y" Then
+            For rowIdx = startRowIdx To endRowIdx
+                testValList(rowIdx, colIdx) = "NULL"
+            Next
+        ElseIf notNull = "Y" Then
+            '■■■ [文字列]型の場合 ■■■
+            If IsColType_String(colType) Then
+                '■桁1の場合
+                If colLen = 1 Then
+                    For i = startRowIdx To endRowIdx
+                        testValList(i, colIdx) = CStr(i Mod 2)
+                    Next
+                '■桁5以下の場合
+                ElseIf colLen <= Len(serialNo) Then
+                    For rowIdx = startRowIdx To endRowIdx
+                        testValList(rowIdx, colIdx) = Right$(AddFrontCharacter(CStr(rowIdx - 13), colLen, "0"), colLen)
+                    Next
+                '■桁6以上の場合
+                Else
+                    '最大桁テストデータセット[半角/全角](2/3行目)
+                    testValList(startRowIdx, colIdx) = Left$(colNm, colLen - Len(serialNo)) & serialNo
+                    testValList(startRowIdx + 1, colIdx) = Left$(testStrHarfWid, colLen)
+                    'Oracleは全角1文字が3Byte
+                    If inputDbNm = ORACLE Then
+                        testValList(startRowIdx + 2, colIdx) = Left$(testStrFullWid, colLen \ 3)
+                    Else
+                        testValList(startRowIdx + 2, colIdx) = Left$(testStrFullWid, colLen)
+                    End If
+                    For i = startRowIdx + 3 To endRowIdx
+                        testValList(i, colIdx) = Left$(colNm, colLen - Len(serialNo)) & AddFrontCharacter(CStr(i - 13), Len(serialNo), "0")
+                    Next
+                End If
+            '■■■ [数値]型の場合 ■■■
+            ElseIf IsColType_Numeric(colType) Then
+                '■小数無しの場合
+                If InStr(colLen, ",") = 0 Then
+                    '最大テストデータセット(2行目)
+                    testValList(startRowIdx, colIdx) = "0"
+                    testValList(startRowIdx + 1, colIdx) = String(colLen, "9")
+                    For rowIdx = startRowIdx + 2 To endRowIdx
+                        str = RemoveFrontCharacter(Right$(CStr(rowIdx - 13), colLen), "0")
+                        str = IIf(str = "", "0", str)
+                        testValList(rowIdx, colIdx) = str
+                    Next
+                Else
+                    '整数桁/小数桁 セット
+                    rngVals = Split(colLen, ",")
+                    dcmlPart = CLng(rngVals(1))
+                    intPart = CLng(rngVals(0)) - dcmlPart
+                    '最大テストデータセット(2行目)
+                    testValList(startRowIdx, colIdx) = "0" & IIf(dcmlPart = 0, "", "." & String(dcmlPart, "0"))
+                    testValList(startRowIdx + 1, colIdx) = String(intPart, "9") & IIf(dcmlPart = 0, "", "." & String(dcmlPart, "9"))
+                    For rowIdx = startRowIdx + 2 To endRowIdx
+                        str = RemoveFrontCharacter(Right$(CStr(rowIdx - 13), intPart), "0")
+                        str = IIf(str = "", "0", str)
+                        testValList(rowIdx, colIdx) = str
+                    Next
+                End If
+            '■■■ [日付]型の場合 ■■■
+            ElseIf IsColType_Date(colType) Then
+                For rowIdx = startRowIdx To endRowIdx
+                    testValList(rowIdx, colIdx) = Format$(testDate + (rowIdx - 14), fmtDate)
+                Next
+            '■■■ [その他]型の場合 ■■■
+            Else
+                For rowIdx = startRowIdx To endRowIdx
+                    testValList(rowIdx, colIdx) = "0"
+                Next
+            End If
+        End If
+    Next
+    '書込
+    ws.Range(ws.Cells(startRowIdx, startColIdx), ws.Cells(endRowIdx, endColIdx)).Value = testValList
+
+    '========== 'Sheet設定 ==========
+    ws.Activate
+    With ws
+        'Tab色
+        .Tab.Color = IIf(delFlg, RGB(237, 125, 49), RGB(189, 215, 238)) '#ED7D31 #BDD7EE
+        '背景色
+        .Range("A1:A7").Interior.Color = RGB(255, 192, 0)      '#FFC000
+        .Range("B1:B7").Interior.Color = RGB(255, 242, 204)    '#FFF2CC
+        .Range("A8:B12").Interior.Color = RGB(128, 128, 128)   '#808080
+        .Range("A13:A113").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range("B13").Interior.Color = RGB(217, 217, 217)      '#D9D9D9
+        .Range("C1:C13").Interior.Color = RGB(217, 217, 217)   '#D9D9D9
+        '列幅
+        .Columns("A").ColumnWidth = 6
+        .Columns("B").ColumnWidth = 20
+        .Columns("C").ColumnWidth = 8
+        '行幅
+        .Rows("1:2").RowHeight = 13.2
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Columns("A").HorizontalAlignment = xlCenter
+        .Columns("C").HorizontalAlignment = xlCenter
+        .Range("D1:" & GetColNm(endColIdx) & "8").HorizontalAlignment = xlCenter
+        '数値型 右寄せ
+        For colIdx = 0 To endColIdx - 4
+            colType = .Range("D5").Offset(0, colIdx).Value2
+            If IsColType_Numeric(colType) Then
+                .Range("D14:D113").Offset(0, colIdx).HorizontalAlignment = xlRight
+            End If
+        Next
+        'グループ化
+        .Columns("B").Group
+        .Rows("8:13").Group
+        'フォント
+        .Cells.Font.Name = "HGｺﾞｼｯｸM"
+        'セル結合
+        .Range("A1:A2").Merge
+        .Range("B1:B2").Merge
+        .Range("B14:C113").Merge Across:=True
+        'D列から終了列まで(列幅/背景色/文字色/太字)
+        For colIdx = 0 To endColIdx - 4
+            '列幅
+            .Columns("D").Offset(0, colIdx).ColumnWidth = 15
+            '2行目(背景色/太字)(空じゃない場合)
+            If .Range("D2").Offset(0, colIdx).Value2 <> "" Then
+                .Range("D2").Offset(0, colIdx).Interior.Color = RGB(255, 0, 0)
+                .Range("D2").Offset(0, colIdx).Font.Bold = True
+            End If
+            '7行目(文字色/太字)
+            .Range("D7").Offset(0, colIdx).Font.Color = RGB(255, 0, 0)
+            .Range("D7").Offset(0, colIdx).Font.Bold = True
+        Next
+        '罫線
+        .Range("A13:B113").Borders(xlInsideHorizontal).Weight = xlHairline
+        .Range("C8:" & GetColNm(endColIdx) & 113).Borders(xlInsideHorizontal).Weight = xlHairline
+        '折り返して表示
+        .Range("B1").WrapText = True
+        .Range("D9:" & GetColNm(endColIdx) & "13").WrapText = True
+        .Range("B14:C113").WrapText = True
+    End With
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+    'ウィンドウ枠の固定
+    ws.Range("D14").Select
+    ActiveWindow.FreezePanes = True
+
+    '条件付き書式
+    Set rng = Range("B14:" & GetColNm(endColIdx) & 113)
+    rng.FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+
+    '========== マクロボタン作成 ==========
+    Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
+    With shp
+        .Fill.ForeColor.RGB = IIf(delFlg, RGB(197, 90, 17), RGB(91, 155, 213)) '#C55A11 #5B9BD5 塗りつぶし色
+        .line.ForeColor.RGB = IIf(delFlg, RGB(197, 90, 17), RGB(91, 155, 213)) '#C55A11 #5B9BD5 枠線色
+        .TextFrame2.TextRange.Text = "SQL作成"                                 '表示文字列
+        .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"                  'フォント(JP)
+        .TextFrame2.TextRange.Font.Name = "游ゴシック"                         'フォント(EN)
+        .TextFrame2.TextRange.Font.Size = 16                                   '文字サイズ
+        .TextFrame2.TextRange.Font.Bold = True                                 '太字
+        .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255)     '文字色
+        .TextFrame2.VerticalAnchor = msoAnchorMiddle                           '文字揃え(横)
+        .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter       '文字揃え(縦)
+        .OnAction = "Btn_CreateSqlFile_" & IIf(delFlg, "DELETE", "INSERT")     'マクロ登録
+        .Top = ws.Range("B9").Top                                              '配置場所(縦)
+        .Left = ws.Range("B95").Left                                           '配置場所(横)
+    End With
+End Sub
+'------------------------------------------------------------
+'概要 : SQLファイルを作成する(DELETE)
 '引数 : -
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Sub CreateSqlFile()
+Private Sub Btn_CreateSqlFile_DELETE()
     '処理中描画OFF設定
-    SetDrawProcess False
+    Call SettingRenderingProcess(False)
 
-    '●列Index
-    Dim colIdx As Long
-    '●行Index
-    Dim rowIdx As Long
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
+
+
+
+
+
+
+
     '●タイムスタンプ
     Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
     '●現在日付(yyyy-MM-dd)
@@ -864,84 +1022,19 @@ Sub CreateSqlFile()
     '●一時保持用(String)
     Dim tmpStr As String
 
-    '●Sheet
-    Dim ws As Worksheet: Set ws = ActiveSheet
-    '●Sheet名
-    Dim wsNm As String: wsNm = ws.Name
-    '●Index(開始列/開始行/終了列/終了行)
-    Dim colStartIdx As Long
-    Dim rowStartIdx As Long
-    Dim colEndIdx As Long
-    Dim rowEndIdx As Long
-    '●Cel値
-    Dim cellVal As String
     '●範囲
     Dim rng As Range
     '●Cell範囲データ
     Dim rngVals As Variant
-    '●図形
-    Dim shp As Shape
-
-    '●新規Sheet
-    Dim newSheet As Variant
-    '●新規Sheet名
-    Dim newSheetNm As String
-
-    '●Sheet[Sheet作成]
-    Dim wsCrat As Worksheet: Set wsCrat = ThisWorkbook.Sheets("Sheet作成")
-    '●Sheet[参照Sheet]
-    Dim wsRef As Worksheet
 
     '●TBL名
     Dim tblNm As String
-    '●参照Sheet名
-    Dim refSheetNm As String
     '●TBL&List
     Dim tblNmList As Object
     '●作成TBL名Map(TBL名/参照Sheet名)
     Dim cratTblNmMap As Collection: Set cratTblNmMap = New Collection
     '●項目番号
     Dim colNo As Long
-
-    '●PK列Idx
-    Dim pkColIdx As Variant
-    '●PK列Idxリスト
-    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
-
-    '●PK
-    Dim pk As String
-    '●項目名
-    Dim colNm As String
-    '●型
-    Dim colType As String
-    '●桁
-    Dim colLen As Variant
-    '●NOT NULL
-    Dim notNull As String
-
-    '●DELETEモードフラグ
-    Dim delMode As Boolean: delMode = ("D-" = Left(wsNm, 2))
-
-    '●SCHEMA名
-    Dim schemaNm As String: schemaNm = ws.Range("B1").Value2
-    '●TBL論理名
-    Dim logiTblNm As String: logiTblNm = ws.Range("B2").Value2
-    '●TBL物理名
-    Dim physiTblNm As String: physiTblNm = ws.Range("B3").Value2
-    '●TBL略名(最初のアンダーバー手前まで切り抜き)
-    Dim omiTblNm As String
-    i = InStr(1, physiTblNm, "_")
-    'アンダーバー無い場合 そのまま
-    If i = 0 Then
-        omiTblNm = physiTblNm
-    Else
-        omiTblNm = Left$(physiTblNm, i - 1)
-    End If
-
-    '●エラーメッセージ
-    Dim errMsg As Variant
-    '●エラーメッセージリスト
-    Dim errMsgList As Collection: Set errMsgList = New Collection
 
     '●作成ファイル[SQL]
     Dim sqlFile As Object
@@ -950,7 +1043,7 @@ Sub CreateSqlFile()
     '●ファイルObject
     Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
     '●Path
-    Dim cratFilePath As String: cratFilePath = ThisWorkbook.Path & "\" & timestamp & "\"
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\" & timestamp & "\"
     'フォルダ作成
     MkDir cratFilePath
     '●現在日時
@@ -961,104 +1054,563 @@ Sub CreateSqlFile()
 
     '●1行内容
     Dim line As String
-    '●セル場所
+
+
+
+
+
+    '●Loopカウンタ [i/j/k]
+    Dim i As Long, j As Long, k As Long
+
+    '●Sheet/Sheet名
+    'Dim ws As Worksheet: Set ws = ActiveSheet
+    'Dim wsNm As String: wsNm = ws.Name
+
+    '●行/列
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    '●開始/終了(行/列)
+    Dim startRowIdx As Long
+    Dim startColIdx As Long
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
+    '●PK列Idx/リスト
+    Dim pkColIdx As Variant
+    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
+
+    '●'TBL名
+    'Dim tblNm As String
+
+    '●PK重複チェックスキップフラグ
+    Dim dupCheckPkSkipFlg As Boolean: dupCheckPkSkipFlg = False
+
+    '●現在日時セット記述 辞書
+    Dim setNowDict As Object: Set setNowDict = CreateObject("Scripting.Dictionary")
+    'Oracle
+    setNowDict("SYSDATE") = True
+    setNowDict("SYSTIMESTAMP") = True
+    setNowDict("TRUNC(SYSDATE)") = True
+    'PostgreSQL
+    setNowDict("CURRENT_TIMESTAMP") = True
+    setNowDict("CURRENT_DATE") = True
+    setNowDict("now()") = True
+    'SQLServer
+    setNowDict("GETDATE()") = True
+    setNowDict("SYSDATETIME()") = True
+    setNowDict("CAST(GETDATE() AS DATE)") = True
+
+    '●エラーメッセージ/リスト
+    Dim errMsg As Variant
+    Dim errMsgList As Collection: Set errMsgList = New Collection
+
+    '●メッセージ内容
+    Dim msg As String
+
+
+
+
+
+
+
+    '●Sheet/Sheet名
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim wsNm As String: wsNm = Trim$(ws.Name)
+
+    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
+    'Dim pk As String
+    'Dim colNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    'Dim initVal As String
+    'Dim intPart As Long
+    'Dim dcmlPart As Long
+
+    '●セル(値/場所)
+    Dim cellVal As String
     Dim cellAdrs As String
 
-    '■■■■■ Schema名 / TBL名 入力チェック ■■■■■
+    '●作成ファイル名/DB名/スキーマ名/テーブル(論理名/物理名)
+    Dim cratFileNm As String: cratFileNm = Trim$(ws.Range("B1").Text)
+    Dim dbNm As String:       dbNm = ws.Range("B3").Value2
+    Dim schemaNm As String:   schemaNm = Trim$(ws.Range("B4").Value2)
+    Dim logiTblNm As String:  logiTblNm = Trim$(ws.Range("B5").Value2)
+    Dim physiTblNm As String: physiTblNm = Trim$(ws.Range("B6").Value2)
+
+    '========== ▼入力チェック[DB / スキーマ名 / テーブル物理名] ==========
+    If LenB(ws.Range("B3").Value2) = 0 Then
+        msg = "(B3) [DB] を選択してください"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+    If LenB(ws.Range("B4").Value2) = 0 Then
+        msg = "(B4) [Schema名] を入力してください"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+    If LenB(ws.Range("B6").Value2) = 0 Then
+        msg = "(B6) [テーブル物理名] を入力してください"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+
+    '開始/終了(行/列) セット
+    startColIdx = 4
+    startRowIdx = 14
+    endRowIdx = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    endColIdx = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+    'PK列Indexリスト セット
+    For colIdx = startColIdx To endColIdx
+        If ws.Cells(2, colIdx).Value2 = "Y" Then pkColIdxList.Add (j)
+    Next
+
+    'PK重複チェック有無 設定 (1,000行以上の場合、処理負荷対策でチェックしない)
+    If 1000 <= endRowIdx - 13 Then dupCheckPkSkipFlg = True
+
+    '========== ▼入力チェック(必須/型/桁) ==========
+    '1列ずつLoop
+    For colIdx = startColIdx To endColIdx
+        '進捗度ステータスバー表示
+        Application.StatusBar = "ERROR Check... " & colIdx - 3 & "/" & endColIdx - 3
+
+        '設定値 取得
+        rngVals = ws.Range(ws.Cells(5, colIdx), ws.Cells(6, colIdx)).Value2
+        colType = CStr(rngVals(1, 1)) '型
+        colLen = CStr(rngVals(2, 1))  '桁
+        notNull = CStr(rngVals(3, 1)) 'NULL不可
+
+        '1行ずつLoop
+        For rowIdx = startRowIdx To endRowIdx
+            'セル(値/アドレス) 取得
+            cellVal = CStr(ws.Cells(rowIdx, colIdx).Text)              '値
+            cellAdrs = ws.Cells(rowIdx, colIdx).Address$(False, False) 'アドレス
+
+            '■未入力 & NULL不可の場合
+            If LenB(cellVal) = 0 And noynull = "Y" Then
+                errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : NOT NULL制約です")
+            Else
+                '■■■ [文字列]型の場合 ■■■
+                If IsColType_String(colType) Then
+                    '桁数超過の場合(Oracleは全角1文字が3Byte)
+                    If inputDbNm = ORACLE Then
+                        If IsOverByteLength_Oracle(cellVal, colLen) Then
+                            errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : 桁数超過しています")
+                        End If
+                    Else
+                        If colLen < Len(cellVal) Then
+                            errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : 桁数超過しています")
+                        End If
+                    End If
+                '■■■ [数値]型の場合 ■■■
+                ElseIf IsColType_Numeric(colType) Then
+                    '数値以外の場合
+                    If Not IsNumeric(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 数値ではありません"
+                    '桁数超過の場合
+                    ElseIf Split(colLen, ",")(0) < Len(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
+                    End If
+                '■■■ [日付]型の場合 ■■■
+                ElseIf IsColType_Date(colType) Then
+                    '現在日時セットの書き方でない & 日付形式でない場合
+                    If Not setNowDict.exists(cellVal) And Not IsValidDate(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 日付形式ではありません"
+                    End If
+                End If
+            End If
+        Next
+    Next
+
+
+
+
+
+
+
+
+
+
+'    '========== 入力エラーチェック(必須/型/桁) ==========
+'    '1列ずつLoop
+'    For colIdx = startColIdx To endColIdx
+'        '進捗度ステータスバー表示
+'        Application.StatusBar = "ERROR Check... " & colIdx - 3 & "/" & endColIdx - 3
+'
+'        '設定値 取得
+'        rngVals = ws.Range(ws.Cells(5, colIdx), ws.Cells(6, colIdx)).Value2
+'        colType = CStr(rngVals(1, 1)) '型
+'        colLen = CStr(rngVals(2, 1))  '桁
+'
+'        '1行ずつLoop
+'        For rowIdx = rowStartIdx To rowEndIdx
+'            'セル(値/アドレス) 取得
+'            cellVal = CStr(ws.Cells(rowIdx, colIdx).Text)              '値
+'            cellAdrs = ws.Cells(rowIdx, colIdx).Address$(False, False) 'アドレス
+'
+'            '未入力の場合
+'            If LenB(cellVal) = 0 Then
+'                errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : NOT NULL制約です")
+'            Else
+'                '■■■ [文字列]型の場合 ■■■
+'                If IsColType_String(colType) Then
+'                    '桁数超過の場合
+'                    If colLen < Len(cellVal) Then
+'                        errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : 桁数超過しています")
+'                    End If
+'
+'                '■■■ [数値]型の場合 ■■■
+'                ElseIf IsColType_Numeric(colType) Then
+'                    '数値以外の場合
+'                    If Not IsNumeric(cellVal) Then
+'                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 数値ではありません"
+'                    '桁数超過の場合
+'                    ElseIf Split(colLen, ",")(0) < Len(cellVal) Then
+'                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
+'                    End If
+'
+'                '■■■ [日付]型の場合 ■■■
+'                ElseIf IsColType_Date(colType) Then
+'                    '現在日時セットの書き方でない & 日付形式でない場合
+'                    If Not setNowDict.exists(cellVal) And Not IsValidDate(cellVal) Then
+'                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 日付形式ではありません"
+'                    End If
+'
+'                '■■■ [その他]型の場合 ■■■
+'                Else
+'                End If
+'            End If
+'        Next
+'    Next
+'
+'    '■■■■■ PK重複チェック ■■■■■
+'    'ここまでエラー無しの場合 & スキップフラグ OFF の場合
+'    If errMsgList.Count = 0 And Not dupPkSkipFlg Then
+'        '●PK(重複チェック用)
+'        Dim pk1 As String
+'        Dim pk2 As String
+'        For i = rowStartIdx To rowEndIdx
+'            '進捗度ステータスバー表示
+'            Application.StatusBar = "Duplicate Check : " & i - 13 & " / " & rowEndIdx - 13
+'            pk1 = ""
+'            For Each pkColIdx In pkColIdxList
+'                pk1 = pk1 & ws.Cells(i, pkColIdx).Value2 & "_"
+'            Next pkColIdx
+'            For j = rowStartIdx To rowEndIdx
+'                '自行以外
+'                If i <> j Then
+'                    pk2 = ""
+'                    For Each pkColIdx In pkColIdxList
+'                        pk2 = pk2 & ws.Cells(j, pkColIdx).Value2 & "_"
+'                    Next pkColIdx
+'                    '重複の場合
+'                    If pk1 = pk2 Then
+'                        errMsgList.Add i - 13 & "行目と、" & j - 13 & "行目のPKが重複しています"
+'                    End If
+'                End If
+'            Next j
+'        Next i
+'        'ステータスバー初期化
+'        Application.StatusBar = False
+'    End If
+'
+'    '■■■■■ エラーFile 作成(処理終了) ■■■■■
+'    If 0 < errMsgList.Count Then
+'        'ファイル作成
+'        Set sqlFile = fso.CreateTextFile(cratFilePath & wsNm & "-ERROR_" & timestamp & ".txt", True)
+'        For Each errMsg In errMsgList
+'            sqlFile.WriteLine errMsg
+'        Next errMsg
+'        sqlFile.Close
+'        MsgBox "ERRORファイルを作成しました"
+'        Exit Sub
+'    End If
+'
+'    '■■■■■■■■■■■■■■■■■■■■
+'    '  DELETE SQL File作成
+'    '■■■■■■■■■■■■■■■■■■■■
+'    If delMode Then
+'        'ファイル作成
+'        Set sqlFile = fso.CreateTextFile(cratFilePath & wsNm & "_" & timestamp & ".sql", True)
+'
+'        '========== Header 作成 ==========
+'        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
+'        sqlFile.WriteLine "--  DELETE [" & logiTblNm & " / " & physiTblNm & "]"
+'        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
+'        '●項目一覧(論理)
+'        line = "--"
+'        For i = colStartIdx To colEndIdx
+'            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(3, i).Value2 & "/"
+'        Next i
+'        line = Left$(line, Len(line) - 1)
+'        sqlFile.WriteLine line
+'        '●項目一覧(物理)
+'        line = "--"
+'        For i = colStartIdx To colEndIdx
+'            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(4, i).Value2 & "/"
+'        Next i
+'        line = Left$(line, Len(line) - 1)
+'        sqlFile.WriteLine line
+'
+'        '========== SQL内容 作成 ==========
+'        line = ""
+'        For i = rowStartIdx To rowEndIdx
+'            '進捗度ステータスバー表示
+'            Application.StatusBar = "Create Delete SQL File : " & i - 13 & " / " & rowEndIdx - 13
+'            line = "DELETE FROM " & schemaNm & "." & physiTblNm & " WHERE "
+'            For Each pkColIdx In pkColIdxList
+'                colNm = ws.Cells(4, pkColIdx).Value2   '●項目名
+'                colType = ws.Cells(5, pkColIdx).Value2 '●型
+'                cellVal = ws.Cells(i, pkColIdx).Value2 '●Cell値
+'
+'                '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
+'                If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
+'                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
+'                        line = line & colNm & "=NULL AND "
+'                    Else
+'                        line = line & colNm & "='" & cellVal & "'AND "
+'                    End If
+'
+'                '========== NUMBER / NUMERIC / INTEGER ==========
+'                ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
+'                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
+'                        line = line & colNm & "=NULL AND "
+'                    Else
+'                        line = line & colNm & "=" & cellVal & " AND "
+'                    End If
+'
+'                '========== TIMESTAMP / DATE ==========
+'                ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
+'                    If cellVal = "SYSDATE" Then
+'                        line = line & colNm & "=" & cellVal & " AND "
+'                    ElseIf IsEmpty(cellVal) Or IsNull(cellVal) Then
+'                        line = line & colNm & "=NULL AND "
+'                    Else
+'                        If Left$(colType, 9) - "TIMESTAMP" Then
+'                            line = line & colNm & "='" & ConvertDateFormat(cellVal, dateFmt2) & "'AND "
+'                        Else
+'                            line = line & colNm & "='" & ConvertDateFormat(cellVal, dateFmt1) & "'AND "
+'                        End If
+'                    End If
+'                End If
+'            Next pkColIdx
+'            line = Left$(line, Len(line) - 4) & ";"
+'            sqlFile.WriteLine line
+'        Next i
+'        sqlFile.Close
+'    End If
+'
+'    If dupPkSkipFlg Then
+'        If delMode Then MsgBox "SQLファイルを作成しました" & vbCrLf & "※1000行以上のため、PK重複チェックはスキップしました"
+'        If Not delMode Then MsgBox "SQL & CSVファイルを作成しました" & vbCrLf & "※1000行以上のため、PK重複チェックはスキップしました"
+'    Else
+'        If delMode Then MsgBox "SQLファイルを作成しました"
+'        If Not delMode Then MsgBox "SQL & CSVファイルを作成しました"
+'    End If
+'
+'    'ステータスバー初期化
+'    Application.StatusBar = False
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : SQLファイルとA5M2用インポートファイルを作成する(INSERT)
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub Btn_CreateSqlFile_INSERT()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    '●タイムスタンプ
+    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
+    '●現在日付(yyyy-MM-dd)
+    Dim crntDate As String: crntDate = Format(Now, "yyyy-MM-dd")
+    '●一時保持用(String)
+    Dim tmpStr As String
+
+    '●Cell値
+    Dim cellVal As String
+    '●範囲
+    Dim rng As Range
+    '●Cell範囲データ
+    Dim rngVals As Variant
+
+    '●TBL名
+    Dim tblNm As String
+    '●TBL&List
+    Dim tblNmList As Object
+    '●作成TBL名Map(TBL名/参照Sheet名)
+    Dim cratTblNmMap As Collection: Set cratTblNmMap = New Collection
+    '●項目番号
+    Dim colNo As Long
+
+    '●作成ファイル[SQL]
+    Dim sqlFile As Object
+    '●作成ファイル[CSV]
+    Dim csvFile As Object
+    '●ファイルObject
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    '●Path
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\" & timestamp & "\"
+    'フォルダ作成
+    MkDir cratFilePath
+    '●現在日時
+    Dim crntDatetime As String: crntDatetime = Format(Now, "yyyy/MM/dd HH:mm:ss")
+    '●日付フォーマット
+    Dim dateFmt1 As String: dateFmt1 = "yyyy-MM-dd"
+    Dim dateFmt2 As String: dateFmt2 = "yyyy-MM-dd HH:mm:ss"
+
+    '●1行内容
+    Dim line As String
+
+
+
+
+
+    '●Loopカウンタ [i/j/k]
+    Dim i As Long, j As Long, k As Long
+
+    '●Sheet/Sheet名
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim wsNm As String: wsNm = ws.Name
+
+    '●行/列
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    '●開始/終了(行/列)
+    Dim startRowIdx As Long
+    Dim startColIdx As Long
+    Dim endRowIdx As Long
+    Dim endColIdx As Long
+    '●PK列Idx/リスト
+    Dim pkColIdx As Variant
+    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
+
+    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
+    'Dim pk As String
+    'Dim colNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    'Dim notNull As String
+    'Dim initVal As String
+    'Dim intPart As Long
+    'Dim dcmlPart As Long
+
+    '●セル(値/場所)
+    Dim cellVal As String
+    Dim cellAdrs As String
+
+    '●PK重複チェックスキップフラグ
+    Dim dupCheckPkSkipFlg As Boolean: dupCheckPkSkipFlg = False
+
+    '●現在日時セット記述 辞書
+    Dim setNowDict As Object: Set setNowDict = CreateObject("Scripting.Dictionary")
+    'Oracle
+    setNowDict("SYSDATE") = True
+    setNowDict("SYSTIMESTAMP") = True
+    setNowDict("TRUNC(SYSDATE)") = True
+    'PostgreSQL
+    setNowDict("CURRENT_TIMESTAMP") = True
+    setNowDict("CURRENT_DATE") = True
+    setNowDict("now()") = True
+    'SQLServer
+    setNowDict("GETDATE()") = True
+    setNowDict("SYSDATETIME()") = True
+    setNowDict("CAST(GETDATE() AS DATE)") = True
+
+    '●エラーメッセージ/リスト
+    Dim errMsg As Variant
+    Dim errMsgList As Collection: Set errMsgList = New Collection
+
+    '●作成ファイル名/スキーマ名/テーブル(論理名/物理名)
+    Dim cratFileNm As String: cratFileNm = ws.Range("B1").Value2
+    Dim schemaNm As String: schemaNm = ws.Range("B3").Value2
+    Dim logiTblNm As String: logiTblNm = ws.Range("B4").Value2
+    Dim physiTblNm As String: physiTblNm = ws.Range("B5").Value2
+
+    '●メッセージ内容
+    Dim msg As String
+
+    'スキーマ名 / テーブル物理名 入力チェック
     If IsEmpty(schemaNm) Then
-        MsgBox "(B1) Schema名を入力してください"
+        msg = "(B1) [Schema名] を入力してください"
+        Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
     If IsEmpty(physiTblNm) Then
-        MsgBox "(B3) TBL名を入力してください"
+        msg = "(B5) [テーブル物理名] を入力してください"
+        Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
 
-    '■■■■■ Index セット ■■■■■
-    '●開始列
-    colStartIdx = 4
-    '●開始行
-    rowStartIdx = 14
-    '●終了列
-    colEndIdx = 4
-    Do While Not IsEmpty(ws.Cells(1, colEndIdx).Value2)
-        colEndIdx = colEndIdx + 1
-    Loop
-    colEndIdx = colEndIdx - 1
-    '●終了行
-    rowEndIdx = 14
-    Do While Not IsEmpty(ws.Cells(rowEndIdx, 4).Value2)
-        rowEndIdx = rowEndIdx + 1
-    Loop
-    rowEndIdx = rowEndIdx - 1
-    '●PK列Indexリスト
-    For j = colStartIdx To colEndIdx
-        If ws.Cells(2, j).Value2 = "Y" Then
-            pkColIdxList.Add j
-        End If
-    Next j
+    '開始/終了(行/列) セット
+    startColIdx = 4
+    startRowIdx = 14
+    endRowIdx = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    endColIdx = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
 
-    '■■■■■ PK重複チェック有無設定 ■■■■■
-    '●PK重複チェックスキップフラグ
-    Dim dupPkSkipFlg As Boolean: dupPkSkipFlg = False
-    '1000行以上対象の場合 チェックしない
-    If 1000 <= rowEndIdx - 13 Then dupPkSkipFlg = True
+    'PK列Indexリスト セット
+    For colIdx = startColIdx To endColIdx
+        If ws.Cells(2, colIdx).Value2 = "Y" Then pkColIdxList.Add (j)
+    Next
 
-    '■■■■■ 入力エラーチェック ■■■■■
-    '========== 必須 / 型 / 桁チェック ==========
-    For i = colStartIdx To colEndIdx
+    'PK重複チェック有無 設定 (1,000行以上の場合、処理対策でチェックしない)
+    If 1000 <= endRowIdx - 13 Then dupCheckPkSkipFlg = True
+
+    '========== 入力エラーチェック(必須/型/桁) ==========
+    '1列ずつLoop
+    For colIdx = startColIdx To endColIdx
         '進捗度ステータスバー表示
-        Application.StatusBar = "ERROR Check : " & i - 3 & "/" & colEndIdx - 3
-        colType = ws.Cells(5, i).Value2 '●型
-        colLen = ws.Cells(6, i).Value2  '●桁
-        notNull = ws.Cells(7, i).Value2 '●NOT NULL
-        For j = rowStartIdx To rowEndIdx
-            cellVal = ws.Cells(j, i).Value2                  '●セル値
-            cellAdrs = ws.Cells(j, i).Address$(False, False) '●セル場所
+        Application.StatusBar = "ERROR Check... " & colIdx - 3 & "/" & endColIdx - 3
 
-            '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
-            If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
-                '<OK> NULL可 & 未入力の場合
-                If (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull <> "Y" Then
-                '<NG> NULL不可 & 未入力の場合
-                ElseIf (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull = "Y" Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : NOT NULL制約です"
-                '<NG> 桁数超過の場合
-                ElseIf colLen < Len(cellVal) Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
-                End If
+        '設定値 取得
+        rngVals = ws.Range(ws.Cells(5, colIdx), ws.Cells(6, colIdx)).Value2
+        colType = CStr(rngVals(1, 1)) '型
+        colLen = CStr(rngVals(2, 1))  '桁
 
-            '========== NUMBER / NUMERIC / INTEGER ==========
-            ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
-                '<OK> NULL可 & 未入力の場合
-                If (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull <> "Y" Then
-                '<NG> NULL不可 & 未入力の場合
-                ElseIf (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull = "Y" Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : NOT NULL制約です"
-                '<NG> 数値以外の場合
-                ElseIf Not IsNumeric(cellVal) Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 数値ではありません"
-                '<NG> 桁数超過の場合
-                ElseIf Split(colLen, ",")(0) < Len(cellVal) Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
-                End If
+        '1行ずつLoop
+        For rowIdx = rowStartIdx To rowEndIdx
+            'セル(値/アドレス) 取得
+            cellVal = CStr(ws.Cells(rowIdx, colIdx).Text)              '値
+            cellAdrs = ws.Cells(rowIdx, colIdx).Address$(False, False) 'アドレス
 
-            '========== TIMESTAMP / DATE ==========
-            ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
-                '<OK> SYSDATEの場合
-                If cellVal = "SYSDATE" Then
-                '<OK> NULL可 & 未入力の場合
-                ElseIf (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull <> "Y" Then
-                '<NG> NULL不可 & 未入力の場合
-                ElseIf (IsEmpty(cellVal) Or IsNull(cellVal)) And notNull = "Y" Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : NOT NULL制約です"
-                '<NG> 日付形式以外の場合
-                ElseIf Not IsValidDate(cellVal) Then
-                    errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 日付形式ではありません"
+            '未入力の場合
+            If LenB(cellVal) = 0 Then
+                errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : NOT NULL制約です")
+            Else
+                '■■■ [文字列]型の場合 ■■■
+                If IsColType_String(colType) Then
+                    '桁数超過の場合
+                    If colLen < Len(cellVal) Then
+                        errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : 桁数超過しています")
+                    End If
+
+                '■■■ [数値]型の場合 ■■■
+                ElseIf IsColType_Numeric(colType) Then
+                    '数値以外の場合
+                    If Not IsNumeric(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 数値ではありません"
+                    '桁数超過の場合
+                    ElseIf Split(colLen, ",")(0) < Len(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
+                    End If
+
+                '■■■ [日付]型の場合 ■■■
+                ElseIf IsColType_Date(colType) Then
+                    '現在日時セットの書き方でない & 日付形式でない場合
+                    If Not setNowDict.exists(cellVal) And Not IsValidDate(cellVal) Then
+                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 日付形式ではありません"
+                    End If
+
+                '■■■ [その他]型の場合 ■■■
+                Else
                 End If
             End If
-        Next j
-    Next i
+        Next
+    Next
 
     '■■■■■ PK重複チェック ■■■■■
     'ここまでエラー無しの場合 & スキップフラグ OFF の場合
@@ -1315,191 +1867,550 @@ Sub CreateSqlFile()
     Application.StatusBar = False
 
     '処理中描画ON設定
-    SetDrawProcess True
+    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
 '概要 : SQLに文字色を付ける(予約語/固定文字列/コメント)
-'引数 : rng : 1セル範囲
+'引数 : rng : セル
 '戻値 : -
 '備考 : 整形後のSQLで利用想定
 '------------------------------------------------------------
-Private Sub ColorTheSqlText(ByVal rng As Range)
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
+Private Sub ColorTheSql(ByRef rng As Range)
+    Dim i As Long      'Loopカウンタ
+    Dim var As Variant 'Loop変数
     '●始点/終点
-    Dim bgnIdx As Long, endIdx As Long
+    Dim bgnIdx As Long
+    Dim endIdx As Long
     '●文字色
     Dim colorKeyword As Long: colorKeyword = RGB(0, 128, 255) '#0080FF 予約語
     Dim colorStr As Long: colorStr = RGB(255, 40, 0)          '#FF2800 固定文字列
     Dim colorCmnt As Long: colorCmnt = RGB(53, 161, 107)      '#35A16B コメント
-    '●区切り文字
-    Dim delimiter As Variant: delimiter = Array(" ", "(", ")", ",", ";")
-
-    '●セル内容文字列
-    Dim txt As String: txt = CStr(rng.Value2)
-    '●セル内容文字数
-    Dim txtLen As Long: txtLen = Len(txt)
-
-    '空の場合 終了
-    If txtLen = 0 Then Exit Sub
-
-    '■■■■■ 予約語 ■■■■■
-    Dim keywords As Variant
-    '予約語一覧
-    keywords = Array( _
+    '●セル内容(文字列/文字数)
+    Dim str As String: str = rng.Value2
+    Dim strLen As Long: strLen = Len(str)
+    '●単語
+    Dim word As String
+    '●区切り文字辞書
+    Dim delimiterDict As Object: Set delimiterDict = CreateObject("Scripting.Dictionary")
+    delimiterDict(" ") = True
+    delimiterDict("(") = True
+    delimiterDict(")") = True
+    delimiterDict(",") = True
+    delimiterDict(";") = True
+    '●予約語辞書
+    Dim keywordDict As Object: Set keywordDict = CreateObject("Scripting.Dictionary")
+    Dim keywordList As Variant: keywordList = Array( _
         "ALL", "ALTER", "AND", "AS", "ASC" _
         , "BETWEEN", "BODY", "BY" _
-        , "CASE", "COALESCE", "CONNECT", "CREATE" _
+        , "CASE", "COALESCE", "CONNECT", "CREATE", "COL_DESCRIPTION", "CONVERT", "CAST" _
         , "DELETE", "DENSE_RANK", "DESC", "DISTINCT", "DROP" _
         , "ELSE", "END", "EXISTS" _
         , "FROM", "FULL", "FUNCTION" _
         , "GROUP" _
         , "HAVING" _
-        , "IN", "INDEX", "INNER", "INSERT", "INTERSECT", "INTO", "IS" _
+        , "IN", "INDEX", "INNER", "INSERT", "INTERSECT", "INTO", "IS", "ISNULL" _
         , "JOIN" _
         , "LEFT", "LIKE" _
         , "MINUS" _
-        , "NOT", "NULL", "NVL", "NVL2" _
-        , "ON", "OR", "ORDER", "OUTER", "OVER" _
-        , "PACKAGE", "PARTITION", "PRIOR", "PROCEDURE" _
+        , "NOT", "NULL", "NVL", "NVL2", "NVARCHAR" _
+        , "ON", "OR", "ORDER", "OUTER", "OVER", "OBJ_DESCRIPTION" _
+        , "PACKAGE", "PARTITION", "PRIOR", "PROCEDURE", "PRECISION" _
         , "RANK", "RIGHT", "ROW_NUMBER" _
-        , "SELECT", "SEQUENCE", "SET", "START", "SYNONYM" _
+        , "SELECT", "SEQUENCE", "SET", "START", "SYNONYM", "SCHEMA_NAME" _
         , "TABLE", "THEN", "TO_CHAR", "TO_DATE", "TO_NUMBER", "TRIGGER" _
         , "UNION", "UPDATE" _
-        , "VALUES", "VIEW" _
+        , "VALUES", "VIEW", "VARCHAR" _
         , "WHEN", "WHERE", "WITH" _
     )
-    '文字列を単語ごとに切り抜き 判定
+    For Each var In keywordList
+        keywordDict(var) = True
+    Next
+
+    '空の場合 終了
+    If strLen = 0 Then Exit Sub
+
+    '========== 予約語 ==========
+    '文字列から単語を切り抜き
     i = 1
-    Do While i <= txtLen
-        Do While i <= txtLen And IsInArray(Mid$(txt, i, 1), delimiter)
+    Do While i <= strLen
+        '始点
+        Do While i <= strLen < i And delimiterDict.exists(Mid$(str, i, 1))
             i = i + 1
         Loop
-        If txtLen < i Then Exit Do
-        '単語始点
         bgnIdx = i
-        '単語終点
-        Do While i <= txtLen And Not IsInArray(Mid$(txt, i, 1), delimiter)
+        '終点
+        Do While i <= strLen And Not delimiterDict.exists(Mid$(str, i, 1))
             i = i + 1
         Loop
         endIdx = i - 1
-        '判定
-        If bgnIdx <= endIdx Then
-            Dim word As String
-            word = UCase$(Mid$(txt, bgnIdx, endIdx - bgnIdx + 1))
-            If IsInArray(word, keywords) Then
-                rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.Color = colorKeyword
-            End If
+        '単語切り抜き
+        word = UCase$(Mid$(str, bgnIdx, endIdx - bgnIdx + 1))
+        '予約語の場合、色セット
+        If keywordDict.exists(word) Then
+            rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.Color = colorKeyword
         End If
     Loop
 
-    '■■■■■ 固定文字列 ■■■■■
+    '========== 固定文字列 ==========
     i = 1
-    Do While i <= txtLen
-        If Mid$(txt, i, 1) = "'" Then
+    Do While i <= strLen
+        'シングルクォート範囲の切り抜き
+        If Mid$(str, i, 1) = "'" Then
+            '始点
             bgnIdx = i
+            '終点
             i = i + 1
-            Do While i <= txtLen And Mid$(txt, i, 1) <> "'"
+            Do While i <= strLen And Mid$(str, i, 1) <> "'"
                 i = i + 1
             Loop
-            If i <= txtLen Then
-                endIdx = i
-                rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.Color = colorStr
-                i = endIdx + 1
-            Else
-                Exit Do
-            End If
+            endIdx = i
+            '色セット
+            rng.Characters(bgnIdx, endIdx - bgnIdx + 1).Font.Color = colorStr
+            i = endIdx + 1
         Else
             i = i + 1
         End If
     Loop
 
-    '■■■■■ コメント ■■■■■
-    bgnIdx = InStr(1, txt, "--", vbBinaryCompare)
+    '========== コメント ==========
+    '始点
+    bgnIdx = InStr(1, str, "--", vbBinaryCompare)
+    'コメント記号有りの場合、色セット
     If 0 < bgnIdx Then
-        rng.Characters(bgnIdx, txtLen - bgnIdx + 1).Font.Color = colorCmnt
+        rng.Characters(bgnIdx, strLen - bgnIdx + 1).Font.Color = colorCmnt
     End If
 End Sub
 '------------------------------------------------------------
-'概要 : 処理中の描画を設定する
-'引数 : flg(True=描画ON / False=描画OFF)
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub SetDrawProcess(ByVal flg As Boolean)
-    Application.ScreenUpdating = flg
-    Application.DisplayAlerts = flg
-    Application.EnableEvents = flg
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
     If flg Then
-        Application.Calculation = xlCalculationAutomatic
+        Application.Calculation = xlCalculationAutomatic '自動
     Else
-        Application.Calculation = xlCalculationManual
+        Application.Calculation = xlCalculationManual '手動
     End If
 End Sub
 '------------------------------------------------------------
-'概要 : sheetNmのSheetが存在するか判定し、結果を返す
-'引数 : sheetNm : Sheet名
-'戻値 : 判定結果(True=存在する / False=存在しない)
+'概要 : ファイルが存在するか判定する
+'引数 : path   : ファイルまでのパス(絶対パス)
+'     : fileNm : ファイル名
+'     : ext    : 拡張子
+'戻値 : 判定結果(True:する / False:しない)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsExistsSheet(sheetNm As String) As Boolean
-    '一時的にエラー処理OFF設定
-    On Error Resume Next
-    IsExistsSheet = Not Worksheets(sheetNm) Is Nothing
-    'エラー処理ON設定
-    On Error GoTo 0
+Private Function IsExistsFile(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As Boolean
+    'パス末尾付与
+    If Right$(path, 1) <> "\" Then path = path & "\"
+    '判定
+    IsExistsFile = (Dir(path & fileNm & "." & ext) <> "")
 End Function
 '------------------------------------------------------------
-'概要 : 対象が配列に含まれるか判定し、結果を返す
-'引数 : word : 検索対象
-'     : arr : 検索配列
-'戻値 : 判定結果(True=含まれる / False=含まれない)
+'概要 : 重複しないファイル名となるまで、末尾に連番を付与する
+'     : (同じ名前のファイルが存在しない場合、そのまま返す)
+'     : (同じ名前のファイルが存在する場合、2からの連番を末尾に付与し、重複しないファイル名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : path   : ファイルまでのパス
+'     : fileNm : ファイル名
+'     : ext    : 拡張子
+'戻値 : ファイル名(拡張子付き)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsInArray(ByVal word As String, ByVal arr As Variant) As Boolean
-    Dim arrVal As Variant
-    For Each arrVal In arr
-        If word = arrVal Then
-            IsInArray = True
+Private Function ChangeUniqueFileNm(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在しない場合
+    If Not IsExistsFile(path, fileNm, ext) Then
+        ChangeUniqueFileNm = fileNm & "." & ext
+        Exit Function
+    End If
+    '存在する場合
+    For i = 2 To 1000
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+        '存在しない場合
+        If Not IsExistsFile(path, fileNm & uniqueNo, ext) Then
+            ChangeUniqueFileNm = fileNm & uniqueNo & "." & ext
             Exit Function
         End If
-    Next arrVal
+    Next
 End Function
 '------------------------------------------------------------
-'概要 : 空か判定し、結果を返す
-'       strの桁が0 or "" の場合、空判定
-'引数 : str : チェック対象文字列
-'戻値 : 判定結果(True=空 / False=空でない)
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
 '備考 : -
 '------------------------------------------------------------
-Private Function IsEmpty(str As String) As Boolean
-    If LenB(str) = 0 Or str = "" Then
-        IsEmpty = True
-    End If
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
 End Function
 '------------------------------------------------------------
-'概要 : NULLか判定し、結果を返す
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在しない場合
+    If Not IsExistsSheet(wsNm) Then
+        ChangeUniqueSheetNm = wsNm
+        Exit Function
+    End If
+    '存在する場合
+    For i = 2 To 1000
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 列番号から列名(アルファベット)を取得する
+'     : (範囲外の数値の場合、空を返す)
+'引数 : colIdx : 列番号
+'戻値 : 列名(アルファベット)
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColNm(ByVal colIdx As Long) As String
+    Dim result As String
+    '範囲外の場合
+    If colIdx < 1 Or Application.Columns.Count < colIdx Then
+        GetColNm = ""
+        Exit Function
+    End If
+    Do While 0 < colIdx
+        colIdx = colIdx - 1
+        result = Chr$(65 + (colIdx Mod 26)) & result
+        colIdx = colIdx \ 26
+    Loop
+    GetColNm = result
+End Function
+'------------------------------------------------------------
+'概要 : 列名(アルファベット)から列番号を取得する
+'     : (範囲外の列名の場合、0を返す)
+'引数 : colNm : 列名(アルファベット)
+'戻値 : 列番号
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColIdx(ByVal colNm As String) As Long
+    Dim i As Long
+    Dim result As Long
+    Dim baseA As Long: baseA = Asc("A") - 1
+    Dim colNmLen As Long: colNmLen = Len(UCase$(colNm))
+    Dim ch As Long
+    For i = 1 To colNmLen
+        ch = Asc(Mid$(colNm, i, 1)) - baseA
+        '範囲外の場合
+        If ch < 1 Or 26 < ch Then
+            GetColIdx = 0
+            Exit Function
+        End If
+        result = result * 26 + ch
+    Next
+    GetColIdx = result
+End Function
+'------------------------------------------------------------
+'概要 : 罫線を引く(格子)
+'引数 : rng : 範囲
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub DrawRuledLine_Grid(rng As Range)
+    '●罫線位置区分
+    Dim borderType As Variant
+    '外
+    rng.BorderAround LineStyle:=xlContinuous, Weight:=xlThin
+    '内
+    For Each borderType In Array(xlInsideHorizontal, xlInsideVertical)
+        rng.Borders(borderType).LineStyle = xlContinuous
+        rng.Borders(borderType).Weight = xlThin
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : DB項目型が[文字列]型か判定する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : colType : 型
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsColType_String(ByVal colType As String) As Boolean
+    '型リスト 作成
+    Dim strTypeDict As Object: Set strTypeDict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    strTypeDict("CHAR") = True
+    strTypeDict("NCHAR") = True
+    strTypeDict("VARCHAR2") = True
+    strTypeDict("NVARCHAR2") = True
+    strTypeDict("CLOB") = True
+    strTypeDict("NCLOB") = True
+    strTypeDict("LONG") = True
+    '========== PostgreSQL ==========
+    strTypeDict("CHAR") = True
+    strTypeDict("CHARACTER") = True
+    strTypeDict("VARCHAR") = True
+    strTypeDict("CHARACTER VARYING") = True
+    strTypeDict("TEXT") = True
+    strTypeDict("BPCHAR") = True
+    '========== SQL Server ==========
+    strTypeDict("CHAR") = True
+    strTypeDict("VARCHAR") = True
+    strTypeDict("NCHAR") = True
+    strTypeDict("NVARCHAR") = True
+    strTypeDict("TEXT") = True
+    strTypeDict("NTEXT") = True
+    '判定
+    IsColType_String = strTypeDict.exists(colType)
+End Function
+'------------------------------------------------------------
+'概要 : DB項目型が[数値]型か判定する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : colType : 型
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsColType_Numeric(ByVal colType As String) As Boolean
+    '型リスト 作成
+    Dim numTypeDict As Object: Set numTypeDict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    numTypeDict("NUMBER") = True
+    numTypeDict("FLOAT") = True
+    numTypeDict("BINARY_FLOAT") = True
+    numTypeDict("BINARY_DOUBLE") = True
+    numTypeDict("INTEGER") = True
+    numTypeDict("INT") = True
+    numTypeDict("SMALLINT") = True
+    numTypeDict("DECIMAL") = True
+    numTypeDict("DEC") = True
+    numTypeDict("NUMERIC") = True
+    '========== PostgreSQL ==========
+    numTypeDict("SMALLINT") = True
+    numTypeDict("INTEGER") = True
+    numTypeDict("BIGINT") = True
+    numTypeDict("DECIMAL") = True
+    numTypeDict("NUMERIC") = True
+    numTypeDict("REAL") = True
+    numTypeDict("DOUBLE PRECISION") = True
+    numTypeDict("SMALLSERIAL") = True
+    numTypeDict("SERIAL") = True
+    numTypeDict("BIGSERIAL") = True
+    numTypeDict("MONEY") = True
+    numTypeDict("INT2") = True
+    numTypeDict("INT4") = True
+    numTypeDict("INT8") = True
+    numTypeDict("FLOAT4") = True
+    numTypeDict("FLOAT8") = True
+    '========== SQL Server ==========
+    numTypeDict("TINYINT") = True
+    numTypeDict("SMALLINT") = True
+    numTypeDict("INT") = True
+    numTypeDict("BIGINT") = True
+    numTypeDict("DECIMAL") = True
+    numTypeDict("NUMERIC") = True
+    numTypeDict("SMALLMONEY") = True
+    numTypeDict("MONEY") = True
+    numTypeDict("FLOAT") = True
+    numTypeDict("REAL") = True
+    '判定
+    IsColType_Numeric = numTypeDict.exists(UCase$(colType))
+End Function
+'------------------------------------------------------------
+'概要 : DB項目型が[日付]型か判定する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : colType : 型
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsColType_Date(ByVal colType As String) As Boolean
+    '末尾桁数 除去
+    If Right$(colType, 1) = ")" Then colType = Left$(colType, Len(colType) - 3)
+    '型リスト 作成
+    Dim dateTypeDict As Object: Set dateTypeDict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIMESTAMP") = True
+    dateTypeDict("TIMESTAMP WITH TIME ZONE") = True
+    dateTypeDict("TIMESTAMP WITH LOCAL TIME ZONE") = True
+    '========== PostgreSQL ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIME") = True
+    dateTypeDict("TIME WITHOUT TIME ZONE") = True
+    dateTypeDict("TIME WITH TIME ZONE") = True
+    dateTypeDict("TIMETZ") = True
+    dateTypeDict("TIMESTAMP") = True
+    dateTypeDict("TIMESTAMP WITHOUT TIME ZONE") = True
+    dateTypeDict("TIMESTAMP WITH TIME ZONE") = True
+    dateTypeDict("TIMESTAMPTZ") = True
+    '========== SQL Server ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIME") = True
+    dateTypeDict("DATETIME") = True
+    dateTypeDict("DATETIME2") = True
+    dateTypeDict("SMALLDATETIME") = True
+    dateTypeDict("DATETIMEOFFSET") = True
+    '判定
+    IsColType_Date = dateTypeDict.exists(UCase(Trim(colType)))
+End Function
+'------------------------------------------------------------
+'概要 : DB項目型が[日時]型か判定する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : colType : 型
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsColType_Timestamp(ByVal colType As String) As Boolean
+    '末尾桁数 除去
+    If Right$(colType, 1) = ")" Then colType = Left$(colType, Len(colType) - 3)
+    '型リスト 作成
+    Dim dateTypeDict As Object: Set dateTypeDict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIMESTAMP") = True
+    dateTypeDict("TIMESTAMP WITH TIME ZONE") = True
+    dateTypeDict("TIMESTAMP WITH LOCAL TIME ZONE") = True
+    '========== PostgreSQL ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIME") = True
+    dateTypeDict("TIME WITHOUT TIME ZONE") = True
+    dateTypeDict("TIME WITH TIME ZONE") = True
+    dateTypeDict("TIMETZ") = True
+    dateTypeDict("TIMESTAMP") = True
+    dateTypeDict("TIMESTAMP WITHOUT TIME ZONE") = True
+    dateTypeDict("TIMESTAMP WITH TIME ZONE") = True
+    dateTypeDict("TIMESTAMPTZ") = True
+    '========== SQL Server ==========
+    dateTypeDict("DATE") = True
+    dateTypeDict("TIME") = True
+    dateTypeDict("DATETIME") = True
+    dateTypeDict("DATETIME2") = True
+    dateTypeDict("SMALLDATETIME") = True
+    dateTypeDict("DATETIMEOFFSET") = True
+    '判定
+    IsColType_Timestamp = dateTypeDict.exists(UCase(Trim(colType)))
+End Function
+'------------------------------------------------------------
+'■概要 : NULLか判定し、結果を返す
 '       strが "NULL" or "null" か判定
 '引数 : str : チェック対象文字列
 '戻値 : 判定結果(True=NULL / False=NULLでない)
 '備考 : -
 '------------------------------------------------------------
 Private Function IsNull(str As String) As Boolean
-    If str = "NULL" Or str = "null" Then
-        IsNull = True
-    End If
+    IsNull = (UCase$(str) = "NULL")
 End Function
 '------------------------------------------------------------
-'概要 : 日付形式チェック
-'引数 : str : 日付文字列
-'戻値 : 判定結果(True=日付形式 / False=日付形式でない)
+'概要 : 日付形式か判定する
+'引数 : str : 文字列
+'戻値 : 判定結果(True:である / False:でない)
 '備考 : -
 '------------------------------------------------------------
 Private Function IsValidDate(str As String) As Boolean
-    IsValidDate = IsDate(str)
+    If IsDate(str) Then
+        IsValidDate = True
+        Exit Function
+    '数字8桁の場合
+    ElseIf AAA Then
+        IsValidDate = True
+        Exit Function
+    'ドット区切りの場合
+    ElseIf BBB Then
+        IsValidDate = True
+        Exit Function
+    End If
+    IsValidDate = False
 End Function
 '------------------------------------------------------------
-'概要 : 日付文字列を指定の日付フォーマットに変換し返す
+'概要 : 文字列が指定Byte数を超過しているか判定する(Oracle用)
+'引数 : str    : 文字列
+'     : maxLen : 最大Byte数
+'戻値 : 判定結果(True:している / False:していない)
+'備考 : Oracleは全角1文字が3Byte
+'     : ただし、古い環境だと半角カナが1Byte、新しい環境だと3Byte
+'     : SELECT VALUE FROM NLS_DATABASE_PARAMETERS WHERE PARAMETER = 'NLS_CHARACTERSET';
+'     : ↑SQLの実行結果が
+'     : "AL32UTF8" の場合、3Byte
+'     : "JA16SJIS" の場合、1Byte
+'     : 結果を最上に書いているグローバル変数[IS_AL32UTF8]にセットする
+'------------------------------------------------------------
+Private Function IsOverByteLength_Oracle(ByVal str As String, ByVal maxLen As Long) As Boolean
+    Dim i As Long: i = 1
+    Dim code As Long
+    Dim code2 As Long
+    Dim totalLen As Long
+    '========== AL32UTF8 ==========
+    If IS_AL32UTF8 Then
+        Do While i <= Len(str)
+            code = AscW(Mid$(str, i, 1))
+            'AscWは&H8000以上で負値になるため補正
+            If code < 0 Then code = code + &H10000
+            Select Case code
+                Case &H0 To &H7F
+                    'ASCII → 1Byte
+                    totalLen = totalLen + 1
+                Case &H80 To &H7FF
+                    'U+0080～U+07FF → 2Byte
+                    totalLen = totalLen + 2
+                Case &HD800 To &HDBFF
+                    '上位サロゲート
+                    '下位サロゲートと組み合わせて4Byte
+                    If i < Len(str) Then
+                        code2 = AscW(Mid$(str, i + 1, 1))
+                        If code2 < 0 Then code2 = code2 + &H10000
+                        If &HDC00 <= code2 And code2 <= &HDFFF Then
+                            'サロゲートペア → 4Byte
+                            totalLen = totalLen + 4
+                            i = i + 1
+                        Else
+                            '単独の上位サロゲート
+                            totalLen = totalLen + 3
+                        End If
+                    Else
+                        '文字列末尾の単独サロゲート
+                        totalLen = totalLen + 3
+                    End If
+                Case &HDC00 To &HDFFF
+                    '単独の下位サロゲート
+                    totalLen = totalLen + 3
+                Case Else
+                    'U+0800～U+FFFF → 3Byte
+                    totalLen = totalLen + 3
+            End Select
+            '最大Byte数を超えた時点で終了
+            If maxLen < totalLen Then
+                IsOverByteLength_Oracle = True
+                Exit Function
+            End If
+            i = i + 1
+        Loop
+    '========== JA16SJIS ==========
+    Else
+        'Shift-JISへ変換したByte数を取得
+        IsOverByteLength_Oracle = (maxLen < LenB(StrConv(str, vbFromUnicode)))
+        Exit Function
+    End If
+    IsOverByteLength_Oracle = False
+End Function
+'------------------------------------------------------------
+'■概要 : 日付文字列を指定の日付フォーマットに変換し返す
 '引数 : str : 日付文字列
 '     : fmt : 日付フォーマット
 '戻値 : 変換後日付文字列
@@ -1510,11 +2421,35 @@ Private Function ConvertDateFormat(str As String, fmt As String) As String
     Exit Function
 End Function
 '------------------------------------------------------------
-'概要 : 列Indexから列名(アルファベット)を返す
-'引数 : colIdx : 列Index
-'戻値 : 列名(アルファベット)
+'概要 : 文字列を桁数と同じ桁数になるまで先頭にchを付け足す
+'引数 : str      : 文字列
+'     : digitNum : 桁数
+'     : ch       : 挿入文字
+'戻値 : 文字列
 '備考 : -
 '------------------------------------------------------------
-Private Function GetColNm(colIdx As Long) As String
-    GetColNm = Split(Cells(1, colIdx).Address(True, False), "$")(O)
+Private Function AddFrontCharacter(ByVal str As String, ByVal digitNum As Long, ByVal ch As String) As String
+    Do While Len(str) < digitNum
+        str = ch & str
+    Loop
+    AddFrontCharacter = str
+End Function
+'------------------------------------------------------------
+'概要 : 文字列の先頭から連続するchと同じ文字を除去する
+'引数 : str : 文字列
+'     : ch  : 除去文字
+'戻値 : 文字列
+'備考 : -
+'------------------------------------------------------------
+Private Function RemoveFrontCharacter(ByVal str As String, ByVal ch As String) As String
+    Dim result As String
+    result = str
+    Do While 0 < Len(result)
+        If Left(result, 1) = ch Then
+            result = Mid$(result, 2)
+        Else
+            Exit Do
+        End If
+    Loop
+    RemoveFrontCharacter = result
 End Function
