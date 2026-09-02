@@ -12,8 +12,7 @@ Public Sub CreateSheet_InputPattern()
 
     Dim ws As Worksheet 'Sheet
     Dim i As Long       'Loopカウンタ
-
-    '図形/サイズ(横/縦)
+    '●図形/サイズ(横/縦)
     Dim shp As Shape
     Dim shpWidth As Double: shpWidth = 3
     Dim shpHeight As Double: shpHeight = 1
@@ -58,7 +57,10 @@ Public Sub CreateSheet_InputPattern()
         .Range("B2:AF2").HorizontalAlignment = xlCenter
         .Range("B3:B5").HorizontalAlignment = xlCenter
         .Range("A5:A105").HorizontalAlignment = xlCenter
-        '折り返して表示
+        '罫線
+        .Range("A2:AF105").Borders(xlInsideHorizontal).Weight = xlHairline
+        .Range("A2:AF105").Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+        '折り返し表示
         .Range("C2:AF5").WrapText = True
         .Range("B6:B105").WrapText = True
         'グループ化
@@ -76,9 +78,6 @@ Public Sub CreateSheet_InputPattern()
 
     '条件付き書式
     ws.Range("C6:AF105").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
-    '罫線
-    ws.Range("A2:AF105").Borders(xlInsideHorizontal).Weight = xlHairline
-    ws.Range("A2:AF105").Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
 
     'マクロボタン作成
     Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
@@ -111,42 +110,39 @@ Private Sub Btn_CreateSheet_ResultPattern()
     Call SettingRenderingProcess(False)
 
     Dim i As Long         'Loopカウンタ
-    Dim inputRng As Range '入力範囲
-
+    Dim endRowIdx As Long '終了行
+    Dim endColIdx As Long '終了列
+    Dim rng As Range      '範囲
     '●入力Sheet/入力Sheet名
     Dim inputWs As Worksheet: Set inputWs = ActiveSheet
     Dim inputWsNm As String: inputWsNm = ActiveSheet.Name
     '●新規Sheet/新規Sheet名
     Dim newWs As Worksheet
     Dim newWsNm As String: newWsNm = "PTN-"
-
-    '●終了(行/列)
-    Dim endRowIdx As Long
-    Dim endColIdx As Long
-
-    '●書込データ内容/書込データ終了(行/列)
-    Dim writeSource As Variant
+    '●入力値範囲
+    Dim inputRng As Range
+    '●書込データリスト/書込データ終了(行/列)
+    Dim writeSrcList As Variant
     Dim writeEndRowIdx As Long
     Dim writeEndColIdx As Long
-
     '●入力受付Form表示内容
-    Dim title As String
-    Dim msg As String
-    Dim initVal As String
+    Dim title As String   'タイトル
+    Dim msg As String     'メッセージ
+    Dim initVal As String '初期値
 
-    '終了(行/列) 取得
+    '終了(行/列) セット
     endRowIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).row
     endColIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).Column
 
-    '入力範囲セット
-    Set inputRng = inputWs.Range("C6:" & GetColNm(endColIdx) & endRowIdx)
+    '入力値範囲 セット
+    Set inputRng = inputWs.Range(inputWs.Range("C6"), inputWs.Cells(endRowIdx, endColIdx))
 
-    '書込内容 作成 & 書込データ最終(行/列)セット
-    writeSource = GetAllPattern(inputRng)
-    writeEndRowIdx = UBound(writeSource, 1)
-    writeEndColIdx = UBound(writeSource, 2)
+    '書込データリスト 作成 & 書込データ終了(行/列) セット
+    writeSrcList = GetAllPattern(inputRng)
+    writeEndRowIdx = UBound(writeSrcList, 1)
+    writeEndColIdx = UBound(writeSrcList, 2)
 
-    '▼100万行OVER 強制終了
+    '▼約100万行OVER 強制終了
     If 1048500 <= writeEndRowIdx Then
         msg = "Excelの行数限界を超えています" & vbCrLf & _
               "（パターン数：" & Format(writeEndRowIdx, "#,##0") & " 行）"
@@ -160,9 +156,8 @@ Private Sub Btn_CreateSheet_ResultPattern()
               "10万行  ：約5秒" & vbCrLf & _
               "100万行：約30秒"
         answer = MsgBox(msg, vbExclamation + vbYesNo, "")
-        If answer = vbNo Then
-            Exit Sub
-        End If
+        'NOの場合
+        If answer = vbNo Then Exit Sub
     End If
 
     '新規Sheet作成 & 新規Sheet名セット
@@ -170,14 +165,14 @@ Private Sub Btn_CreateSheet_ResultPattern()
     newWs.Name = ChangeUniqueSheetNm(newWsNm & inputWsNm)
 
     'ヘッダー書込
-    inputWs.Range("C2:" & GetColNm(writeEndColIdx + 2) & 2).Copy
+    inputWs.Range(inputWs.Range("C2"), inputWs.Cells(2, writeEndColIdx + 2)).Copy
     newWs.Range("A1").Value = "No"
     newWs.Range("A2").Resize(writeEndRowIdx, 1).Formula2 = "=ROW()-1"
-    newWs.Range("B1:" & GetColNm(writeEndColIdx) & 1).PasteSpecial xlPasteAll
+    newWs.Range(newWs.Range("B1"), newWs.Cells(1, writeEndColIdx)).PasteSpecial xlPasteAll
     Application.CutCopyMode = False
 
     'データ 一括書込
-    newWs.Range("B2").Resize(writeEndRowIdx, writeEndColIdx).Value = writeSource
+    newWs.Range("B2").Resize(writeEndRowIdx, writeEndColIdx).Value = writeSrcList
 
     'Sheet設定
     With newWs
@@ -193,7 +188,8 @@ Private Sub Btn_CreateSheet_ResultPattern()
         .Range("A1:A" & writeEndRowIdx + 1).Interior.Color = RGB(217, 217, 217) '#D9D9D9
     End With
     'テーブルスタイル
-    Call ApplyTableStyle_01(newWs, newWs.Range("A1:" & GetColNm(writeEndColIdx + 1) & (writeEndRowIdx + 1)), 2)
+    Set rng = newWs.Range(newWs.Range("A1"), newWs.Cells(writeEndRowIdx + 1, writeEndColIdx + 1))
+    Call ApplyTableStyle_01(newWs, rng, 2)
     '表示倍率
     ActiveWindow.Zoom = 85
     '目盛線
@@ -212,10 +208,9 @@ End Sub
 '備考 : -
 '------------------------------------------------------------
 Private Function GetAllPattern(srcRng As Range) As Variant()
-    '●Loopカウンタ/行/列
-    Dim i As Long
-    Dim colIdx As Long
-    Dim rowIdx As Long
+    Dim i As Long      'Loopカウンタ
+    Dim colIdx As Long '行
+    Dim rowIdx As Long '列
     '●全要素リスト/1列要素リスト
     Dim srcCol As New Collection
     Dim srcValCol As New Collection
@@ -230,18 +225,18 @@ Private Function GetAllPattern(srcRng As Range) As Variant()
         '要素無しの列で取得終了
         If srcRng.Cells(1, colIdx).Value2 = "" Then Exit For
         Set srcValCol = New Collection
-        For i = 1 To srcRng.Rows.Count
+        For rowIdx = 1 To srcRng.Rows.Count
             '空セルで終了
-            If srcRng.Cells(i, colIdx).Value2 = "" Then Exit For
-            Call srcValCol.Add(srcRng.Cells(i, colIdx).Value2)
+            If srcRng.Cells(rowIdx, colIdx).Value2 = "" Then Exit For
+            Call srcValCol.Add(srcRng.Cells(rowIdx, colIdx).Value2)
         Next
         Call srcCol.Add(srcValCol)
     Next
 
     '総パターン数 算出
     totalPtnCnt = 1
-    For i = 1 To srcCol.Count
-        totalPtnCnt = totalPtnCnt * srcCol(i).Count
+    For colIdx = 1 To srcCol.Count
+        totalPtnCnt = totalPtnCnt * srcCol(colIdx).Count
     Next
 
     '配列サイズ再定義
@@ -308,6 +303,7 @@ End Sub
 Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
+        '存在する場合
         If ws.Name = wsNm Then
             IsExistsSheet = True
             Exit Function
@@ -326,20 +322,14 @@ End Function
 Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
     Dim i As Long
     Dim uniqueNo As String
-    '存在しない場合
-    If Not IsExistsSheet(wsNm) Then
-        ChangeUniqueSheetNm = wsNm
-        Exit Function
-    End If
-    '存在する場合
     For i = 2 To 1000
-        '末尾付与
-        uniqueNo = " (" & i & ")"
         '存在しない場合
         If Not IsExistsSheet(wsNm & uniqueNo) Then
             ChangeUniqueSheetNm = wsNm & uniqueNo
             Exit Function
         End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
     Next
 End Function
 '------------------------------------------------------------
@@ -397,7 +387,8 @@ End Function
 '------------------------------------------------------------
 Private Sub ApplyTableStyle_01(ByRef ws As Worksheet, ByRef rng As Range, ByVal colIdx As Long)
     'テーブルスタイル適用
-    Dim tbl As ListObject: Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
+    Dim tbl As ListObject
+    Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
     tbl.TableStyle = "TableStyleMedium1"
     'ヘッダー
     With ws.Range(ws.Cells(rng.row, rng.Column), ws.Cells(rng.row, rng.Columns.Count))

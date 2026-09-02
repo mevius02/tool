@@ -33,8 +33,7 @@ Public Sub TestMain()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    '●Loopカウンタ
-    Dim i As Long
+    Dim i As Long 'Loopカウンタ
     '●Proc/Cat設定
     Dim proc As String: proc = "TestMain"
     Dim cat1 As String: cat1 = ""
@@ -92,6 +91,7 @@ End Sub
 Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
+        '存在する場合
         If ws.Name = wsNm Then
             IsExistsSheet = True
             Exit Function
@@ -110,20 +110,14 @@ End Function
 Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
     Dim i As Long
     Dim uniqueNo As String
-    '存在しない場合
-    If Not IsExistsSheet(wsNm) Then
-        ChangeUniqueSheetNm = wsNm
-        Exit Function
-    End If
-    '存在する場合
     For i = 2 To 1000
-        '末尾付与
-        uniqueNo = " (" & i & ")"
         '存在しない場合
         If Not IsExistsSheet(wsNm & uniqueNo) Then
             ChangeUniqueSheetNm = wsNm & uniqueNo
             Exit Function
         End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
     Next
 End Function
 '------------------------------------------------------------

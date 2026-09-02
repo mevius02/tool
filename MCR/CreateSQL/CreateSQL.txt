@@ -2453,3 +2453,4 @@ Private Function RemoveFrontCharacter(ByVal str As String, ByVal ch As String) A
     Loop
     RemoveFrontCharacter = result
 End Function
+
