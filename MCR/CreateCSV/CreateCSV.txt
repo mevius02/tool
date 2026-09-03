@@ -24,10 +24,10 @@ Public Sub CreateSheet_InputCsvContents()
 
     '書込
     With ws
-        .Range("A1").Value = "ファイル名"
+        .Range("A1").Value = "FILE名"
         .Range("A2").Value = "CSV/TSV"
         .Range("A3").Value = "HEADER"
-        .Range("A4").Value = "論理/物理"
+        .Range("A4").Value = "HEAD論/理"
         .Range("A9").Value = "No"
         .Range("A10:A109").Formula2 = "=ROW()-9"
         .Range("B1").Value = "ファイル名"
@@ -87,8 +87,6 @@ Public Sub CreateSheet_InputCsvContents()
         .Columns("D:BA").ColumnWidth = 15
         'セル結合
         .Range("B10:C109").Merge Across:=True
-        '表示形式
-        .Range("D10:BA109").NumberFormat = "@"
         'グループ化
         .Columns("B:C").Group
         .Rows("5:9").Group
@@ -143,22 +141,19 @@ Private Sub Btn_CreateCsvFile()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    '●Loopカウンタ
-    Dim i As Long, j As Long
-
-    '●Sheet
-    Dim ws As Worksheet: Set ws = ActiveSheet
-    '●終了(行/列)
-    Dim endRowIdx As Long
-    Dim endColIdx As Long
-
+    Dim i As Long, j As Long                  'Loopカウンタ
+    Dim ws As Worksheet: Set ws = ActiveSheet 'Sheet
+    Dim rowIdx As Long                        '行
+    Dim colIdx As Long                        '列
+    Dim endRowIdx As Long                     '終了行
+    Dim endColIdx As Long                     '終了列
+    Dim rng As Range                          '範囲
     '●CSV/TSVフラグ(True=CSV/False=TSV)
     Dim csvTsvFlg As Boolean
     '●Header有無フラグ(True=有/False=無)
     Dim headerFlg As Boolean
     '●論理/物理フラグ(True=論理/False=物理)
     Dim physiLogiFlg As Boolean
-
     '●ファイルパス/ファイル名/拡張子
     Dim filePath As String: filePath = ThisWorkbook.path & "\"
     Dim fileNm As String
@@ -168,13 +163,34 @@ Private Sub Btn_CreateCsvFile()
     Dim line As String
     Dim str As Variant
     Dim delimiter As String
-    '●範囲/コピー元範囲
-    Dim rng As Range
+    '●コピー元範囲
     Dim sourceRng As Range
     '●ヘッダー項目リスト/ヘッダー項目/ダブルクォート設定値リスト
     Dim headerValCol As New Collection
     Dim headerVal As Variant
     Dim dblQtValList As Variant
+    '●メッセージ内容
+    Dim msg As String
+
+    '=== ▼入力 & 存在チェック[CSV/TSV / HEADER / HEAD論/物] ==========
+    '=== [CSV/TSV]が未選択の場合 ==========
+    If LenB(ws.Range("B2").Value2) = 0 Then
+        msg = "(B2) [CSV/TSV] を選択して下さい"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+    '=== [CSV/TSV]が未選択の場合 ==========
+    If LenB(ws.Range("B3").Value2) = 0 Then
+        msg = "(B3) [HEADER] を選択して下さい"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+    '=== [CSV/TSV]が未選択の場合 ==========
+    If LenB(ws.Range("B4").Value2) = 0 Then
+        msg = "(B4) [HEAD論/物] を選択して下さい"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
 
     '=== 設定値 セット ====================
     'CSV/TSVフラグ/拡張子/区切り文字
@@ -188,79 +204,71 @@ Private Sub Btn_CreateCsvFile()
         fileExt = "tsv"
         delimiter = vbTab
     End If
-
     'ファイル名 (未入力の場合 Sheet名をセット)
     fileNm = Trim$(RemoveForbiddenCharsFileNm(ws.Range("B1").Value2))
-    If fileNm = "" Then
-        fileNm = ChangeUniqueFileNm(filePath, ActiveSheet.Name, fileExt)
+    If LenB(fileNm) = 0 Then
+        fileNm = ChangeUniqueFileNm(filePath, ws.Name, fileExt)
     Else
         fileNm = ChangeUniqueFileNm(filePath, fileNm, fileExt)
     End If
-
     'ヘッダー有無フラグ
-    If ws.Range("B3").Value2 = "有" Then
-        headerFlg = True
-    Else
-        headerFlg = False
-    End If
-
+    headerFlg = IIf(ws.Range("B3").Value2 = "有", True, False)
     '論理/物理フラグ
-    If ws.Range("B4").Value2 = "論理" Then
-        physiLogiFlg = True
-    Else
-        physiLogiFlg = False
-    End If
+    physiLogiFlg = IIf(ws.Range("B4").Value2 = "論理", True, False)
     '======================================
 
-    '終了(行/列) 取得
+    '終了(行/列) セット
     endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
     endColIdx = ws.Cells(2, ws.Columns.Count).End(xlToLeft).Column
 
     'ダブルクォート有無行 取得
-    dblQtValList = ws.Range("D4:" & GetColNm(endColIdx) & 4).Value2
+    dblQtValList = ws.Range(ws.Range("D4"), ws.Cells(4, endColIdx)).Value2
 
-    'ヘッダー作成
+    '========== ヘッダー作成 ==========
     If headerFlg Then
         'ヘッダー行 取得
         If physiLogiFlg Then
-            Set rng = ws.Range("D2:" & GetColNm(endColIdx) & 2)
+            Set rng = ws.Range(ws.Range("D2"), ws.Cells(2, endColIdx))
         Else
-            Set rng = ws.Range("D3:" & GetColNm(endColIdx) & 3)
+            Set rng = ws.Range(ws.Range("D3"), ws.Cells(3, endColIdx))
         End If
-        For i = 1 To rng.Columns.Count
-            headerValCol.Add (CStr(rng.Cells(1, i).Text))
+        For colIdx = 1 To rng.Columns.Count
+            headerValCol.Add (CStr(rng.Cells(1, colIdx).Text))
         Next
         '作成
-        For i = 1 To rng.Columns.Count
-            If CStr(dblQtValList(1, i)) = "Y" Then
-                line = line & """" & CStr(headerValCol(i)) & """" & delimiter
+        For colIdx = 1 To rng.Columns.Count
+            'ダブルクォート囲み有無
+            If CStr(dblQtValList(1, colIdx)) = "Y" Then
+                line = line & """" & CStr(headerValCol(colIdx)) & """" & delimiter
             Else
-                line = line & CStr(headerValCol(i)) & delimiter
+                line = line & CStr(headerValCol(colIdx)) & delimiter
             End If
         Next
         '末尾除去
-        line = Left(line, Len(line) - Len(delimiter))
+        line = Left$(line, Len(line) - Len(delimiter))
         csvBody = csvBody & line & vbCrLf
     End If
 
-    'データ内容 取得
-    Set sourceRng = ActiveSheet.Range("D10:" & GetColNm(endColIdx) & endRowIdx)
+    'データ範囲 取得
+    Set sourceRng = ws.Range(ws.Range("D10"), ws.Cells(endRowIdx, endColIdx))
 
-    'データ作成
-    For i = 1 To sourceRng.Rows.Count
+    '========== データ作成 ==========
+    For rowIdx = 1 To sourceRng.Rows.Count
         'ステータスバー
-        Application.StatusBar = "CSV内容 作成中... " & i & " / " & sourceRng.Rows.Count
+        Application.StatusBar = "ファイル内容 作成中... " & rowIdx & " / " & sourceRng.Rows.Count
         line = ""
-        For j = 1 To sourceRng.Columns.Count
-            str = ConvertCsvVal(CStr(sourceRng.Cells(i, j).Text))
-            If CStr(dblQtValList(1, j)) = "Y" Then
+        For colIdx = 1 To sourceRng.Columns.Count
+            'CSV用文字列変換
+            str = ConvertCsvVal(CStr(sourceRng.Cells(rowIdx, colIdx).Text))
+            'ダブルクォート囲み有無
+            If CStr(dblQtValList(1, colIdx)) = "Y" Then
                 line = line & """" & str & """" & delimiter
             Else
                 line = line & str & delimiter
             End If
         Next
         '末尾除去
-        line = Left(line, Len(line) - Len(delimiter))
+        line = Left$(line, Len(line) - Len(delimiter))
         csvBody = csvBody & line & vbCrLf
     Next
 
@@ -318,20 +326,14 @@ End Function
 Private Function ChangeUniqueFileNm(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As String
     Dim i As Long
     Dim uniqueNo As String
-    '存在しない場合
-    If Not IsExistsFile(path, fileNm, ext) Then
-        ChangeUniqueFileNm = fileNm & "." & ext
-        Exit Function
-    End If
-    '存在する場合
     For i = 2 To 1000
-        '末尾付与
-        uniqueNo = " (" & i & ")"
         '存在しない場合
         If Not IsExistsFile(path, fileNm & uniqueNo, ext) Then
             ChangeUniqueFileNm = fileNm & uniqueNo & "." & ext
             Exit Function
         End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
     Next
 End Function
 '------------------------------------------------------------
@@ -343,6 +345,7 @@ End Function
 Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
+        '存在する場合
         If ws.Name = wsNm Then
             IsExistsSheet = True
             Exit Function
@@ -361,20 +364,14 @@ End Function
 Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
     Dim i As Long
     Dim uniqueNo As String
-    '存在しない場合
-    If Not IsExistsSheet(wsNm) Then
-        ChangeUniqueSheetNm = wsNm
-        Exit Function
-    End If
-    '存在する場合
     For i = 2 To 1000
-        '末尾付与
-        uniqueNo = " (" & i & ")"
         '存在しない場合
         If Not IsExistsSheet(wsNm & uniqueNo) Then
             ChangeUniqueSheetNm = wsNm & uniqueNo
             Exit Function
         End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
     Next
 End Function
 '------------------------------------------------------------
@@ -450,9 +447,10 @@ End Function
 '------------------------------------------------------------
 Private Function RemoveForbiddenCharsFileNm(ByVal fileNm As String) As String
     Dim i As Long
+    Dim str As Variant
     Dim forbiddenChars As Variant: forbiddenChars = Array("\", "/", ":", "*", "?", """", "<", ">", "|")
-    For i = LBound(forbiddenChars) To UBound(forbiddenChars)
-        fileNm = Replace(fileNm, forbiddenChars(i), "")
+    For Each str In forbiddenChars
+        fileNm = Replace(fileNm, CStr(str), "")
     Next
     RemoveForbiddenCharsFileNm = fileNm
 End Function

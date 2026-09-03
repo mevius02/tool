@@ -3,7 +3,8 @@ Option Explicit
 '==================================================
 ' テーマを追加する場合
 '   1, グローバル変数[テーマ]に１行追加
-'   2, GetThemePreset_(01 & 02)に1Case追加
+'   2, Function GetAllThemeList()に 1, で追加した変数名を追記
+'   3, Function GetThemePreset_(01 & 02)に1Case追加
 '   (RGB値はSheet情で、セルの(背景色 or 文字色) → [その他の色] → [ユーザー設定]タブ から確認可能)
 '   画像や写真の色を取得したい場合、フリーソフト[ColorPicker]等がおすすめ
 '==================================================
@@ -18,7 +19,7 @@ Private Const THEME_06 = "6：Ocean"
 Private Const THEME_07 = "7：LaundryRoom"
 Private Const THEME_08 = "8：Ocha"
 Private Const THEME_09 = "9：Feminine"
-'●テーマプリセット[時間]
+'●テーマプリセット[時間タイプ]
 Private Type ThemePreset_01
     ThemeNm As String           'テーマ名
     Font_All As String          '[フォント]全体
@@ -43,7 +44,7 @@ Private Type ThemePreset_01
     BtnBgColor_Csv As Long      '[ボタン]背景色(CSV)
     BtnBgColor_Excel As Long    '[ボタン]背景色(Excel)
 End Type
-'●テーマプリセット[時間数]
+'●テーマプリセット[時間数タイプ]
 Private Type ThemePreset_02
     ThemeNm As String         'テーマ名
     Font_All As String        '[フォント]全体
@@ -61,7 +62,18 @@ Private Type ThemePreset_02
     BorderColor_Biko As Long  '[罫線色]備考
 End Type
 '------------------------------------------------------------
-'概要 : テーマプリセットを取得する[01]
+'概要 : 全テーマリストを取得する
+'引数 : -
+'戻値 : 全テーマリスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetAllThemeList() As Variant
+    GetAllThemeList = Array( _
+        THEME_01, THEME_02, THEME_03, THEME_04, THEME_05, _
+        THEME_06, THEME_07, THEME_08, THEME_09)
+End Function
+'------------------------------------------------------------
+'概要 : テーマプリセットを取得する[01:時間タイプ]
 '引数 : themeNo : テーマ番号
 '戻値 : テーマセット
 '備考 : -
@@ -280,7 +292,7 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
     GetThemePreset_01 = result
 End Function
 '------------------------------------------------------------
-'概要 : テーマプリセットを取得する[02]
+'概要 : テーマプリセットを取得する[02:時間数タイプ]
 '引数 : themeNo : テーマ番号
 '戻値 : テーマセット
 '備考 : -
@@ -479,18 +491,25 @@ Public Sub CreateSheet_WorkSchedule()
 
     Dim ws As Worksheet   'Sheet
     Dim wsNm As String    'Sheet名
+    Dim rowIdx As Long    '行
     Dim endRowIdx As Long '終了行
     Dim rng As Range      '範囲
     '●テーマリスト/テーマ
-    Dim themeList As Variant: themeList = Array(THEME_01, THEME_02, THEME_03, THEME_04, THEME_05, THEME_06, THEME_07, THEME_08, THEME_09)
+    Dim themeList As Variant: themeList = GetAllThemeList
     Dim theme As Variant
+    '●祝日Map[日付/祝日名]/行
+    Dim holidayMap As New Collection
+    '●祝日辞書(検索用)/祝日
+    Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
+    Dim holiday As Variant
+    '●フラグ
+    Dim flg As Boolean
     '==================== 入力受付系 ====================
     '●入力受付Form表示内容
     Dim title As String
     Dim msg As String
-    '●[Sheetタイプ]入力値/初期値/入力可能範囲
+    '●[Sheetタイプ]入力値/入力可能範囲
     Dim inputSheetType As Long
-    Dim initSheetType As Double: initSheetType = "1"
     Dim minSheetType As Double: minSheetType = "1"
     Dim maxSheetType As Double: maxSheetType = "2"
     '●[作成年]入力値/初期値/入力可能範囲(1年前～10年後)
@@ -514,21 +533,18 @@ Public Sub CreateSheet_WorkSchedule()
     Dim initWorkHr As Double: initWorkHr = 8
     Dim minHr As Double: minHr = 0
     Dim maxHr As Double: maxHr = 24
-    '●[テーマ]入力値/初期値/入力可能範囲
+    '●[テーマ]入力値/入力可能範囲
     Dim inputThemeNo As Long
-    Dim initThemeNo As Double: initThemeNo = Split(THEME_01, "：")(0)
     Dim minThemeNo As Double: minThemeNo = Split(THEME_01, "：")(0)
     Dim maxThemeNo As Double: maxThemeNo = UBound(themeList)
     '====================================================
-    '●祝日辞書(検索用)
-    Dim holidayDict As Object: Set holidayDict = CreateObject("Scripting.Dictionary")
 
     '=== 入力受付 ====================
     '▼入力受付[Sheetタイプ]
     title = "作成する勤務表タイプを数字で選択して下さい"
     msg = "1：[開始/終了]時間入力タイプ" & vbCrLf & _
           "2：1日の勤務時間数入力タイプ"
-    inputSheetType = Int(InputForm_Num(title, msg, initSheetType, minSheetType, maxSheetType))
+    inputSheetType = Int(InputForm_Num(title, msg, minSheetType, minSheetType, maxSheetType))
     'キャンセルの場合
     If inputSheetType = -1 Then Exit Sub
     '▼入力受付[作成年]
@@ -537,7 +553,7 @@ Public Sub CreateSheet_WorkSchedule()
     inputYear = Int(InputForm_Num(title, msg, initYear, minYear, maxYear))
     If inputYear = -1 Then Exit Sub
     Select Case inputSheetType
-        '===== 時間タイプの場合 =====
+        '===== 時間タイプ =====
         Case "1"
             '▼入力受付[勤務時間(開始/終了)]
             title = "勤務 [開始] 時間を入力して下さい"
@@ -554,7 +570,7 @@ Public Sub CreateSheet_WorkSchedule()
             title = "休憩 [終了] 時間を入力して下さい"
             inputBtEndTime = InputForm_Time(title, msg, initBtEndTime, minTime, maxTime)
             If inputBtEndTime = "-1" Then Exit Sub
-        '===== 時間数タイプの場合 =====
+        '===== 時間数タイプ =====
         Case "2"
             '▼入力受付[勤務時間数]
             title = "1日の勤務時間数を入力して下さい"
@@ -569,7 +585,7 @@ Public Sub CreateSheet_WorkSchedule()
     Next
     '末尾除去
     msg = Left(msg, Len(msg) - Len(vbCrLf))
-    inputThemeNo = Int(InputForm_Num(title, msg, initThemeNo, minThemeNo, maxThemeNo))
+    inputThemeNo = Int(InputForm_Num(title, msg, minThemeNo, minThemeNo, maxThemeNo))
     If inputThemeNo = -1 Then Exit Sub
 
     '=== Sheet[祝日]作成 (存在する場合、既存セット) ====================
@@ -583,8 +599,31 @@ Public Sub CreateSheet_WorkSchedule()
     '=== 祝日辞書 作成 ====================
     endRowIdx = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
     For Each rng In ws.Range("B2:B" & endRowIdx)
-        If IsDate(rng.Value) Then holidayDict(CLng(CDate(rng.Value))) = True
+        If IsDate(rng.Value) Then holidayDict(CDate(rng.Value)) = True
     Next
+
+    '=== 作成年の祝日が存在しない場合、追記 ====================
+    '存在チェック
+    flg = False
+    For Each holiday In holidayDict.Keys
+        If Year(CDate(holiday)) = Year(Date) Then
+            flg = True
+            Exit For
+        End If
+    Next
+    '存在しない場合
+    If Not flg Then
+        '祝日Map 作成
+        Set holidayMap = CreateHolidayMap(inputYear, inputYear)
+        '祝日追記
+        Call AppendHoliday(ws, holidayMap)
+        '祝日辞書 作成(再)
+        Set holidayDict = CreateObject("Scripting.Dictionary")
+        endRowIdx = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+        For Each rng In ws.Range("B2:B" & endRowIdx)
+            If IsDate(rng.Value) Then holidayDict(CDate(rng.Value)) = True
+        Next
+    End If
 
     '=== Sheet[勤務表]作成 ====================
     Select Case inputSheetType
@@ -1180,6 +1219,45 @@ Private Sub SortHolidayMap(ByRef holidayMap As Collection)
     For i = 1 To UBound(holidayArr)
         holidayMap.Add holidayArr(i)
     Next
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[祝日]に祝日を追記する
+'引数 : ws         : Sheet[祝日]
+'     : holidayMap : 祝日Map
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub AppendHoliday(ByRef ws As Worksheet, ByVal holidayMap As Object)
+    Dim i As Long         'Loopカウンタ
+    Dim rowIdx As Long    '行
+    Dim endRowIdx As Long '終了行
+    '●祝日Map行
+    Dim holidayArr As Variant
+    '●日数
+    Dim dateCnt As Long: dateCnt = 1
+    '終了行 セット
+    endRowIdx = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    '祝日 書込
+    rowIdx = endRowIdx + 1
+    For i = 1 To holidayMap.Count
+        holidayArr = holidayMap(i)
+        '月日/祝日名
+        ws.Range("B" & rowIdx).Value = holidayArr(0)
+        ws.Range("C" & rowIdx).Value = holidayArr(1)
+        '日数
+        ws.Range("D" & rowIdx).Value = CStr(dateCnt)
+        dateCnt = dateCnt + 1
+        rowIdx = rowIdx + 1
+    Next
+    '年
+    ws.Range(ws.Cells(endRowIdx + 1, "A"), ws.Cells(endRowIdx + holidayMap.Count, "A")).FormulaR1C1 = "=RC[1]"
+    '表示形式
+    ws.Range(ws.Cells(endRowIdx + 1, "A"), ws.Cells(endRowIdx + holidayMap.Count, "A")).NumberFormatLocal = "yyyy"
+    ws.Range(ws.Cells(endRowIdx + 1, "B"), ws.Cells(endRowIdx + holidayMap.Count, "B")).NumberFormatLocal = "m/d"
+    '罫線
+    ws.Range(ws.Cells(endRowIdx + 1, "A"), ws.Cells(endRowIdx + 1, "D")).Borders(xlEdgeTop).LineStyle = xlDouble
+    '選択
+    ws.Range("A2").Select
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[テーマサンプル(時間タイプ)]を作成する
