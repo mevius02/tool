@@ -1,7 +1,7 @@
 '変数未宣言エラー設定ON
 Option Explicit
 '------------------------------------------------------------
-'概要 : 1, Sheet[勤務変数作成]を作成する
+'概要 : Sheet[勤怠変数作成]を作成する
 '引数 : -
 '戻値 : -
 '備考 : -
@@ -17,7 +17,7 @@ Public Sub CreateSheet_Init()
 
     'Sheet作成 & Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    ws.Name = ChangeUniqueSheetNm("勤務変数作成")
+    ws.Name = ChangeUniqueSheetNm("勤怠変数作成")
 
     '書込
     With ws
