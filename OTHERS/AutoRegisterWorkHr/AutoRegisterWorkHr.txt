@@ -1,0 +1,156 @@
+'変数未宣言エラー設定ON
+Option Explicit
+'------------------------------------------------------------
+'概要 : 1, Sheet[勤務変数作成]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_Init()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim i As Long         'Loopカウンタ
+    Dim ws As Worksheet   'Sheet
+    Dim rowIdx As Long    '行
+    Dim colIdx As Long    '列
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("勤務変数作成")
+
+    '書込
+    With ws
+        .range("A2").Value = "日"
+        .range("B1").Value = "勤務"
+        .range("B2").Value = "開始"
+        .range("C2").Value = "終了"
+        .range("D1").Value = "休憩"
+        .range("D2").Value = "開始"
+        .range("E2").Value = "終了"
+        .range("G2").Value = "上書き用変数"
+        .range("G3").Formula2 = "=""startWork := [""&TEXTJOIN("", "",FALSE,IF(B3:B33="""",CHAR(34)&CHAR(34),CHAR(34)&TEXT(B3:B33,""h:mm"")&CHAR(34)))&""]"""
+        .range("G4").Formula2 = "=""endWork := [""&TEXTJOIN("", "",FALSE,IF(C3:C33="""",CHAR(34)&CHAR(34),CHAR(34)&TEXT(C3:C33,""h:mm"")&CHAR(34)))&""]"""
+        .range("G5").Formula2 = "=""startRest := [""&TEXTJOIN("", "",FALSE,IF(D3:D33="""",CHAR(34)&CHAR(34),CHAR(34)&TEXT(D3:D33,""h:mm"")&CHAR(34)))&""]"""
+        .range("G6").Formula2 = "=""endRest := [""&TEXTJOIN("", "",FALSE,IF(E3:E33="""",CHAR(34)&CHAR(34),CHAR(34)&TEXT(E3:E33,""h:mm"")&CHAR(34)))&""]"""
+        For i = 1 To 31
+            .range("A3").Offset(i - 1, 0).Formula2 = "=ROW()-2"
+            .range("B3").Offset(i - 1, 0).Value = "9:00"
+            .range("C3").Offset(i - 1, 0).Value = "18:00"
+            .range("D3").Offset(i - 1, 0).Value = "12:00"
+            .range("E3").Offset(i - 1, 0).Value = "13:00"
+        Next
+    End With
+
+    'Sheet設定
+    ws.Activate
+    With ws
+        '文字揃え
+        .Rows("1:2").HorizontalAlignment = xlCenter
+        .Columns("A").HorizontalAlignment = xlCenter
+        '背景色
+        .range("A1:E2").Interior.Color = RGB(221, 235, 247) '#DDEBF7
+        .range("G1:G2").Interior.Color = RGB(221, 235, 247) '#DDEBF7
+        '行幅
+        .Rows(1).RowHeight = 30
+        '列幅
+        .Columns("A:F").ColumnWidth = 6
+        .Columns("G").ColumnWidth = 100
+        'セル結合
+        .range("B1:C1").Merge
+        .range("D1:E1").Merge
+    End With
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+    '条件付き書式
+    ws.range("A3:E33").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+    ws.range("G3:G6").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+    'ウィンドウ枠の固定
+    ws.range("B3").Select
+    ActiveWindow.FreezePanes = True
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic '自動
+    Else
+        Application.Calculation = xlCalculationManual '手動
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        '存在する場合
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    For i = 2 To 1000
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : テーブルスタイル適用[01]
+'引数 : ws     : Sheet
+'     : rng    : 適用範囲
+'     : colIdx : ウィンドウ枠の固定列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyTableStyle_01(ByRef ws As Worksheet, ByRef rng As range, ByVal colIdx As Long)
+    'テーブルスタイル適用
+    Dim tbl As ListObject
+    Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
+    tbl.TableStyle = "TableStyleMedium1"
+    'ヘッダー
+    With ws.range(ws.Cells(rng.Row, rng.Column), ws.Cells(rng.Row, rng.Columns.Count))
+        .Font.Color = RGB(0, 0, 0)           '#000000 文字色
+        .Interior.Color = RGB(221, 235, 247) '#DDEBF7 背景色
+        .HorizontalAlignment = xlCenter      '文字揃え
+    End With
+    '罫線
+    rng.Borders(xlInsideHorizontal).Weight = xlHairline
+    rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+    'ウィンドウ枠の固定
+    ws.Activate
+    ws.Cells(rng.Row + 1, rng.Column + colIdx - 1).Select
+    ActiveWindow.FreezePanes = True
+End Sub
