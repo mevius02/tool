@@ -127,30 +127,3 @@ Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
         uniqueNo = " (" & i & ")"
     Next
 End Function
-'------------------------------------------------------------
-'概要 : テーブルスタイル適用[01]
-'引数 : ws     : Sheet
-'     : rng    : 適用範囲
-'     : colIdx : ウィンドウ枠の固定列番号
-'戻値 : -
-'備考 : -
-'------------------------------------------------------------
-Private Sub ApplyTableStyle_01(ByRef ws As Worksheet, ByRef rng As range, ByVal colIdx As Long)
-    'テーブルスタイル適用
-    Dim tbl As ListObject
-    Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes)
-    tbl.TableStyle = "TableStyleMedium1"
-    'ヘッダー
-    With ws.range(ws.Cells(rng.Row, rng.Column), ws.Cells(rng.Row, rng.Columns.Count))
-        .Font.Color = RGB(0, 0, 0)           '#000000 文字色
-        .Interior.Color = RGB(221, 235, 247) '#DDEBF7 背景色
-        .HorizontalAlignment = xlCenter      '文字揃え
-    End With
-    '罫線
-    rng.Borders(xlInsideHorizontal).Weight = xlHairline
-    rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
-    'ウィンドウ枠の固定
-    ws.Activate
-    ws.Cells(rng.Row + 1, rng.Column + colIdx - 1).Select
-    ActiveWindow.FreezePanes = True
-End Sub
