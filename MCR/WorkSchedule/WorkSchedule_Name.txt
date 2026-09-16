@@ -16,15 +16,16 @@ Private Const THEME_03 = "3：Dark"
 Private Const THEME_04 = "4：Sweets"
 Private Const THEME_05 = "5：Chiikawa"
 Private Const THEME_06 = "6：Ocean"
-Private Const THEME_07 = "7：LaundryRoom"
+Private Const THEME_07 = "7：Laundry"
 Private Const THEME_08 = "8：Ocha"
 Private Const THEME_09 = "9：Feminine"
-Private Const THEME_10 = "10：[SP]FourSeasons(作成中)"
+Private Const THEME_10 = "10：Spring"
+Private Const THEME_11 = "11：Summer"
+Private Const THEME_12 = "12：Autumn"
+Private Const THEME_13 = "13：Winter"
 '●テーマプリセット[時間タイプ]
 Private Type ThemePreset_01
     ThemeNm As String           'テーマ名
-    SpFlg As Boolean            'スペシャルフラグ
-    SpThemeNoList As Variant    'スペシャルテーマ番号リスト
     Font_All As String          '[フォント]全体
     FontColor_All As Long       '[文字色]全体
     FontColor_Header As Long    '[文字色]ヘッダー
@@ -50,8 +51,6 @@ End Type
 '●テーマプリセット[時間数タイプ]
 Private Type ThemePreset_02
     ThemeNm As String         'テーマ名
-    SpFlg As Boolean          'スペシャルフラグ
-    SpThemeNoList As Variant  'スペシャルテーマ番号リスト
     Font_All As String        '[フォント]全体
     FontSize_All As Long      '[フォント]サイズ
     FontColor_All As Long     '[文字色]全体
@@ -74,8 +73,8 @@ End Type
 '------------------------------------------------------------
 Private Function GetAllThemeList() As Variant
     GetAllThemeList = Array( _
-        THEME_01, THEME_02, THEME_03, THEME_04, THEME_05, _
-        THEME_06, THEME_07, THEME_08, THEME_09, THEME_10)
+        THEME_01, THEME_02, THEME_03, THEME_04, THEME_05, THEME_06, THEME_07, THEME_08, THEME_09, THEME_10, _
+        THEME_11, THEME_12, THEME_13)
 End Function
 '------------------------------------------------------------
 '概要 : テーマプリセットを取得する[01:時間タイプ]
@@ -88,7 +87,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
     Select Case themeNo
         Case Split(THEME_01, "：")(0)
             result.ThemeNm = Split(THEME_01, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "游ゴシック"                  '[フォント]全体
             result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
             result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
@@ -112,7 +110,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
         Case Split(THEME_02, "：")(0)
             result.ThemeNm = Split(THEME_02, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "游ゴシック"                  '[フォント]全体
             result.FontColor_All = RGB(0, 0, 0)             '#000000 [文字色]全体
             result.FontColor_Header = RGB(0, 0, 0)          '#000000 [文字色]ヘッダー
@@ -136,7 +133,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(114, 213, 96)     '#72D560 [ボタン]背景色(Excel)
         Case Split(THEME_03, "：")(0)
             result.ThemeNm = Split(THEME_03, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "游ゴシック"                  '[フォント]全体
             result.FontColor_All = RGB(250, 250, 250)       '#FAFAFA [文字色]全体
             result.FontColor_Header = RGB(250, 250, 250)    '#FAFAFA [文字色]ヘッダー
@@ -160,7 +156,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(96, 189, 130)     '#60BD82 [ボタン]背景色(Excel)
         Case Split(THEME_04, "：")(0)
             result.ThemeNm = Split(THEME_04, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(120, 0, 0)           '#780000 [文字色]全体
             result.FontColor_Header = RGB(90, 0, 0)         '#5A0000 [文字色]ヘッダー
@@ -184,7 +179,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(120, 0, 0)        '#780000 [ボタン]背景色(Excel)
         Case Split(THEME_05, "：")(0)
             result.ThemeNm = Split(THEME_05, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(70, 46, 49)          '#462E31 [文字色]全体
             result.FontColor_Header = RGB(250, 248, 247)    '#FAF8F7 [文字色]ヘッダー
@@ -208,7 +202,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(199, 240, 182)    '#C7F0B6 [ボタン]背景色(Excel)
         Case Split(THEME_06, "：")(0)
             result.ThemeNm = Split(THEME_06, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(0, 30, 150)          '#001E96 [文字色]全体
             result.FontColor_Header = RGB(242, 242, 242)    '#F2F2F2 [文字色]ヘッダー
@@ -232,7 +225,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(100, 220, 100)    '#64DC64 [ボタン]背景色(Excel)
         Case Split(THEME_07, "：")(0)
             result.ThemeNm = Split(THEME_07, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(105, 60, 40)         '#693C28 [文字色]全体
             result.FontColor_Header = RGB(105, 60, 40)      '#693C28 [文字色]ヘッダー
@@ -256,7 +248,6 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(150, 180, 150)    '#96B496 [ボタン]背景色(Excel)
         Case Split(THEME_08, "：")(0)
             result.ThemeNm = Split(THEME_08, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "HG正楷書体-PRO"              '[フォント]全体
             result.FontColor_All = RGB(95, 110, 17)         '#5F6E11 [文字色]全体
             result.FontColor_Header = RGB(95, 110, 17)      '#5F6E11 [文字色]ヘッダー
@@ -273,14 +264,13 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BorderColor_Cont = RGB(95, 110, 17)      '#5F6E11 [罫線色]行間
             result.BorderColor_TopCont = RGB(170, 207, 83)  '#AACF53 [罫線色]上部コンテンツ(下/右)
             result.BtnFont = "HG行書体"                     '[ボタン]フォント
-            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontSize = 14                         '[ボタン]フォントサイズ
             result.BtnFontColor_Csv = RGB(71, 89, 80)       '#475950 [ボタン]文字色(CSV)
             result.BtnFontColor_Excel = RGB(71, 89, 80)     '#475950 [ボタン]文字色(Excel)
             result.BtnBgColor_Csv = RGB(166, 148, 37)       '#A69425 [ボタン]背景色(CSV)
             result.BtnBgColor_Excel = RGB(131, 155, 92)     '#839B5C [ボタン]背景色(Excel)
         Case Split(THEME_09, "：")(0)
             result.ThemeNm = Split(THEME_09, "：")(1)       'テーマ名
-            result.SpFlg = False                            'スペシャルフラグ
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(95, 65, 143)         '#5F418F [文字色]全体
             result.FontColor_Header = RGB(95, 65, 143)      '#5F418F [文字色]ヘッダー
@@ -304,9 +294,96 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.BtnBgColor_Excel = RGB(220, 240, 223)    '#DCF0DF [ボタン]背景色(Excel)
         Case Split(THEME_10, "：")(0)
             result.ThemeNm = Split(THEME_10, "：")(1)       'テーマ名
-            result.SpFlg = True                             'スペシャルフラグ
-            result.SpThemeNoList = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3) 'スペシャルテーマ番号リスト(12か月分)
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(90, 82, 10)          '#5A520A [文字色]全体
+            result.FontColor_Header = RGB(90, 82, 10)       '#5A520A [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(211, 193, 23)   '#D3C117 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(211, 193, 23)   '#D3C117 [文字色]グレーアウト2
+            result.BgColor_All = RGB(250, 250, 250)         '#FAFAFA [背景色]全体
+            result.BgColor_Header = RGB(249, 207, 209)      '#F9CFD1 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(252, 233, 237)     '#FCE9ED [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(226, 235, 209)    '#E2EBD1 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(207, 221, 178)    '#CFDDB2 [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(205, 233, 228)    '#CDE9E4 [背景色]土曜
+            result.BgColor_Sunday = RGB(250, 234, 188)      '#FAEABC [背景色]日曜
+            result.BgColor_Holiday = RGB(241, 151, 160)     '#F197A0 [背景色]祝日
+            result.BorderColor_Cont = RGB(90, 82, 10)       '#5A520A [罫線色]行間
+            result.BorderColor_TopCont = RGB(249, 207, 209) '#F9CFD1 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Comic Sans MS"                '[ボタン]フォント
             result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(110, 101, 12)     '#6E650C [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(110, 101, 12)   '#6E650C [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(255, 252, 231)      '#FFFCE7 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(174, 211, 99)     '#AED363 [ボタン]背景色(Excel)
+        Case Split(THEME_11, "：")(0)
+            result.ThemeNm = Split(THEME_11, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(112, 69, 0)          '#704500 [文字色]全体
+            result.FontColor_Header = RGB(112, 69, 0)       '#704500 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(185, 220, 255)  '#B9DCFF [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(185, 220, 255)  '#B9DCFF [文字色]グレーアウト2
+            result.BgColor_All = RGB(251, 255, 255)         '#FBFFFF [背景色]全体
+            result.BgColor_Header = RGB(159, 246, 255)      '#9FF6FF [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(209, 251, 255)     '#D1FBFF [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(255, 241, 193)    '#FFF2C1 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(215, 255, 171)    '#D7FFAB [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(186, 224, 232)    '#BAE0E8 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 231, 0)        '#FFE701 [背景色]日曜
+            result.BgColor_Holiday = RGB(244, 93, 58)       '#F45D3A [背景色]祝日
+            result.BorderColor_Cont = RGB(112, 69, 0)       '#704500 [罫線色]行間
+            result.BorderColor_TopCont = RGB(159, 246, 255) '#9FF6FF [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Magneto"                      '[ボタン]フォント
+            result.BtnFontSize = 12                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(100, 245, 245)    '#64F5F5 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(254, 255, 201)  '#FEFFC9 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(244, 249, 43)       '#F4F92B [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(125, 255, 131)    '#7DFF83 [ボタン]背景色(Excel)
+        Case Split(THEME_12, "：")(0)
+            result.ThemeNm = Split(THEME_12, "：")(1)       'テーマ名
+            result.Font_All = "UD デジタル 教科書体 NK"     '[フォント]全体
+            result.FontColor_All = RGB(84, 25, 133)         '#541985 [文字色]全体
+            result.FontColor_Header = RGB(84, 25, 133)      '#541985 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(171, 104, 226)  '#AB68E2 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(171, 104, 226)  '#AB68E2 [文字色]グレーアウト2
+            result.BgColor_All = RGB(237, 223, 249)         '#EDDFF9 [背景色]全体
+            result.BgColor_Header = RGB(226, 135, 0)        '#E28700 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(255, 206, 133)     '#FFCE85 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(214, 181, 241)    '#D6B5F1 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(191, 138, 234)    '#BF8AEA [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(179, 197, 255)    '#B3C5FF [背景色]土曜
+            result.BgColor_Sunday = RGB(242, 179, 0)        '#F2B300 [背景色]日曜
+            result.BgColor_Holiday = RGB(233, 97, 97)       '#E96161 [背景色]祝日
+            result.BorderColor_Cont = RGB(84, 25, 133)      '#541985 [罫線色]行間
+            result.BorderColor_TopCont = RGB(226, 135, 0)   '#E28700 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Blackadder ITC"               '[ボタン]フォント
+            result.BtnFontSize = 16                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(253, 255, 155)    '#FDFF9B [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(253, 255, 155)  '#FDFF9B [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(187, 183, 1)        '#BBB701 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(61, 142, 0)       '#3D8E00 [ボタン]背景色(Excel)
+        Case Split(THEME_13, "：")(0)
+            result.ThemeNm = Split(THEME_13, "：")(1)       'テーマ名
+            result.Font_All = "Noto Sans JP"                '[フォント]全体
+            result.FontColor_All = RGB(84, 84, 84)          '#545454 [文字色]全体
+            result.FontColor_Header = RGB(84, 84, 84)       '#545454 [文字色]ヘッダー
+            result.FontColor_GrayOut1 = RGB(167, 255, 167)  '#A7FFA7 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(255, 155, 155)  '#FF9B9B [文字色]グレーアウト2
+            result.BgColor_All = RGB(255, 255, 255)         '#FFFFFF [背景色]全体
+            result.BgColor_Header = RGB(121, 167, 217)      '#79A7D9 [背景色]ヘッダー
+            result.BgColor_TopCont = RGB(207, 223, 241)     '#CFDFF1 [背景色]上部コンテンツ
+            result.BgColor_GrayOut1 = RGB(229, 255, 213)    '#E5FFD5 [背景色]グレーアウト1
+            result.BgColor_GrayOut2 = RGB(255, 208, 189)    '#FFD0BD [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(97, 206, 255)     '#61CEFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 155, 33)       '#FF9B21 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 47, 47)       '#FF2F2F [背景色]祝日
+            result.BorderColor_Cont = RGB(80, 0, 0)         '#500000 [罫線色]行間
+            result.BorderColor_TopCont = RGB(121, 167, 217) '#79A7D9 [罫線色]上部コンテンツ(下/右)
+            result.BtnFont = "Elephant"                     '[ボタン]フォント
+            result.BtnFontSize = 14                         '[ボタン]フォントサイズ
+            result.BtnFontColor_Csv = RGB(88, 0, 0)         '#580000 [ボタン]文字色(CSV)
+            result.BtnFontColor_Excel = RGB(88, 0, 0)       '#580000 [ボタン]文字色(Excel)
+            result.BtnBgColor_Csv = RGB(254, 248, 0)        '#FEF800 [ボタン]背景色(CSV)
+            result.BtnBgColor_Excel = RGB(81, 188, 0)       '#51BC00 [ボタン]背景色(Excel)
     End Select
     GetThemePreset_01 = result
 End Function
@@ -321,7 +398,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
     Select Case themeNo
         Case Split(THEME_01, "：")(0)
             result.ThemeNm = Split(THEME_01, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "游ゴシック"                '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
@@ -337,7 +413,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
         Case Split(THEME_02, "：")(0)
             result.ThemeNm = Split(THEME_02, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "游ゴシック"                '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
@@ -353,7 +428,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(191, 191, 191)  '#BFBFBF [罫線色]備考
         Case Split(THEME_03, "：")(0)
             result.ThemeNm = Split(THEME_03, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "游ゴシック"                '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(250, 250, 250)     '#FAFAFA [文字色]全体
@@ -369,7 +443,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(255, 255, 255)  '#FFFFFF [罫線色]備考
         Case Split(THEME_04, "：")(0)
             result.ThemeNm = Split(THEME_04, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "Noto Sans JP"              '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(120, 0, 0)         '#780000 [文字色]全体
@@ -385,7 +458,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(120, 0, 0)      '#780000 [罫線色]備考
         Case Split(THEME_05, "：")(0)
             result.ThemeNm = Split(THEME_05, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "Noto Sans JP"              '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(70, 46, 49)        '#462E31 [文字色]全体
@@ -401,7 +473,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(99, 133, 108)   '#63856C [罫線色]備考
         Case Split(THEME_06, "：")(0)
             result.ThemeNm = Split(THEME_06, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "Noto Sans JP"              '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(0, 30, 150)        '#001E96 [文字色]全体
@@ -417,7 +488,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(0, 30, 150)     '#001E96 [罫線色]備考
         Case Split(THEME_07, "：")(0)
             result.ThemeNm = Split(THEME_07, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "Noto Sans JP"              '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(105, 60, 40)       '#693C28 [文字色]全体
@@ -433,7 +503,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(180, 180, 180)  '#B4B4B4 [罫線色]備考
         Case Split(THEME_08, "：")(0)
             result.ThemeNm = Split(THEME_08, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "HG正楷書体-PRO"            '[フォント]全体
             result.FontSize_All = 12                      '[フォント]サイズ
             result.FontColor_All = RGB(95, 110, 17)       '#5F6E11 [文字色]全体
@@ -449,7 +518,6 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(199, 220, 104)  '#C7DC68 [罫線色]備考
         Case Split(THEME_09, "：")(0)
             result.ThemeNm = Split(THEME_09, "：")(1)     'テーマ名
-            result.SpFlg = False                          'スペシャルフラグ
             result.Font_All = "Noto Sans JP"              '[フォント]全体
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(95, 65, 143)       '#5F418F [文字色]全体
@@ -465,8 +533,64 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.BorderColor_Biko = RGB(198, 185, 209)  '#C6B9D1 [罫線色]備考
         Case Split(THEME_10, "：")(0)
             result.ThemeNm = Split(THEME_10, "：")(1)     'テーマ名
-            result.SpFlg = True                           'スペシャルフラグ
-            result.SpThemeNoList = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3) 'スペシャルテーマ番号リスト(12か月分)
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(90, 82, 10)        '#5A520A [文字色]全体
+            result.FontColor_Header = RGB(90, 82, 10)     '#5A520A [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(211, 193, 23)  '#D3C117 [文字色]グレーアウト
+            result.BgColor_All = RGB(250, 250, 250)       '#FAFAFA [背景色]全体
+            result.BgColor_Header = RGB(249, 207, 209)    '#F9CFD1 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(252, 233, 237)      '#FCE9ED [背景色]備考
+            result.BgColor_GrayOut = RGB(226, 235, 209)   '#E2EBD1 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(205, 233, 228)  '#CDE9E4 [背景色]土曜
+            result.BgColor_Sunday = RGB(250, 234, 188)    '#FAEABC [背景色]日曜
+            result.BgColor_Holiday = RGB(241, 151, 160)   '#F197A0 [背景色]祝日
+            result.BorderColor_Biko = RGB(249, 207, 209)  '#F9CFD1 [罫線色]備考
+        Case Split(THEME_11, "：")(0)
+            result.ThemeNm = Split(THEME_11, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(112, 69, 0)        '#704500 [文字色]全体
+            result.FontColor_Header = RGB(112, 69, 0)     '#704500 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(185, 220, 255) '#B9DCFF [文字色]グレーアウト
+            result.BgColor_All = RGB(251, 255, 255)       '#FBFFFF [背景色]全体
+            result.BgColor_Header = RGB(159, 246, 255)    '#9FF6FF [背景色]ヘッダー
+            result.BgColor_Biko = RGB(209, 251, 255)      '#D1FBFF [背景色]備考
+            result.BgColor_GrayOut = RGB(255, 241, 193)   '#FFF2C1 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(186, 224, 232)  '#BAE0E8 [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 231, 0)      '#FFE701 [背景色]日曜
+            result.BgColor_Holiday = RGB(244, 93, 58)     '#F45D3A [背景色]祝日
+            result.BorderColor_Biko = RGB(159, 246, 255)  '#9FF6FF [罫線色]備考
+        Case Split(THEME_12, "：")(0)
+            result.ThemeNm = Split(THEME_12, "：")(1)     'テーマ名
+            result.Font_All = "UD デジタル 教科書体 NK"   '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(84, 25, 133)       '#541985 [文字色]全体
+            result.FontColor_Header = RGB(84, 25, 133)    '#541985 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(171, 104, 226) '#AB68E2 [文字色]グレーアウト
+            result.BgColor_All = RGB(237, 223, 249)       '#EDDFF9 [背景色]全体
+            result.BgColor_Header = RGB(226, 135, 0)      '#E28700 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(191, 138, 234)      '#BF8AEA [背景色]備考
+            result.BgColor_GrayOut = RGB(214, 181, 241)   '#D6B5F1 [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(179, 197, 255)  '#B3C5FF [背景色]土曜
+            result.BgColor_Sunday = RGB(242, 179, 0)      '#F2B300 [背景色]日曜
+            result.BgColor_Holiday = RGB(233, 97, 97)     '#E96161 [背景色]祝日
+            result.BorderColor_Biko = RGB(84, 25, 133)    '#541985 [罫線色]備考
+        Case Split(THEME_13, "：")(0)
+            result.ThemeNm = Split(THEME_13, "：")(1)     'テーマ名
+            result.Font_All = "Noto Sans JP"              '[フォント]全体
+            result.FontSize_All = 11                      '[フォント]サイズ
+            result.FontColor_All = RGB(84, 84, 84)        '#545454 [文字色]全体
+            result.FontColor_Header = RGB(84, 84, 84)     '#545454 [文字色]ヘッダー
+            result.FontColor_GrayOut = RGB(255, 155, 155) '#FF9B9B [文字色]グレーアウト
+            result.BgColor_All = RGB(255, 255, 255)       '#FFFFFF [背景色]全体
+            result.BgColor_Header = RGB(121, 167, 217)    '#79A7D9 [背景色]ヘッダー
+            result.BgColor_Biko = RGB(81, 188, 0)       '#51BC00 [背景色]備考
+            result.BgColor_GrayOut = RGB(255, 208, 189)   '#FFD0BD [背景色]グレーアウト
+            result.BgColor_Saturday = RGB(97, 206, 255)   '#61CEFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 155, 33)     '#FF9B21 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 47, 47)     '#FF2F2F [背景色]祝日
+            result.BorderColor_Biko = RGB(254, 248, 0)        '#FEF800 [罫線色]備考
     End Select
     GetThemePreset_02 = result
 End Function
@@ -567,8 +691,10 @@ Public Sub CreateSheet_WorkSchedule()
     Dim maxHr As Double: maxHr = 24
     '●[テーマ]入力値/入力可能範囲
     Dim inputThemeNo As Long
-    Dim minThemeNo As Double: minThemeNo = Split(THEME_01, "：")(0)
+    Dim minThemeNo As Double: minThemeNo = LBound(themeList) + 1
     Dim maxThemeNo As Double: maxThemeNo = UBound(themeList) + 1
+    '●[カスタムテーマ]入力値
+    Dim inputCstmThemeNo As String
     '====================================================
 
     '=== 入力受付 ====================
@@ -615,10 +741,15 @@ Public Sub CreateSheet_WorkSchedule()
     For Each theme In themeList
         msg = msg & theme & vbCrLf
     Next
-    '末尾除去
-    msg = Left(msg, Len(msg) - Len(vbCrLf))
-    inputThemeNo = Int(InputForm_Num(title, msg, minThemeNo, minThemeNo, maxThemeNo))
+    msg = msg & "（1か月ごとにカスタマイズする場合[0]を入力して下さい）"
+    inputThemeNo = Int(InputForm_Num(title, msg, minThemeNo, minThemeNo - 1, maxThemeNo))
     If inputThemeNo = -1 Then Exit Sub
+    'カスタマイズの場合
+    If inputThemeNo = 0 Then
+        '▼入力受付[カスタムテーマ]
+        inputCstmThemeNo = InputForm_CustomTheme(minThemeNo, minThemeNo, maxThemeNo)
+        If inputCstmThemeNo = "-1" Then Exit Sub
+    End If
 
     '=== Sheet[祝日]作成 (存在する場合、既存セット) ====================
     wsNm = "祝日"
@@ -660,9 +791,9 @@ Public Sub CreateSheet_WorkSchedule()
     '=== Sheet[勤務表]作成 ====================
     Select Case inputSheetType
         Case "1"
-            Call CreateSheet_WorkSchedule_01(holidayDict, inputYear, inputWhStartTime, inputWhEndTime, inputBtStartTime, inputBtEndTime, inputThemeNo)
+            Call CreateSheet_WorkSchedule_01(holidayDict, inputYear, inputWhStartTime, inputWhEndTime, inputBtStartTime, inputBtEndTime, inputThemeNo, inputCstmThemeNo)
         Case "2"
-            Call CreateSheet_WorkSchedule_02(holidayDict, inputYear, inputWorkHr, inputThemeNo)
+            Call CreateSheet_WorkSchedule_02(holidayDict, inputYear, inputWorkHr, inputThemeNo, inputCstmThemeNo)
     End Select
 
     '処理中描画ON設定
@@ -982,6 +1113,47 @@ Private Function InputForm_Time(ByVal title As String, ByVal msg As String, ByVa
         Exit Function
     End If
     InputForm_Time = inputVal
+End Function
+'------------------------------------------------------------
+'概要 : 入力受付Form(カスタマイズテーマ番号(12か月分))
+'     : (キャンセル選択 or 範囲外エラーの場合 "-1"を返す)
+'引数 : initVal : 初期値
+'     : minVal  : 有効範囲(最小)
+'     : maxVal  : 有効範囲(最大)
+'戻値 : 入力値
+'備考 : -
+'------------------------------------------------------------
+Private Function InputForm_CustomTheme(ByVal initVal As Long, ByVal minVal As Long, ByVal maxVal As Long) As String
+    Dim i As Long
+    Dim title As String: title = title & "12か月分のテーマを数字で選択して下さい"
+    Dim msg As String
+    Dim inputVal As Variant
+    Dim resultThemeList As String
+    Dim selectThemeList As String
+    '12か月分
+    For i = 1 To 12
+        msg = selectThemeList & "--------------------" & vbCrLf & _
+              i & "月のテーマを数字で選択して下さい" & vbCrLf & _
+              "入力可能範囲（" & minVal & "～" & maxVal & "）"
+        '入力受付
+        inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
+        'キャンセルの場合
+        If VarType(inputVal) = vbBoolean And inputVal = False Then
+            InputForm_CustomTheme = "-1"
+            Exit Function
+        End If
+        '範囲チェック
+        If inputVal < minVal Or maxVal < inputVal Then
+            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            InputForm_CustomTheme = "-1"
+            Exit Function
+        End If
+        selectThemeList = selectThemeList & i & "月 [" & inputVal & "：" & GetThemePreset_01(inputVal).ThemeNm & "]" & vbCrLf
+        resultThemeList = resultThemeList & inputVal & ","
+    Next
+    '末尾除去
+    resultThemeList = Left$(resultThemeList, Len(resultThemeList) - 1)
+    InputForm_CustomTheme = resultThemeList
 End Function
 '------------------------------------------------------------
 '概要 : Sheet[祝日]を作成する
@@ -1319,15 +1491,13 @@ Private Sub CreateSheet_ThemeSample_01(ByVal holidayDict As Object)
     ws.Rows("3:5").RowHeight = 18
     ws.Rows("6:7").RowHeight = 6
 
-    '全テーマ数分 書込(スペシャル除く)
+    '全テーマ数分 書込
     writeStartColIdx = 1
     For Each themeCostNm In themeCostNmList
         'テーマプリセット 取得
         theme = GetThemePreset_01(CLng(Split(themeCostNm, "：")(0)))
-        If Not theme.SpFlg Then
-            Call WriteOneMonthSchedule_01(ws, 1, writeStartColIdx, holidayDict, Year(Now), "9:00", "18:00", "12:00", "13:00", CLng(Split(themeCostNm, "：")(0)), True)
-            writeStartColIdx = writeStartColIdx + 16
-        End If
+        Call WriteOneMonthSchedule_01(ws, 1, writeStartColIdx, holidayDict, Year(Now), "9:00", "18:00", "12:00", "13:00", CLng(Split(themeCostNm, "：")(0)), True)
+        writeStartColIdx = writeStartColIdx + 16
     Next
 
     'Sheet設定2
@@ -1367,17 +1537,15 @@ Private Sub CreateSheet_ThemeSample_02(ByVal holidayDict As Object)
     ws.Columns("AH").ColumnWidth = 0.5
     ws.Columns("AI:AJ").ColumnWidth = 8
 
-    '全テーマ数分 書込(スペシャル除く)
+    '全テーマ数分 書込
     i = 1
     writeStartRowIdx = 1
     For Each themeCostNm In themeCostNmList
         'テーマプリセット 取得
         theme = GetThemePreset_02(CLng(Split(themeCostNm, "：")(0)))
-        If Not theme.SpFlg Then
-            Call WriteOneMonthSchedule_02(ws, 1, writeStartRowIdx, holidayDict, Year(Now), CDbl(8), CLng(Split(themeCostNm, "：")(0)), True)
-            writeStartRowIdx = (i * 12) + 1
-            i = i + 1
-        End If
+        Call WriteOneMonthSchedule_02(ws, 1, writeStartRowIdx, holidayDict, Year(Now), CDbl(8), CLng(Split(themeCostNm, "：")(0)), True)
+        writeStartRowIdx = (i * 12) + 1
+        i = i + 1
     Next
 
     'Sheet設定2
@@ -1393,13 +1561,15 @@ End Sub
 '     : inputBtStartTime : 入力休憩時間(開始)
 '     : inputBtEndTime   : 入力休憩時間(終了)
 '     : inputThemeNo     : 入力テーマ番号
+'     : inputCstmThemeNo : 入力カスタムテーマ番号
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub CreateSheet_WorkSchedule_01(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWhStartTime As String, ByVal inputWhEndTime As String, ByVal inputBtStartTime As String, ByVal inputBtEndTime As String, ByVal inputThemeNo As Long)
+Private Sub CreateSheet_WorkSchedule_01(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWhStartTime As String, ByVal inputWhEndTime As String, ByVal inputBtStartTime As String, ByVal inputBtEndTime As String, ByVal inputThemeNo As Long, ByVal inputCstmThemeNo As String)
     Dim ws As Worksheet          'Sheet
     Dim i As Long                'Loopカウンタ
     Dim writeStartColIdx As Long '書込開始列番号
+    Dim val As Variant
     '●テーマプリセット
     Dim theme As ThemePreset_01: theme = GetThemePreset_01(inputThemeNo)
     '●テーマ番号リスト(12か月分)
@@ -1418,10 +1588,10 @@ Private Sub CreateSheet_WorkSchedule_01(ByVal holidayDict As Object, ByVal input
     ws.Rows("6:7").RowHeight = 6
 
     '=== テーマ番号リスト 作成 ==========
-    'スペシャルテーマの場合
-    If theme.SpFlg Then
-        For i = 1 To 12
-            themeNoList.Add (theme.SpThemeNoList(i - 1))
+    'カスタムテーマの場合
+    If LenB(inputCstmThemeNo) <> 0 Then
+        For Each val In Split(inputCstmThemeNo, ",")
+            themeNoList.Add (CLng(val))
         Next
     '通常テーマの場合
     Else
@@ -1584,7 +1754,7 @@ Private Sub WriteOneMonthSchedule_01(ByRef ws As Worksheet, ByVal cratMonth As L
         .Cells(10, writeStartColIdx + 12).Resize(31, 1).Value = balkSetPlanBtEnd
         .Cells(10, writeStartColIdx + 13).Resize(31, 1).Formula2R1C1 = "=LET(ws,RC[-4],we,RC[-3],bs,RC[-2],be,RC[-1],bt,IF(OR(bs="""",be=""""),0,be-bs)," & "w,(we-ws-bt)*24,IF(OR(ws="""",we=""""),"""",IF(w=INT(w),TEXT(w,""0"")&""h"",TEXT(w,""0.###"")&""h"")))"
         If sampleFlg Then
-            .Range(.Cells(10, writeStartColIdx + 14), .Cells(40, writeStartColIdx + 14)).Value = "[" & inputThemeNo & "：" & theme.ThemeNm & "]"
+            .Range(.Cells(10, writeStartColIdx + 14), .Cells(40, writeStartColIdx + 14)).Value = "テーマ[" & inputThemeNo & "：" & theme.ThemeNm & "]"
         End If
         .Cells(11, writeStartColIdx + 1).Resize(30, 1).Formula2R1C1 = "=IF(R[-1]C="""","""",IF(R[-1]C+1<=EOMONTH(R8C" & writeStartColIdx & ",0),R[-1]C+1,""""))"
     End With
@@ -1726,17 +1896,19 @@ Private Sub WriteOneMonthSchedule_01(ByRef ws As Worksheet, ByVal cratMonth As L
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[勤務表(時間数タイプ)]を作成する
-'引数 : holidayDict  : 祝日辞書
-'     : inputYear    : 入力年
-'     : inputWorkHr  : 入力勤務時間数
-'     : inputThemeNo : 入力テーマ番号
+'引数 : holidayDict      : 祝日辞書
+'     : inputYear        : 入力年
+'     : inputWorkHr      : 入力勤務時間数
+'     : inputThemeNo     : 入力テーマ番号
+'     : inputCstmThemeNo : 入力カスタムテーマ番号
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWorkHr As Double, ByVal inputThemeNo As Long)
+Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal inputYear As Long, ByVal inputWorkHr As Double, ByVal inputThemeNo As Long, ByVal inputCstmThemeNo As String)
     Dim ws As Worksheet          'Sheet
     Dim i As Long                'Loopカウンタ
     Dim writeStartRowIdx As Long '書込開始行番号
+    Dim val As Variant
     '●テーマプリセット
     Dim theme As ThemePreset_02: theme = GetThemePreset_02(inputThemeNo)
     '●テーマ番号リスト(12か月分)
@@ -1747,10 +1919,10 @@ Private Sub CreateSheet_WorkSchedule_02(ByVal holidayDict As Object, ByVal input
     ws.Name = ChangeUniqueSheetNm(CStr(inputYear))
 
     '=== テーマ番号リスト 作成 ==========
-    'スペシャルテーマの場合
-    If theme.SpFlg Then
-        For i = 1 To 12
-            themeNoList.Add (theme.SpThemeNoList(i - 1))
+    'カスタムテーマの場合
+    If LenB(inputCstmThemeNo) <> 0 Then
+        For Each val In Split(inputCstmThemeNo, ",")
+            themeNoList.Add (CLng(val))
         Next
     '通常テーマの場合
     Else
@@ -1827,8 +1999,8 @@ Private Sub WriteOneMonthSchedule_02(ByRef ws As Worksheet, ByVal cratMonth As L
         .Cells(writeStartRowIdx + 6, "A").Value = "備"
         .Cells(writeStartRowIdx, "C").Value = DateSerial(inputYear, cratMonth, 1)
         If sampleFlg Then
-            .Cells(writeStartRowIdx + 6, "C").Value = "テーマ：[" & inputThemeNo & "：" & theme.ThemeNm & "]"
-            .Cells(writeStartRowIdx + 6, "S").Value = "テーマ：[" & inputThemeNo & "：" & theme.ThemeNm & "]"
+            .Cells(writeStartRowIdx + 6, "C").Value = "テーマ[" & inputThemeNo & "：" & theme.ThemeNm & "]"
+            .Cells(writeStartRowIdx + 6, "S").Value = "テーマ[" & inputThemeNo & "：" & theme.ThemeNm & "]"
         End If
         .Cells(writeStartRowIdx + 1, "AI").Value = "予定(日)"
         .Cells(writeStartRowIdx + 2, "AI").Value = "予定(時)"
