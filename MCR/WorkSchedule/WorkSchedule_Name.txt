@@ -1881,10 +1881,10 @@ Private Sub WriteOneMonthSchedule_01(ByRef ws As Worksheet, ByVal cratMonth As L
         '罫線(内容)
         .Range(.Cells(3, writeStartColIdx + 1), .Cells(5, writeStartColIdx + 4)).Borders(xlInsideHorizontal).Weight = xlHairline
         .Range(.Cells(3, writeStartColIdx + 1), .Cells(5, writeStartColIdx + 4)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
-        .Range(.Cells(4, writeStartColIdx + 6), .Cells(5, writeStartColIdx + 9)).Borders(xlInsideHorizontal).Weight = xlHairline
-        .Range(.Cells(4, writeStartColIdx + 6), .Cells(5, writeStartColIdx + 9)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
-        .Range(.Cells(4, writeStartColIdx + 9), .Cells(5, writeStartColIdx + 12)).Borders(xlInsideHorizontal).Weight = xlHairline
-        .Range(.Cells(4, writeStartColIdx + 9), .Cells(5, writeStartColIdx + 12)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
+        .Range(.Cells(4, writeStartColIdx + 6), .Cells(5, writeStartColIdx + 7)).Borders(xlInsideHorizontal).Weight = xlHairline
+        .Range(.Cells(4, writeStartColIdx + 6), .Cells(5, writeStartColIdx + 7)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
+        .Range(.Cells(4, writeStartColIdx + 9), .Cells(5, writeStartColIdx + 10)).Borders(xlInsideHorizontal).Weight = xlHairline
+        .Range(.Cells(4, writeStartColIdx + 9), .Cells(5, writeStartColIdx + 10)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
         .Range(.Cells(9, writeStartColIdx + 1), .Cells(40, writeStartColIdx + 14)).Borders(xlInsideHorizontal).Weight = xlHairline
         .Range(.Cells(9, writeStartColIdx + 1), .Cells(40, writeStartColIdx + 14)).Borders(xlInsideHorizontal).Color = theme.BorderColor_Cont
     End With
