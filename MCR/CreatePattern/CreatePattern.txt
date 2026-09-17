@@ -125,10 +125,8 @@ Private Sub Btn_CreateSheet_ResultPattern()
     Dim writeSrcList As Variant
     Dim writeEndRowIdx As Long
     Dim writeEndColIdx As Long
-    '●入力受付Form表示内容
-    Dim title As String   'タイトル
-    Dim msg As String     'メッセージ
-    Dim initVal As String '初期値
+    '●メッセージ
+    Dim msg As String
 
     '終了(行/列) セット
     endRowIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).row

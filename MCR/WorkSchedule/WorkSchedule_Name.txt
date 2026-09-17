@@ -4,7 +4,7 @@ Option Explicit
 ' テーマを追加する場合
 '   1, グローバル変数[テーマ]に１行追加
 '   2, Function GetAllThemeList()に 1, で追加した変数名を追記
-'   3, Function GetThemePreset_(01 & 02)に1Case追加
+'   3, Function GetThemePreset_[01 & 02]に1Case追加
 '   (RGB値はSheet上で、セルの(背景色 or 文字色) → [その他の色] → [ユーザー設定]タブ から確認可能)
 '   画像や写真の色を取得したい場合、フリーソフト[ColorPicker]等がおすすめ
 '==================================================
@@ -56,6 +56,7 @@ Private Type ThemePreset_02
     FontColor_All As Long     '[文字色]全体
     FontColor_Header As Long  '[文字色]ヘッダー
     FontColor_GrayOut As Long '[文字色]グレーアウト
+    FontColor_Biko As Long    '[文字色]備考
     BgColor_All As Long       '[背景色]全体
     BgColor_Header As Long    '[背景色]ヘッダー
     BgColor_Biko As Long      '[背景色]備考
@@ -297,8 +298,8 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(90, 82, 10)          '#5A520A [文字色]全体
             result.FontColor_Header = RGB(90, 82, 10)       '#5A520A [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(211, 193, 23)   '#D3C117 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(211, 193, 23)   '#D3C117 [文字色]グレーアウト2
+            result.FontColor_GrayOut1 = RGB(200, 183, 22)   '#C8B716 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(200, 183, 22)   '#C8B716 [文字色]グレーアウト2
             result.BgColor_All = RGB(250, 250, 250)         '#FAFAFA [背景色]全体
             result.BgColor_Header = RGB(249, 207, 209)      '#F9CFD1 [背景色]ヘッダー
             result.BgColor_TopCont = RGB(252, 233, 237)     '#FCE9ED [背景色]上部コンテンツ
@@ -320,16 +321,16 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(112, 69, 0)          '#704500 [文字色]全体
             result.FontColor_Header = RGB(112, 69, 0)       '#704500 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(185, 220, 255)  '#B9DCFF [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(185, 220, 255)  '#B9DCFF [文字色]グレーアウト2
+            result.FontColor_GrayOut1 = RGB(255, 167, 167)  '#FFA7A7 [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(101, 255, 160)  '#65FFA0 [文字色]グレーアウト2
             result.BgColor_All = RGB(251, 255, 255)         '#FBFFFF [背景色]全体
             result.BgColor_Header = RGB(159, 246, 255)      '#9FF6FF [背景色]ヘッダー
             result.BgColor_TopCont = RGB(209, 251, 255)     '#D1FBFF [背景色]上部コンテンツ
             result.BgColor_GrayOut1 = RGB(255, 241, 193)    '#FFF2C1 [背景色]グレーアウト1
-            result.BgColor_GrayOut2 = RGB(215, 255, 171)    '#D7FFAB [背景色]グレーアウト2
-            result.BgColor_Saturday = RGB(186, 224, 232)    '#BAE0E8 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 231, 0)        '#FFE701 [背景色]日曜
-            result.BgColor_Holiday = RGB(244, 93, 58)       '#F45D3A [背景色]祝日
+            result.BgColor_GrayOut2 = RGB(197, 255, 219)    '#C5FFDB [背景色]グレーアウト2
+            result.BgColor_Saturday = RGB(151, 253, 255)    '#97FDFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 237, 5)        '#FFED05 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 87, 87)       '#FF5757 [背景色]祝日
             result.BorderColor_Cont = RGB(112, 69, 0)       '#704500 [罫線色]行間
             result.BorderColor_TopCont = RGB(159, 246, 255) '#9FF6FF [罫線色]上部コンテンツ(下/右)
             result.BtnFont = "Magneto"                      '[ボタン]フォント
@@ -344,7 +345,7 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.FontColor_All = RGB(84, 25, 133)         '#541985 [文字色]全体
             result.FontColor_Header = RGB(84, 25, 133)      '#541985 [文字色]ヘッダー
             result.FontColor_GrayOut1 = RGB(171, 104, 226)  '#AB68E2 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(171, 104, 226)  '#AB68E2 [文字色]グレーアウト2
+            result.FontColor_GrayOut2 = RGB(218, 188, 242)  '#DABCF2 [文字色]グレーアウト2
             result.BgColor_All = RGB(237, 223, 249)         '#EDDFF9 [背景色]全体
             result.BgColor_Header = RGB(226, 135, 0)        '#E28700 [背景色]ヘッダー
             result.BgColor_TopCont = RGB(255, 206, 133)     '#FFCE85 [背景色]上部コンテンツ
@@ -366,8 +367,8 @@ Private Function GetThemePreset_01(ByVal themeNo As Long) As ThemePreset_01
             result.Font_All = "Noto Sans JP"                '[フォント]全体
             result.FontColor_All = RGB(84, 84, 84)          '#545454 [文字色]全体
             result.FontColor_Header = RGB(84, 84, 84)       '#545454 [文字色]ヘッダー
-            result.FontColor_GrayOut1 = RGB(167, 255, 167)  '#A7FFA7 [文字色]グレーアウト1
-            result.FontColor_GrayOut2 = RGB(255, 155, 155)  '#FF9B9B [文字色]グレーアウト2
+            result.FontColor_GrayOut1 = RGB(139, 255, 139)  '#8BFF8B [文字色]グレーアウト1
+            result.FontColor_GrayOut2 = RGB(255, 139, 139)  '#FF8B8B [文字色]グレーアウト2
             result.BgColor_All = RGB(255, 255, 255)         '#FFFFFF [背景色]全体
             result.BgColor_Header = RGB(121, 167, 217)      '#79A7D9 [背景色]ヘッダー
             result.BgColor_TopCont = RGB(207, 223, 241)     '#CFDFF1 [背景色]上部コンテンツ
@@ -403,6 +404,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
             result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(0, 0, 0)          '#000000 [文字色]備考
             result.BgColor_All = RGB(250, 250, 250)       '#FAFAFA [背景色]全体
             result.BgColor_Header = RGB(218, 242, 208)    '#DAF2D0 [背景色]ヘッダー
             result.BgColor_Biko = RGB(250, 250, 250)      '#FAFAFA [背景色]備考
@@ -418,6 +420,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(0, 0, 0)           '#000000 [文字色]全体
             result.FontColor_Header = RGB(0, 0, 0)        '#000000 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(0, 0, 0)          '#000000 [文字色]備考
             result.BgColor_All = RGB(250, 251, 253)       '#FAFBFD [背景色]全体
             result.BgColor_Header = RGB(219, 255, 255)    '#DBFFFF [背景色]ヘッダー
             result.BgColor_Biko = RGB(255, 255, 255)      '#FFFFFF [背景色]備考
@@ -433,6 +436,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(250, 250, 250)     '#FAFAFA [文字色]全体
             result.FontColor_Header = RGB(250, 250, 250)  '#FAFAFA [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(166, 166, 166) '#A6A6A6 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(250, 250, 250)    '#FAFAFA [文字色]備考
             result.BgColor_All = RGB(128, 128, 128)       '#808080 [背景色]全体
             result.BgColor_Header = RGB(41, 41, 41)       '#292929 [背景色]ヘッダー
             result.BgColor_Biko = RGB(89, 89, 89)         '#595959 [背景色]備考
@@ -448,6 +452,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(120, 0, 0)         '#780000 [文字色]全体
             result.FontColor_Header = RGB(120, 0, 0)      '#780000 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(230, 180, 180) '#E6B4B4 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(120, 0, 0)        '#780000 [文字色]備考
             result.BgColor_All = RGB(255, 255, 230)       '#FFFFE6 [背景色]全体
             result.BgColor_Header = RGB(255, 200, 255)    '#FFC8FF [背景色]ヘッダー
             result.BgColor_Biko = RGB(255, 255, 180)      '#FFFFB4 [背景色]備考
@@ -463,6 +468,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(70, 46, 49)        '#462E31 [文字色]全体
             result.FontColor_Header = RGB(250, 248, 247)  '#FAF8F7 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(128, 128, 128) '#808080 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(70, 46, 49)       '#462E31 [文字色]備考
             result.BgColor_All = RGB(250, 248, 247)       '#FAF8F7 [背景色]全体
             result.BgColor_Header = RGB(123, 166, 196)    '#7BA6C4 [背景色]ヘッダー
             result.BgColor_Biko = RGB(211, 236, 191)      '#D3ECBF [背景色]備考
@@ -478,6 +484,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(0, 30, 150)        '#001E96 [文字色]全体
             result.FontColor_Header = RGB(242, 242, 242)  '#F2F2F2 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(140, 170, 255) '#8CAAFF [文字色]グレーアウト
+            result.FontColor_Biko = RGB(0, 30, 150)       '#001E96 [文字色]備考
             result.BgColor_All = RGB(210, 230, 255)       '#D2E6FF [背景色]全体
             result.BgColor_Header = RGB(90, 110, 255)     '#5A6EFF [背景色]ヘッダー
             result.BgColor_Biko = RGB(180, 210, 255)      '#B4D2FF [背景色]備考
@@ -493,6 +500,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(105, 60, 40)       '#693C28 [文字色]全体
             result.FontColor_Header = RGB(105, 60, 40)    '#693C28 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(160, 160, 160) '#A0A0A0 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(105, 60, 40)      '#693C28 [文字色]備考
             result.BgColor_All = RGB(225, 225, 225)       '#E1E1E1 [背景色]全体
             result.BgColor_Header = RGB(235, 235, 235)    '#EBEBEB [背景色]ヘッダー
             result.BgColor_Biko = RGB(245, 245, 245)      '#F5F5F5 [背景色]備考
@@ -508,6 +516,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(95, 110, 17)       '#5F6E11 [文字色]全体
             result.FontColor_Header = RGB(95, 110, 17)    '#5F6E11 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(153, 171, 78)  '#99AB4E [文字色]グレーアウト
+            result.FontColor_Biko = RGB(224, 235, 175)    '#E0EBAF [文字色]備考
             result.BgColor_All = RGB(224, 235, 175)       '#E0EBAF [背景色]全体
             result.BgColor_Header = RGB(170, 207, 83)     '#AACF53 [背景色]ヘッダー
             result.BgColor_Biko = RGB(153, 171, 78)       '#99AB4E [背景色]備考
@@ -523,6 +532,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(95, 65, 143)       '#5F418F [文字色]全体
             result.FontColor_Header = RGB(95, 65, 143)    '#5F418F [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(198, 185, 209) '#C6B9D1 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(95, 65, 143)      '#5F418F [文字色]備考
             result.BgColor_All = RGB(255, 255, 255)       '#FFFFFF [背景色]全体
             result.BgColor_Header = RGB(211, 208, 232)    '#D3D0E8 [背景色]ヘッダー
             result.BgColor_Biko = RGB(220, 240, 223)      '#DCF0DF [背景色]備考
@@ -537,7 +547,8 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(90, 82, 10)        '#5A520A [文字色]全体
             result.FontColor_Header = RGB(90, 82, 10)     '#5A520A [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(211, 193, 23)  '#D3C117 [文字色]グレーアウト
+            result.FontColor_GrayOut = RGB(200, 183, 22)  '#C8B716 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(90, 82, 10)       '#5A520A [文字色]備考
             result.BgColor_All = RGB(250, 250, 250)       '#FAFAFA [背景色]全体
             result.BgColor_Header = RGB(249, 207, 209)    '#F9CFD1 [背景色]ヘッダー
             result.BgColor_Biko = RGB(252, 233, 237)      '#FCE9ED [背景色]備考
@@ -552,14 +563,15 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(112, 69, 0)        '#704500 [文字色]全体
             result.FontColor_Header = RGB(112, 69, 0)     '#704500 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(185, 220, 255) '#B9DCFF [文字色]グレーアウト
+            result.FontColor_GrayOut = RGB(255, 167, 167) '#FFA7A7 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(112, 69, 0)       '#704500 [文字色]備考
             result.BgColor_All = RGB(251, 255, 255)       '#FBFFFF [背景色]全体
             result.BgColor_Header = RGB(159, 246, 255)    '#9FF6FF [背景色]ヘッダー
-            result.BgColor_Biko = RGB(209, 251, 255)      '#D1FBFF [背景色]備考
+            result.BgColor_Biko = RGB(197, 255, 219)      '#C5FFDB [背景色]備考
             result.BgColor_GrayOut = RGB(255, 241, 193)   '#FFF2C1 [背景色]グレーアウト
-            result.BgColor_Saturday = RGB(186, 224, 232)  '#BAE0E8 [背景色]土曜
-            result.BgColor_Sunday = RGB(255, 231, 0)      '#FFE701 [背景色]日曜
-            result.BgColor_Holiday = RGB(244, 93, 58)     '#F45D3A [背景色]祝日
+            result.BgColor_Saturday = RGB(151, 253, 255)  '#97FDFF [背景色]土曜
+            result.BgColor_Sunday = RGB(255, 237, 5)      '#FFED05 [背景色]日曜
+            result.BgColor_Holiday = RGB(255, 87, 87)     '#FF5757 [背景色]祝日
             result.BorderColor_Biko = RGB(159, 246, 255)  '#9FF6FF [罫線色]備考
         Case Split(THEME_12, "：")(0)
             result.ThemeNm = Split(THEME_12, "：")(1)     'テーマ名
@@ -568,6 +580,7 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontColor_All = RGB(84, 25, 133)       '#541985 [文字色]全体
             result.FontColor_Header = RGB(84, 25, 133)    '#541985 [文字色]ヘッダー
             result.FontColor_GrayOut = RGB(171, 104, 226) '#AB68E2 [文字色]グレーアウト
+            result.FontColor_Biko = RGB(84, 25, 133)      '#541985 [文字色]備考
             result.BgColor_All = RGB(237, 223, 249)       '#EDDFF9 [背景色]全体
             result.BgColor_Header = RGB(226, 135, 0)      '#E28700 [背景色]ヘッダー
             result.BgColor_Biko = RGB(191, 138, 234)      '#BF8AEA [背景色]備考
@@ -582,15 +595,16 @@ Private Function GetThemePreset_02(ByVal themeNo As Long) As ThemePreset_02
             result.FontSize_All = 11                      '[フォント]サイズ
             result.FontColor_All = RGB(84, 84, 84)        '#545454 [文字色]全体
             result.FontColor_Header = RGB(84, 84, 84)     '#545454 [文字色]ヘッダー
-            result.FontColor_GrayOut = RGB(255, 155, 155) '#FF9B9B [文字色]グレーアウト
+            result.FontColor_GrayOut = RGB(255, 139, 139) '#FF8B8B [文字色]グレーアウト
+            result.FontColor_Biko = RGB(229, 255, 213)    '#E5FFD5 [文字色]備考
             result.BgColor_All = RGB(255, 255, 255)       '#FFFFFF [背景色]全体
             result.BgColor_Header = RGB(121, 167, 217)    '#79A7D9 [背景色]ヘッダー
-            result.BgColor_Biko = RGB(81, 188, 0)       '#51BC00 [背景色]備考
+            result.BgColor_Biko = RGB(81, 188, 0)         '#51BC00 [背景色]備考
             result.BgColor_GrayOut = RGB(255, 208, 189)   '#FFD0BD [背景色]グレーアウト
             result.BgColor_Saturday = RGB(97, 206, 255)   '#61CEFF [背景色]土曜
             result.BgColor_Sunday = RGB(255, 155, 33)     '#FF9B21 [背景色]日曜
             result.BgColor_Holiday = RGB(255, 47, 47)     '#FF2F2F [背景色]祝日
-            result.BorderColor_Biko = RGB(254, 248, 0)        '#FEF800 [罫線色]備考
+            result.BorderColor_Biko = RGB(254, 248, 0)    '#FEF800 [罫線色]備考
     End Select
     GetThemePreset_02 = result
 End Function
@@ -1036,7 +1050,7 @@ Private Sub ApplyLineStyle_01(ByRef ws As Worksheet, ByRef rng As Range, ByVal c
 End Sub
 '------------------------------------------------------------
 '概要 : 入力受付Form(数値)
-'     : (キャンセル選択 or 範囲外エラーの場合 -1を返す)
+'     : (キャンセル選択の場合 -1を返す)
 '引数 : title   : タイトル文
 '     : msg     : 説明文
 '     : initVal : 初期値
@@ -1055,26 +1069,28 @@ Private Function InputForm_Num(ByVal title As String, ByVal msg As String, ByVal
     Else
         msg = msg & vbCrLf & "入力可能範囲（" & minVal & "～" & maxVal & "）"
     End If
-    '入力受付
-    inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
-    'キャンセルの場合
-    If VarType(inputVal) = vbBoolean And inputVal = False Then
-        InputForm_Num = -1
-        Exit Function
-    End If
-    '小数点以下有りとして受付
-    inputValDbl = CDbl(inputVal)
-    '範囲チェック
-    If inputValDbl < minVal Or maxVal < inputValDbl Then
-        MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
-        InputForm_Num = -1
-        Exit Function
-    End If
+    Do While True
+        '入力受付
+        inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
+        'キャンセルの場合
+        If VarType(inputVal) = vbBoolean And inputVal = False Then
+            InputForm_Num = -1
+            Exit Function
+        End If
+        '小数点以下有りとして受付
+        inputValDbl = CDbl(inputVal)
+        '範囲チェック
+        If inputValDbl < minVal Or maxVal < inputValDbl Then
+            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+        Else
+            Exit Do
+        End If
+    Loop
     InputForm_Num = inputValDbl
 End Function
 '------------------------------------------------------------
 '概要 : 入力受付Form(時間)
-'     : (キャンセル選択 or 範囲外エラーの場合 "-1"を返す)
+'     : (キャンセルの場合 "-1"を返す)
 '引数 : title   : タイトル文
 '     : msg     : 説明文
 '     : initVal : 初期値
@@ -1092,31 +1108,33 @@ Private Function InputForm_Time(ByVal title As String, ByVal msg As String, ByVa
     Else
         msg = msg & vbCrLf & "入力可能範囲（" & minVal & "～" & maxVal & "）"
     End If
-    '入力受付
-    inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=2)
-    'キャンセルの場合
-    If VarType(inputVal) = vbBoolean And inputVal = False Then
-        InputForm_Time = "-1"
-        Exit Function
-    End If
-    inputVal = CStr(inputVal)
-    'フォーマットチェック
-    If InStr(inputVal, ":") = 0 Or Len(inputVal) < 4 Or 5 < Len(inputVal) Then
-        MsgBox "24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation
-        InputForm_Time = "-1"
-        Exit Function
-    End If
-    '範囲チェック
-    If CLng(Replace$(inputVal, ":", "")) < CLng(Replace$(minVal, ":", "")) Or CLng(Replace$(maxVal, ":", "")) < CLng(Replace$(inputVal, ":", "")) Then
-        MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
-        InputForm_Time = "-1"
-        Exit Function
-    End If
+    Do While True
+        '入力受付
+        inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=2)
+        'キャンセルの場合
+        If VarType(inputVal) = vbBoolean And inputVal = False Then
+            InputForm_Time = "-1"
+            Exit Function
+        End If
+        inputVal = CStr(inputVal)
+        'フォーマットチェック
+        If InStr(inputVal, ":") = 0 Or Len(inputVal) < 4 Or 5 < Len(inputVal) Then
+            MsgBox "24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation
+            GoTo Continue
+        End If
+        '範囲チェック
+        If CLng(Replace$(inputVal, ":", "")) < CLng(Replace$(minVal, ":", "")) Or CLng(Replace$(maxVal, ":", "")) < CLng(Replace$(inputVal, ":", "")) Then
+            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+        Else
+            Exit Do
+        End If
+Continue:
+    Loop
     InputForm_Time = inputVal
 End Function
 '------------------------------------------------------------
 '概要 : 入力受付Form(カスタマイズテーマ番号(12か月分))
-'     : (キャンセル選択 or 範囲外エラーの場合 "-1"を返す)
+'     : (キャンセルの場合"-1"を返す)
 '引数 : initVal : 初期値
 '     : minVal  : 有効範囲(最小)
 '     : maxVal  : 有効範囲(最大)
@@ -1135,19 +1153,21 @@ Private Function InputForm_CustomTheme(ByVal initVal As Long, ByVal minVal As Lo
         msg = selectThemeList & "--------------------" & vbCrLf & _
               i & "月のテーマを数字で選択して下さい" & vbCrLf & _
               "入力可能範囲（" & minVal & "～" & maxVal & "）"
-        '入力受付
-        inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
-        'キャンセルの場合
-        If VarType(inputVal) = vbBoolean And inputVal = False Then
-            InputForm_CustomTheme = "-1"
-            Exit Function
-        End If
-        '範囲チェック
-        If inputVal < minVal Or maxVal < inputVal Then
-            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
-            InputForm_CustomTheme = "-1"
-            Exit Function
-        End If
+        Do While True
+            '入力受付
+            inputVal = Application.InputBox(Prompt:=msg, title:=title, Default:=initVal, Type:=1)
+            'キャンセルの場合
+            If VarType(inputVal) = vbBoolean And inputVal = False Then
+                InputForm_CustomTheme = "-1"
+                Exit Function
+            End If
+            '範囲チェック
+            If inputVal < minVal Or maxVal < inputVal Then
+                MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            Else
+                Exit Do
+            End If
+        Loop
         selectThemeList = selectThemeList & i & "月 [" & inputVal & "：" & GetThemePreset_01(inputVal).ThemeNm & "]" & vbCrLf
         resultThemeList = resultThemeList & inputVal & ","
     Next
@@ -2064,6 +2084,8 @@ Private Sub WriteOneMonthSchedule_02(ByRef ws As Worksheet, ByVal cratMonth As L
         .Range(.Cells(writeStartRowIdx, "C"), .Cells(writeStartRowIdx, "AG")).Font.Color = theme.FontColor_Header
         .Range(.Cells(writeStartRowIdx + 1, "AI"), .Cells(writeStartRowIdx + 2, "AJ")).Font.Color = theme.FontColor_GrayOut
         .Range(.Cells(writeStartRowIdx + 3, "C"), .Cells(writeStartRowIdx + 3, "AG")).Font.Color = theme.FontColor_GrayOut
+        .Range(.Cells(writeStartRowIdx + 6, "C"), .Cells(writeStartRowIdx + 10, "Q")).Font.Color = theme.FontColor_Biko
+        .Range(.Cells(writeStartRowIdx + 6, "S"), .Cells(writeStartRowIdx + 10, "AG")).Font.Color = theme.FontColor_Biko
         '太字
         .Cells(writeStartRowIdx, "C").Font.Bold = True
         '背景色

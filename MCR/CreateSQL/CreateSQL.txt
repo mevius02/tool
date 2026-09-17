@@ -649,9 +649,9 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     Dim alreadySetFlg As Boolean
 
     '●DB項目型辞書(文字列/数値/日付)
-    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColType_String
-    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColType_Numeric
-    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColType_Date
+    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
+    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
+    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
 
     '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
     Dim pk As String
@@ -1041,72 +1041,9 @@ Private Sub Btn_CreateSqlFile_DELETE()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-
-
-
-
-
-
-
-    '●一時保持用(String)
-    Dim tmpStr As String
-
-    '●範囲
-    Dim rng As Range
-    '●Cell範囲データ
-    Dim rngVals As Variant
-
-    '●TBL名
-    Dim tblNm As String
-    '●TBL&List
-    Dim tblNmList As Object
-    '●作成TBL名Map(TBL名/参照Sheet名)
-    Dim cratTblNmMap As Collection: Set cratTblNmMap = New Collection
-    '●項目番号
-    Dim colNo As Long
-
-    '●作成ファイル
-    Dim cratFile As Object
-    '●作成ファイル[SQL]
-    Dim sqlFile As Object
-    '●作成ファイル[CSV]
-    Dim csvFile As Object
-    '●ファイルObject
-    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
-    '●作成Path
-    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\"
-    'フォルダ作成
-    'MkDir cratFilePath
-    '●日付フォーマット
-    Dim dateFmt1 As String: dateFmt1 = "yyyy-MM-dd"
-    Dim dateFmt2 As String: dateFmt2 = "yyyy-MM-dd HH:mm:ss"
-    Dim dateFmt3 As String: dateFmt3 = "yyyymmdd"
-    Dim dateFmt4 As String: dateFmt4 = "yyyymmddhhmmss"
-    '●現在日付/日時
-    'Dim crntDate As String: crntDate = Format(Date, dateFmt3)
-    'Dim crntDatetime As String: crntDatetime = Format(Now, dateFmt2)
-    '●日付スタンプ/タイムスタンプ
-    Dim datestamp As String: datestamp = Format(Now, dateFmt3)
-    Dim timestamp As String: timestamp = Format(Now, dateFmt4)
-    '●現在日付(yyyy-MM-dd)
-    'Dim crntDate As String: crntDate = Format(Now, "yyyy-MM-dd")
-
-    '●1行内容
-    Dim line As String
-    Dim line1 As String
-    Dim line2 As String
-
-
-
-
-
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-
     '●Sheet/Sheet名
-    'Dim ws As Worksheet: Set ws = ActiveSheet
-    'Dim wsNm As String: wsNm = ws.Name
-
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim wsNm As String: wsNm = Trim$(ws.Name)
     '●行/列
     Dim rowIdx As Long
     Dim colIdx As Long
@@ -1116,83 +1053,73 @@ Private Sub Btn_CreateSqlFile_DELETE()
     Dim endRowIdx As Long
     Dim endColIdx As Long
 
-    '●'TBL名
-    'Dim tblNm As String
-
-    '●PK重複チェックスキップフラグ
-    Dim dupCheckPkSkipFlg As Boolean: dupCheckPkSkipFlg = False
-
-    '●現在日時セット記述 辞書
-    Dim setNowDict As Object: Set setNowDict = CreateObject("Scripting.Dictionary")
-    setNowDict("CURRENT_TIMESTAMP") = True
-    'Oracle
-    setNowDict("SYSDATE") = True
-    setNowDict("SYSTIMESTAMP") = True
-    'PostgreSQL
-    setNowDict("CURRENT_DATE") = True
-    setNowDict("now()") = True
-    'SQLServer
-    setNowDict("GETDATE()") = True
-    setNowDict("SYSDATETIME()") = True
-
-    '●エラーメッセージ/リスト
-    Dim errMsg As Variant
-    Dim errMsgList As Collection: Set errMsgList = New Collection
-
     '●メッセージ内容
     Dim msg As String
+    '●エラーメッセージリスト
+    Dim errMsgList As Collection: Set errMsgList = New Collection
+    Dim errMsg As Variant
 
+    '●PK列リスト
+    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
+    Dim pkColIdx As Variant
 
-
-
-
-
-
-    '●Sheet/Sheet名
-    Dim ws As Worksheet: Set ws = ActiveSheet
-    Dim wsNm As String: wsNm = Trim$(ws.Name)
-
-    '●DB項目型辞書(文字列/数値/日付)
-    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColType_String
-    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColType_Numeric
-    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColType_Date
+    '●始点/終点
+    Dim bgnIdx As Long
+    Dim endIdx As Long
 
     '●設定値範囲データ
     Dim settingVals As Variant
-    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
-    'Dim pk As String
+    '●項目名/型/桁/NULL不可/整数部/小数部
     Dim colNm As String
     Dim colType As String
     Dim colLen As Variant
     Dim notNull As String
-    'Dim initVal As String
     Dim intPart As Long
     Dim dcmlPart As Long
+    '●入力セル範囲データ/セル(値/アドレス(Sheet)/アドレス(表))
+    Dim cellVals As Variant
+    Dim cellVal As String
+    Dim cellAdrs As String
+    Dim tblAdrs As String
 
+    '●DB項目型辞書(文字列/数値/日付)
+    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
+    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
+    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
+    '●現在日時セット記述 辞書
+    Dim setCrntDateDict As Object: Set setCrntDateDict = GetDbSetCrntDateDict
+
+    '●PK列の全値リスト
+    Dim pkVals As Variant
     '●列の値リスト
     Dim colVals As Variant
-    '●PK列リスト
-    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
-    Dim pkColIdx As Variant
     '●PKkey辞書(重複チェック用)
     Dim pkKeyDict As Object: Set pkKeyDict = CreateObject("Scripting.Dictionary")
     Dim pkKey As String
 
-    '●入力値範囲データ/セル(値/アドレス(Sheet))
-    Dim cellVals As Variant
-    Dim cellVal As String
-    Dim cellAdrs As String
-    '●セル(アドレス(表))
-    Dim tblAdrs As String
+    '●日付スタンプ
+    Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
+    '●ファイルObject
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    '●作成ファイルPath/ファイル名/作成ファイル
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\"
+    Dim cratFileNm As String: cratFileNm = RemoveForbiddenCharsFileNm(Trim$(ws.Range("B1").Text))
+    Dim cratFile As Object
 
-    '●作成ファイル名/DB名/スキーマ名/テーブル(論理名/物理名)
-    Dim cratFileNm As String: cratFileNm = Trim$(ws.Range("B1").Text)
+    '●DB名/スキーマ名/テーブル名(論理/物理)/項目名(論理/物理)
     Dim dbNm As String:       dbNm = ws.Range("B3").Value2
     Dim schemaNm As String:   schemaNm = Trim$(ws.Range("B4").Value2)
     Dim logiTblNm As String:  logiTblNm = Trim$(ws.Range("B5").Value2)
     Dim physiTblNm As String: physiTblNm = Trim$(ws.Range("B6").Value2)
+    Dim logiColNm As String
+    Dim physiColNm As String
 
-    '========== ▼入力チェック[DB / スキーマ名 / テーブル物理名] ==========
+    '●1行内容
+    Dim line As String
+    Dim line1 As String
+    Dim line2 As String
+
+    '========== ▼入力チェック[DB名/スキーマ名/テーブル物理名] ==========
     If LenB(ws.Range("B3").Value2) = 0 Then
         msg = "(B3) [DB] を選択してください"
         Call MsgBox(msg, vbCritical, "")
@@ -1209,6 +1136,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
         Exit Sub
     End If
 
+    '========== 準備 ==========
     '開始/終了(行/列) セット
     startColIdx = 4
     startRowIdx = 14
@@ -1220,9 +1148,6 @@ Private Sub Btn_CreateSqlFile_DELETE()
         If ws.Cells(2, colIdx).Value2 = "Y" Then pkColIdxList.Add (colIdx)
     Next
 
-    'PK重複チェック有無 設定 (1,000行以上の場合、処理負荷対策でチェックしない)
-    If 1000 <= endRowIdx - 13 Then dupCheckPkSkipFlg = True
-
     '設定値範囲 取得
     settingVals = ws.Range(ws.Cells(1, startColIdx), ws.Cells(8, endColIdx)).Value2
 
@@ -1230,12 +1155,19 @@ Private Sub Btn_CreateSqlFile_DELETE()
     '1列ずつLoop
     For colIdx = startColIdx To endColIdx
         '進捗度ステータスバー
-        Application.StatusBar = "ERROR Check... " & GetColNm(colIdx - 3) & "列"
+        Application.StatusBar = "ERROR Check... " & GetColNm(colIdx) & "列"
 
         '設定値 取得
         colType = UCase$(settingVals(5, colIdx - 3)) '型
         colLen = CStr(settingVals(6, colIdx - 3))    '桁
         notNull = CStr(settingVals(7, colIdx - 3))   'NULL不可
+
+        '型のかっこ 除去
+        If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+            bgnIdx = InStr(colType, "(") - 1
+            endIdx = InStr(colType, ")") + 1
+            colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+        End If
 
         '1行ずつLoop
         For rowIdx = startRowIdx To endRowIdx
@@ -1246,7 +1178,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
             tblAdrs = GetColNm(colIdx) & rowIdx - 13                   'アドレス(表)
 
             '■未入力 or NULL & NULL不可の場合
-            If (LenB(cellVal) = 0 Or cellVal = "NULL") And notNull = "Y" Then
+            If (LenB(cellVal) = 0 Or cellVal = "null" Or cellVal = "NULL") And notNull = "Y" Then
                 errMsg = "NOT NULL制約です"
             '■DEFAULT以外の場合 (DEFAULT=初期値指定)
             ElseIf cellVal <> "DEFAULT" Then
@@ -1308,7 +1240,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                     If LenB(cellVal) = 0 Then
                         errMsg = "日付形式ではありません"
                     '現在日時セットの書き方でない & 日付形式でない場合
-                    ElseIf Not setNowDict.exists(cellVal) And Not IsValidDate(cellVal) Then
+                    ElseIf Not setCrntDateDict.exists(cellVal) And Not IsValidDate(cellVal) Then
                         errMsg = "日付形式ではありません"
                     End If
                 End If
@@ -1352,25 +1284,26 @@ Private Sub Btn_CreateSqlFile_DELETE()
     'ステータスバー初期化
     Application.StatusBar = False
 
-    '========== エラーファイル 作成(処理終了) ==========
-    If 0 < errMsgList.Count Then
-        'フォルダ作成(存在しない場合)
-        If Not IsExistsFolder(cratFilePath, datestamp) Then
-            If Not CreateFolderPath(cratFilePath & datestamp) Then
-                msg = "フォルダの作成に失敗しました" & vbCrLf & _
-                      "PATH : " & cratFilePath & datestamp
-                Call MsgBox(msg, vbCritical, "")
-                'ステータスバー初期化
-                Application.StatusBar = False
-                Exit Sub
-            End If
+    '========== ファイル作成先フォルダ作成(存在しない場合) ==========
+    If Not IsExistsFolder(cratFilePath, datestamp) Then
+        If Not CreateFolderPath(cratFilePath & datestamp) Then
+            msg = "フォルダの作成に失敗しました" & vbCrLf & _
+                  "PATH : " & cratFilePath & datestamp
+            Call MsgBox(msg, vbCritical, "")
+            'ステータスバー初期化
+            Application.StatusBar = False
+            Exit Sub
         End If
+    End If
+
+    '========== エラーファイル作成(エラー有りの場合 / 処理終了) ==========
+    If 0 < errMsgList.Count Then
         'ファイル名 作成 & ファイル作成
         cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, "ERROR_" & IIf(cratFileNm <> "", cratFileNm, wsNm), "txt")
         Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm)
         'エラーメッセージ 出力
         For Each errMsg In errMsgList
-            cratFile.WriteLine errMsg
+            cratFile.WriteLine (errMsg)
         Next
         cratFile.Close
         'エラーメッセージ 表示
@@ -1383,15 +1316,6 @@ Private Sub Btn_CreateSqlFile_DELETE()
     End If
 
     '========== SQLファイル作成 ==========
-    'フォルダ作成(存在しない場合)
-    If Not IsExistsFolder(cratFilePath, datestamp) Then
-        If Not CreateFolderPath(cratFilePath & datestamp) Then
-            msg = "フォルダの作成に失敗しました" & vbCrLf & _
-                  "PATH : " & cratFilePath & datestamp
-            Call MsgBox(msg, vbCritical, "")
-            Exit Sub
-        End If
-    End If
     'ファイル名 作成 & ファイル作成
     cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm <> "", cratFileNm, wsNm), "sql")
     Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm)
@@ -1401,19 +1325,24 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '========== SQLファイル書込 ==========
     '***** Header *****
-    cratFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"
-    cratFile.WriteLine "--  DELETE [" & logiTblNm & " / " & physiTblNm & "]"
-    cratFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"
+    cratFile.WriteLine ("--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    cratFile.WriteLine ("--  DELETE [" & logiTblNm & " / " & physiTblNm & "]")
+    cratFile.WriteLine ("--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
     '***** 項目一覧(論理/物理) *****
     line1 = "--[項目名(論理)] "
     line2 = "--[項目名(物理)] "
     For colIdx = startColIdx - 3 To endColIdx - 3
-        line1 = line1 & settingVals(1, colIdx) & ":" & settingVals(3, colIdx) & "/"
-        line2 = line2 & settingVals(1, colIdx) & ":" & settingVals(4, colIdx) & "/"
+        '項目名(論理/物理)
+        logiColNm = settingVals(3, colIdx)
+        physiColNm = settingVals(4, colIdx)
+        '桁数調整
+        Call AppendCharaToString(logiColNm, physiColNm, " ")
+        line1 = line1 & settingVals(1, colIdx) & ":" & logiColNm & " / "
+        line2 = line2 & settingVals(1, colIdx) & ":" & physiColNm & " / "
     Next
     '末尾除去
-    line1 = Left$(line1, Len(line1) - 1)
-    line2 = Left$(line2, Len(line2) - 1)
+    line1 = Left$(line1, Len(line1) - 3)
+    line2 = Left$(line2, Len(line2) - 3)
     cratFile.WriteLine (line1)
     cratFile.WriteLine (line2)
 
@@ -1429,8 +1358,14 @@ Private Sub Btn_CreateSqlFile_DELETE()
             colNm = CStr(settingVals(4, colIdx - 3))      '項目名(物理)
             colType = UCase$(settingVals(5, colIdx - 3))  '型
             cellVal = CStr(ws.Cells(rowIdx, colIdx).Text) '値
+            '型のかっこ 除去
+            If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+                bgnIdx = InStr(colType, "(") - 1
+                endIdx = InStr(colType, ")") + 1
+                colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+            End If
             '■■■ NULL or DEFAULTの場合 ■■■
-            If cellVal = "NULL" Or cellVal = "DEFAULT" Then
+            If cellVal = "null" Or cellVal = "NULL" Or cellVal = "DEFAULT" Then
                 line = line & colNm & "=" & cellVal & " AND "
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
@@ -1441,9 +1376,15 @@ Private Sub Btn_CreateSqlFile_DELETE()
             '■■■ [日付]型の場合 ■■■
             ElseIf colTypeDict_Date.exists(colType) Then
                 '現在日時セットの場合
-                If setNowDict.exist(cellVal) Then
+                If setCrntDateDict.exists(cellVal) Then
                     line = line & colNm & "=" & cellVal & " AND "
                 Else
+                    '曜日除去
+                    If 0 < InStr(cellVal, "(") And 0 < InStr(cellVal, ")") Then
+                        bgnIdx = InStr(cellVal, "(") - 1
+                        endIdx = InStr(cellVal, ")") + 1
+                        cellVal = Trim$(Left$(cellVal, bgnIdx) & Mid$(cellVal, endIdx))
+                    End If
                     line = line & colNm & "='" & cellVal & "' AND "
                 End If
             '■■■ その他の場合 ■■■
@@ -2178,6 +2119,21 @@ Private Function ChangeUniqueFileNm(ByVal path As String, ByVal fileNm As String
         uniqueNo = " (" & i & ")"
     Next
 End Function
+ '------------------------------------------------------------
+'概要 : ファイル名から使用不可文字を除去する
+'引数 : fileNm : ファイル名
+'戻値 : ファイル名
+'備考 : -
+'------------------------------------------------------------
+Private Function RemoveForbiddenCharsFileNm(ByVal fileNm As String) As String
+    Dim i As Long
+    Dim str As Variant
+    Dim forbiddenChars As Variant: forbiddenChars = Array("\", "/", ":", "*", "?", """", "<", ">", "|")
+    For Each str In forbiddenChars
+        fileNm = Replace(fileNm, CStr(str), "")
+    Next
+    RemoveForbiddenCharsFileNm = fileNm
+End Function
 '------------------------------------------------------------
 '概要 : Sheet名のSheetが存在するか判定する
 '引数 : wsNm : Sheet名
@@ -2279,13 +2235,13 @@ Private Sub DrawRuledLine_Grid(rng As Range)
     Next
 End Sub
 '------------------------------------------------------------
-'概要 : DB項目型[文字列]型の辞書を取得する
+'概要 : DB項目[文字列]型の辞書を取得する
 '     : 対象DB(Oracle/PostgreSQL/SQLServer)
 '引数 : -
 '戻値 : 項目型辞書
 '備考 : -
 '------------------------------------------------------------
-Private Function GetDbColType_String() As Object
+Private Function GetDbColTypeDict_String() As Object
     Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
     typeDict("CHAR") = True
@@ -2309,16 +2265,16 @@ Private Function GetDbColType_String() As Object
     typeDict("NVARCHAR") = True
     'typeDict("TEXT") = True
     typeDict("NTEXT") = True
-    Set GetDbColType_String = typeDict
+    Set GetDbColTypeDict_String = typeDict
 End Function
 '------------------------------------------------------------
-'概要 : DB項目型[数値]型の辞書を取得する
+'概要 : DB項目[数値]型の辞書を取得する
 '     : 対象DB(Oracle/PostgreSQL/SQLServer)
 '引数 : -
 '戻値 : 項目型辞書
 '備考 : -
 '------------------------------------------------------------
-Private Function GetDbColType_Numeric() As Object
+Private Function GetDbColTypeDict_Numeric() As Object
     Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
     typeDict("NUMBER") = True
@@ -2352,16 +2308,16 @@ Private Function GetDbColType_Numeric() As Object
     'typeDict("REAL") = True
     'typeDict("FLOAT") = True
     typeDict("BIT") = True
-    Set GetDbColType_Numeric = typeDict
+    Set GetDbColTypeDict_Numeric = typeDict
 End Function
 '------------------------------------------------------------
-'概要 : DB項目型[日付]型の辞書を取得する
+'概要 : DB項目[日付]型の辞書を取得する
 '     : 対象DB(Oracle/PostgreSQL/SQLServer)
 '引数 : -
 '戻値 : 項目型辞書
 '備考 : -
 '------------------------------------------------------------
-Private Function GetDbColType_Date() As Object
+Private Function GetDbColTypeDict_Date() As Object
     Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
     typeDict("DATE") = True
@@ -2385,7 +2341,29 @@ Private Function GetDbColType_Date() As Object
     typeDict("DATETIME2") = True
     typeDict("DATETIMEOFFSET") = True
     typeDict("SMALLDATETIME") = True
-    Set GetDbColType_Date = typeDict
+    Set GetDbColTypeDict_Date = typeDict
+End Function
+'------------------------------------------------------------
+'概要 : DB項目[日付]型の現在日時セット記述辞書を取得する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : -
+'戻値 : 現在日時セット記述辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbSetCrntDateDict() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    '========== 共通 ==========
+    dict("CURRENT_TIMESTAMP") = True
+    '========== Oracle ==========
+    dict("SYSDATE") = True
+    dict("SYSTIMESTAMP") = True
+    '========== PostgreSQL ==========
+    dict("CURRENT_DATE") = True
+    dict("now()") = True
+    '========== SQLServer ==========
+    dict("GETDATE()") = True
+    dict("SYSDATETIME()") = True
+    Set GetDbSetCrntDateDict = dict
 End Function
 '------------------------------------------------------------
 '概要 : 日付形式か判定する
@@ -2394,38 +2372,72 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function IsValidDate(ByVal str As String) As Boolean
+    Dim i As Long
     Dim ymdArr() As String '年月日
     Dim bgnIdx As Long     '始点
     Dim endIdx As Long     '終点
+    '●区切り文字リスト
+    Dim sepList As Variant: sepList = Array("/", ".", "-")
+    Dim sep As String
+    Dim datePart As String
+    Dim timePart As String
+    Dim dateOkFlg As Boolean: dateOkFlg = False
     '曜日除去
     If 0 < InStr(str, "(") And 0 < InStr(str, ")") Then
         bgnIdx = InStr(str, "(") - 1
         endIdx = InStr(str, ")") + 1
         str = Trim$(Left$(str, bgnIdx) & Mid$(str, endIdx))
     End If
-    '判定
-    If IsDate(str) Then
-        IsValidDate = True
-        Exit Function
+    '日付と時刻を分離
+    If 0 < InStr(str, " ") Then
+        datePart = Split(str, " ")(0)
+        timePart = Split(str, " ")(1)
+    Else
+        datePart = str
+    End If
+    '========== 判定(日付) ==========
     '半角数字8桁の場合
-    ElseIf Len(str) = 8 And str Like String(8, "#") Then
-        If IsValidYMD(CInt(Left(str, 4)), CInt(Mid(str, 5, 2)), CInt(Mid(str, 7, 2))) Then
+    If Len(str) = 8 And str Like String(8, "#") Then
+        If IsExistsDate(CInt(Left(str, 4)), CLng(Mid(str, 5, 2)), CLng(Mid(str, 7, 2))) Then
             IsValidDate = True
             Exit Function
         End If
-    'ドット区切りの場合
-    ElseIf 0 < InStr(str, ".") Then
-        ymdArr = Split(str, ".")
-        '(年月日)の3要素ある & 全て数字の場合
-        If (UBound(arr) = 2) And (IsNumeric(ymdArr(0)) And IsNumeric(ymdArr(1)) And IsNumeric(ymdArr(2))) Then
-            '存在する日付の場合
-            If IsExistsDate(CLng(ymdArr(0)), CLng(ymdArr(1)), CLng(ymdArr(2))) Then
-                IsValidDate = True
-                Exit Function
+    '区切り文字有りの場合
+    Else
+        '区切り文字 特定
+        For i = LBound(sepList) To UBound(sepList)
+            If 0 < InStr(str, sepList(i)) Then
+                sep = sepList(i)
+                Exit For
             End If
+        Next
+        '許容区切り文字の場合
+        If LenB(sep) <> 0 Then
+            ymdArr = Split(datePart, sep)
+            '(年月日)の3要素ある & 全て数字の場合
+            If (UBound(ymdArr) = 2) And IsNumeric(ymdArr(0)) And IsNumeric(ymdArr(1)) And IsNumeric(ymdArr(2)) Then
+                '存在する日付の場合
+                If IsExistsDate(CLng(ymdArr(0)), CLng(ymdArr(1)), CLng(ymdArr(2))) Then
+                    dateOkFlg = True
+                End If
+            End If
+        'その他の場合
+        ElseIf IsDate(str) Then
+            dateOkFlg = True
         End If
     End If
-    IsValidDate = False
+    'NGの場合
+    If Not dateOkFlg Then
+        IsValidDate = False
+        Exit Function
+    End If
+    '時刻無しの場合
+    If timePart = "" Then
+        IsValidDate = True
+        Exit Function
+    End If
+    '========== 判定(時刻) ==========
+    IsValidDate = IsValidTime(timePart)
 End Function
 '------------------------------------------------------------
 '概要 : 存在する日付か判定する
@@ -2446,6 +2458,46 @@ Private Function IsExistsDate(ByVal y As Long, ByVal m As Long, ByVal d As Long)
         IsExistsDate = (Year(dt) = y And Month(dt) = m And Day(dt) = d)
     End If
     On Error GoTo 0
+End Function
+'------------------------------------------------------------
+'概要 : 時刻形式か判定する
+'引数 : str : 文字列
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsValidTime(ByVal str As String) As Boolean
+    Dim hmsArr() As String: hmsArr = Split(str, ":")
+    Dim h As Long, m As Long, s As Double
+    '"時:分" or "時:分:秒" 以外の場合
+    If UBound(hmsArr) <> 1 And UBound(hmsArr) <> 2 Then
+        IsValidTime = False
+        Exit Function
+    End If
+    '数字でない場合
+    If Not (IsNumeric(hmsArr(0)) And IsNumeric(hmsArr(1))) Then
+        IsValidTime = False
+        Exit Function
+    End If
+    If UBound(hmsArr) = 2 Then
+        If Not IsNumeric(hmsArr(2)) Then
+            IsValidTime = False
+            Exit Function
+        End If
+    End If
+    '時分秒 分離
+    h = CLng(hmsArr(0))
+    m = CLng(hmsArr(1))
+    s = IIf(UBound(hmsArr) = 2, CDbl(hmsArr(2)), 0)
+    '範囲チェック
+    If h < 0 Or 23 < h Then
+        IsValidTime = False
+    ElseIf m < 0 Or 59 < m Then
+        IsValidTime = False
+    ElseIf s < 0 Or 59.999 < s Then
+        IsValidTime = False
+    Else
+        IsValidTime = True
+    End If
 End Function
 '------------------------------------------------------------
 '概要 : 文字列が指定Byte数を超過しているか判定する(Oracle用)
@@ -2551,3 +2603,27 @@ Private Function RemoveFrontCharacter(ByVal str As String, ByVal ch As String) A
     Loop
     RemoveFrontCharacter = result
 End Function
+'------------------------------------------------------------
+'概要 : 2つの文字列の桁数を比較し、大きい方に合わせて、小さい方の文字列の末尾に半角文字を追記し、桁数を合わせる
+'引数 : str1  : 文字列1
+'     : str2  : 文字列2
+'     : addCh : 追記文字(半角)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub AppendCharaToString(ByRef str1 As String, ByRef str2 As String, ByVal addCh As String)
+    Dim len1 As Long
+    Dim len2 As Long
+    Dim diffLen As Long
+    '桁数セット(半角=1/全角=2)
+    len1 = LenB(StrConv(str1, vbFromUnicode))
+    len2 = LenB(StrConv(str2, vbFromUnicode))
+    '桁数を比較して、小さい方の末尾に半角スペース（Space関数）を補充
+    If len2 < len1 Then
+        diffLen = len1 - len2
+        str2 = str2 & String(diffLen, addCh)
+    ElseIf len1 < len2 Then
+        diffLen = len2 - len1
+        str1 = str1 & String(diffLen, addCh)
+    End If
+End Sub
