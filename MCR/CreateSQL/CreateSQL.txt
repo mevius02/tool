@@ -648,6 +648,10 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     '●セット済フラグ
     Dim alreadySetFlg As Boolean
 
+    '●始点/終点
+    Dim bgnIdx As Long
+    Dim endIdx As Long
+
     '●DB項目型辞書(文字列/数値/日付)
     Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
     Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
@@ -838,6 +842,14 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
         colType = UCase$(rngVals(2, 1)) '型
         colLen = CStr(rngVals(3, 1))    '桁
         notNull = CStr(rngVals(4, 1))   'NULL不可
+
+        '型末尾のかっこ 除去
+        If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+            bgnIdx = InStr(colType, "(") - 1
+            endIdx = InStr(colType, ")") + 1
+            colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+        End If
+
         '■■■ [文字列]型の場合 ■■■
         If colTypeDict_Str.exists(colType) Then
             '■桁1の場合
@@ -880,7 +892,11 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
         '■■■ [数値]型の場合 ■■■
         ElseIf colTypeDict_Num.exists(colType) Then
             '整数桁/小数桁 セット
-            dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
+            If InStr(colLen, ",") = 0 Then
+                dcmlPart = 0
+            Else
+                dcmlPart = CLng(Split(colLen, ",")(1))
+            End If
             intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
             '■小数無しの場合
             If dcmlPart = 0 Then
@@ -966,8 +982,8 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
         .Range("D1:" & GetColNm(endColIdx) & "8").HorizontalAlignment = xlCenter
         '数値型 右寄せ
         For colIdx = 0 To endColIdx - 4
-            colType = .Range("D5").Offset(0, colIdx).Value2
-            If IsColType_Numeric(colType) Then
+            colType = UCase$(.Range("D5").Offset(0, colIdx).Value2)
+            If colTypeDict_Num.exists(colType) Then
                 .Range("D14:D113").Offset(0, colIdx).HorizontalAlignment = xlRight
             End If
         Next
@@ -1162,7 +1178,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
         colLen = CStr(settingVals(6, colIdx - 3))    '桁
         notNull = CStr(settingVals(7, colIdx - 3))   'NULL不可
 
-        '型のかっこ 除去
+        '型末尾のかっこ 除去
         If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
             bgnIdx = InStr(colType, "(") - 1
             endIdx = InStr(colType, ")") + 1
@@ -1347,10 +1363,9 @@ Private Sub Btn_CreateSqlFile_DELETE()
     cratFile.WriteLine (line2)
 
     '***** SQL *****
-    line = ""
     For rowIdx = startRowIdx To endRowIdx
         '進捗度ステータスバー
-        Application.StatusBar = "Create Delete SQL File... " & rowIdx - 13 & " / " & endRowIdx - 13
+        Application.StatusBar = "Create DELETE SQL File... " & rowIdx - 13 & " / " & endRowIdx - 13
         '内容 作成
         line = "DELETE FROM " & schemaNm & "." & physiTblNm & " WHERE "
         For colIdx = startColIdx To endColIdx
@@ -1358,7 +1373,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
             colNm = CStr(settingVals(4, colIdx - 3))      '項目名(物理)
             colType = UCase$(settingVals(5, colIdx - 3))  '型
             cellVal = CStr(ws.Cells(rowIdx, colIdx).Text) '値
-            '型のかっこ 除去
+            '型末尾のかっこ 除去
             If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
                 bgnIdx = InStr(colType, "(") - 1
                 endIdx = InStr(colType, ")") + 1
@@ -1400,8 +1415,8 @@ Private Sub Btn_CreateSqlFile_DELETE()
     '完了メッセージ
     msg = "SQLファイルを作成しました！！" & vbCrLf & _
           "PATH : " & cratFilePath & datestamp & vbCrLf & _
-          "FILE名 : " & cratFileNm
-    Call MsgBox(msg)
+          "SQL FILE名 : " & cratFileNm
+    Call MsgBox(msg, vbInformation, "")
 
     'ステータスバー初期化
     Application.StatusBar = False
@@ -1410,7 +1425,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
     Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
-'概要 : SQLファイルとA5M2用インポートファイルを作成する(INSERT)
+'概要 : SQLファイルを作成する(INSERT)
 '引数 : -
 '戻値 : -
 '備考 : -
@@ -1419,59 +1434,9 @@ Private Sub Btn_CreateSqlFile_INSERT()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    '●タイムスタンプ
-    Dim timestamp As String: timestamp = Format(Now, "YYYYMMDDHHMMSS")
-    '●現在日付(yyyy-MM-dd)
-    Dim crntDate As String: crntDate = Format(Now, "yyyy-MM-dd")
-    '●一時保持用(String)
-    Dim tmpStr As String
-
-    '●Cell値
-    Dim cellVal As String
-    '●範囲
-    Dim rng As Range
-    '●Cell範囲データ
-    Dim rngVals As Variant
-
-    '●TBL名
-    Dim tblNm As String
-    '●TBL&List
-    Dim tblNmList As Object
-    '●作成TBL名Map(TBL名/参照Sheet名)
-    Dim cratTblNmMap As Collection: Set cratTblNmMap = New Collection
-    '●項目番号
-    Dim colNo As Long
-
-    '●作成ファイル[SQL]
-    Dim sqlFile As Object
-    '●作成ファイル[CSV]
-    Dim csvFile As Object
-    '●ファイルObject
-    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
-    '●Path
-    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\" & timestamp & "\"
-    'フォルダ作成
-    MkDir cratFilePath
-    '●現在日時
-    Dim crntDatetime As String: crntDatetime = Format(Now, "yyyy/MM/dd HH:mm:ss")
-    '●日付フォーマット
-    Dim dateFmt1 As String: dateFmt1 = "yyyy-MM-dd"
-    Dim dateFmt2 As String: dateFmt2 = "yyyy-MM-dd HH:mm:ss"
-
-    '●1行内容
-    Dim line As String
-
-
-
-
-
-    '●Loopカウンタ [i/j/k]
-    Dim i As Long, j As Long, k As Long
-
     '●Sheet/Sheet名
     Dim ws As Worksheet: Set ws = ActiveSheet
-    Dim wsNm As String: wsNm = ws.Name
-
+    Dim wsNm As String: wsNm = Trim$(ws.Name)
     '●行/列
     Dim rowIdx As Long
     Dim colIdx As Long
@@ -1480,67 +1445,92 @@ Private Sub Btn_CreateSqlFile_INSERT()
     Dim startColIdx As Long
     Dim endRowIdx As Long
     Dim endColIdx As Long
-    '●PK列Idx/リスト
-    Dim pkColIdx As Variant
-    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
-
-    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
-    'Dim pk As String
-    'Dim colNm As String
-    Dim colType As String
-    Dim colLen As Variant
-    'Dim notNull As String
-    'Dim initVal As String
-    'Dim intPart As Long
-    'Dim dcmlPart As Long
-
-    '●セル(値/場所)
-    Dim cellVal As String
-    Dim cellAdrs As String
-
-    '●PK重複チェックスキップフラグ
-    Dim dupCheckPkSkipFlg As Boolean: dupCheckPkSkipFlg = False
-
-    '●現在日時セット記述 辞書
-    Dim setNowDict As Object: Set setNowDict = CreateObject("Scripting.Dictionary")
-    'Oracle
-    setNowDict("SYSDATE") = True
-    setNowDict("SYSTIMESTAMP") = True
-    setNowDict("TRUNC(SYSDATE)") = True
-    'PostgreSQL
-    setNowDict("CURRENT_TIMESTAMP") = True
-    setNowDict("CURRENT_DATE") = True
-    setNowDict("now()") = True
-    'SQLServer
-    setNowDict("GETDATE()") = True
-    setNowDict("SYSDATETIME()") = True
-    setNowDict("CAST(GETDATE() AS DATE)") = True
-
-    '●エラーメッセージ/リスト
-    Dim errMsg As Variant
-    Dim errMsgList As Collection: Set errMsgList = New Collection
-
-    '●作成ファイル名/スキーマ名/テーブル(論理名/物理名)
-    Dim cratFileNm As String: cratFileNm = ws.Range("B1").Value2
-    Dim schemaNm As String: schemaNm = ws.Range("B3").Value2
-    Dim logiTblNm As String: logiTblNm = ws.Range("B4").Value2
-    Dim physiTblNm As String: physiTblNm = ws.Range("B5").Value2
 
     '●メッセージ内容
     Dim msg As String
+    '●エラーメッセージリスト
+    Dim errMsgList As Collection: Set errMsgList = New Collection
+    Dim errMsg As Variant
 
-    'スキーマ名 / テーブル物理名 入力チェック
-    If IsEmpty(schemaNm) Then
-        msg = "(B1) [Schema名] を入力してください"
+    '●PK列リスト
+    Dim pkColIdxList As Collection: Set pkColIdxList = New Collection
+    Dim pkColIdx As Variant
+
+    '●始点/終点
+    Dim bgnIdx As Long
+    Dim endIdx As Long
+
+    '●設定値範囲データ
+    Dim settingVals As Variant
+    '●項目名/型/桁/NULL不可/整数部/小数部
+    Dim colNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    Dim intPart As Long
+    Dim dcmlPart As Long
+    '●入力セル範囲データ/セル(値/アドレス(Sheet)/アドレス(表))
+    Dim cellVals As Variant
+    Dim cellVal As String
+    Dim cellAdrs As String
+    Dim tblAdrs As String
+
+    '●DB項目型辞書(文字列/数値/日付)
+    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
+    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
+    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
+    '●現在日時セット記述 辞書
+    Dim setCrntDateDict As Object: Set setCrntDateDict = GetDbSetCrntDateDict
+
+    '●PK列の全値リスト
+    Dim pkVals As Variant
+    '●列の値リスト
+    Dim colVals As Variant
+    '●PKkey辞書(重複チェック用)
+    Dim pkKeyDict As Object: Set pkKeyDict = CreateObject("Scripting.Dictionary")
+    Dim pkKey As String
+
+    '●日付スタンプ
+    Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
+    '●ファイルObject
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    '●作成ファイルPath/ファイル名/作成ファイル
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\"
+    Dim cratFileNm1 As String: cratFileNm1 = RemoveForbiddenCharsFileNm(Trim$(ws.Range("B1").Text))
+    Dim cratFileNm2 As String: cratFileNm2 = cratFileNm1
+    Dim cratFile As Object
+
+    '●DB名/スキーマ名/テーブル名(論理/物理)/項目名(論理/物理)
+    Dim dbNm As String:       dbNm = ws.Range("B3").Value2
+    Dim schemaNm As String:   schemaNm = Trim$(ws.Range("B4").Value2)
+    Dim logiTblNm As String:  logiTblNm = Trim$(ws.Range("B5").Value2)
+    Dim physiTblNm As String: physiTblNm = Trim$(ws.Range("B6").Value2)
+    Dim logiColNm As String
+    Dim physiColNm As String
+
+    '●1行内容
+    Dim line As String
+    Dim line1 As String
+    Dim line2 As String
+
+    '========== ▼入力チェック[DB名/スキーマ名/テーブル物理名] ==========
+    If LenB(ws.Range("B3").Value2) = 0 Then
+        msg = "(B3) [DB] を選択してください"
         Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
-    If IsEmpty(physiTblNm) Then
-        msg = "(B5) [テーブル物理名] を入力してください"
+    If LenB(ws.Range("B4").Value2) = 0 Then
+        msg = "(B4) [Schema名] を入力してください"
+        Call MsgBox(msg, vbCritical, "")
+        Exit Sub
+    End If
+    If LenB(ws.Range("B6").Value2) = 0 Then
+        msg = "(B6) [テーブル物理名] を入力してください"
         Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
 
+    '========== 準備 ==========
     '開始/終了(行/列) セット
     startColIdx = 4
     startRowIdx = 14
@@ -1549,314 +1539,328 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     'PK列Indexリスト セット
     For colIdx = startColIdx To endColIdx
-        If ws.Cells(2, colIdx).Value2 = "Y" Then pkColIdxList.Add (j)
+        If ws.Cells(2, colIdx).Value2 = "Y" Then pkColIdxList.Add (colIdx)
     Next
 
-    'PK重複チェック有無 設定 (1,000行以上の場合、処理対策でチェックしない)
-    If 1000 <= endRowIdx - 13 Then dupCheckPkSkipFlg = True
+    '設定値範囲 取得
+    settingVals = ws.Range(ws.Cells(1, startColIdx), ws.Cells(8, endColIdx)).Value2
 
-    '========== 入力エラーチェック(必須/型/桁) ==========
+    '========== ▼入力チェック(必須/型/桁) ==========
     '1列ずつLoop
     For colIdx = startColIdx To endColIdx
-        '進捗度ステータスバー表示
-        Application.StatusBar = "ERROR Check... " & colIdx - 3 & "/" & endColIdx - 3
+        '進捗度ステータスバー
+        Application.StatusBar = "ERROR Check... " & GetColNm(colIdx) & "列"
 
         '設定値 取得
-        rngVals = ws.Range(ws.Cells(5, colIdx), ws.Cells(6, colIdx)).Value2
-        colType = CStr(rngVals(1, 1)) '型
-        colLen = CStr(rngVals(2, 1))  '桁
+        colType = UCase$(settingVals(5, colIdx - 3)) '型
+        colLen = CStr(settingVals(6, colIdx - 3))    '桁
+        notNull = CStr(settingVals(7, colIdx - 3))   'NULL不可
+
+        '型末尾のかっこ 除去
+        If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+            bgnIdx = InStr(colType, "(") - 1
+            endIdx = InStr(colType, ")") + 1
+            colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+        End If
 
         '1行ずつLoop
-        For rowIdx = rowStartIdx To rowEndIdx
+        For rowIdx = startRowIdx To endRowIdx
+            errMsg = ""
             'セル(値/アドレス) 取得
             cellVal = CStr(ws.Cells(rowIdx, colIdx).Text)              '値
-            cellAdrs = ws.Cells(rowIdx, colIdx).Address$(False, False) 'アドレス
+            cellAdrs = ws.Cells(rowIdx, colIdx).Address$(False, False) 'アドレス(Sheet)
+            tblAdrs = GetColNm(colIdx) & rowIdx - 13                   'アドレス(表)
 
-            '未入力の場合
-            If LenB(cellVal) = 0 Then
-                errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : NOT NULL制約です")
-            Else
+            '■未入力 or NULL & NULL不可の場合
+            If (LenB(cellVal) = 0 Or cellVal = "null" Or cellVal = "NULL") And notNull = "Y" Then
+                errMsg = "NOT NULL制約です"
+            '■DEFAULT以外の場合 (DEFAULT=初期値指定)
+            ElseIf cellVal <> "DEFAULT" Then
                 '■■■ [文字列]型の場合 ■■■
-                If IsColType_String(colType) Then
-                    '桁数超過の場合
-                    If colLen < Len(cellVal) Then
-                        errMsgList.Add (GetColNm(colIdx) & rowIdx - 13 & " (" & cellAdrs & ") : 桁数超過しています")
+                If colTypeDict_Str.exists(colType) Then
+                    '桁数超過の場合(Oracleは全角1文字が3Byte)
+                    If dbNm = ORACLE Then
+                        If IsOverByteLength_Oracle(cellVal, colLen) Then
+                            errMsg = "桁数超過しています"
+                        End If
+                    Else
+                        If colLen < Len(cellVal) Then
+                            errMsg = "桁数超過しています"
+                        End If
                     End If
-
                 '■■■ [数値]型の場合 ■■■
-                ElseIf IsColType_Numeric(colType) Then
+                ElseIf colTypeDict_Num.exists(colType) Then
+                    '整数桁/小数桁 セット
+                    dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
+                    intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
+                    'カンマ除去
+                    cellVal = Replace(cellVal, ",", "")
+                    '空の場合
+                    If LenB(cellVal) = 0 Then
+                        errMsg = "数値ではありません"
                     '数値以外の場合
-                    If Not IsNumeric(cellVal) Then
-                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 数値ではありません"
-                    '桁数超過の場合
-                    ElseIf Split(colLen, ",")(0) < Len(cellVal) Then
-                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 桁数超過しています"
+                    ElseIf Not IsNumeric(cellVal) Then
+                        errMsg = "数値ではありません"
+                    '小数不可の場合
+                    ElseIf dcmlPart = "0" Then
+                        '少数有りの場合
+                        If 0 < InStr(cellVal, ".") Then
+                            errMsg = "小数は登録できません"
+                       '桁数超過の場合
+                        Else
+                            If intPart < Len(cellVal) Then
+                                errMsg = "桁数超過しています"
+                            End If
+                        End If
+                    '小数可の場合
+                    Else
+                        '少数無しの場合
+                        If InStr(cellVal, ".") = 0 Then
+                            '桁数超過の場合
+                            If intPart < Len(cellVal) Then
+                                errMsg = "整数が桁数超過しています"
+                            End If
+                        '少数有りの場合
+                        Else
+                            '桁数超過の場合
+                            If intPart < Len(Split(cellVal, ".")(1)) Then
+                                errMsg = "小数が桁数超過しています"
+                            End If
+                        End If
                     End If
-
                 '■■■ [日付]型の場合 ■■■
-                ElseIf IsColType_Date(colType) Then
+                ElseIf colTypeDict_Date.exists(colType) Then
+                    '空の場合
+                    If LenB(cellVal) = 0 Then
+                        errMsg = "日付形式ではありません"
                     '現在日時セットの書き方でない & 日付形式でない場合
-                    If Not setNowDict.exists(cellVal) And Not IsValidDate(cellVal) Then
-                        errMsgList.Add GetColNm(i) & j - 13 & " (" & cellAdrs & ") : 日付形式ではありません"
+                    ElseIf Not setCrntDateDict.exists(cellVal) And Not IsValidDate(cellVal) Then
+                        errMsg = "日付形式ではありません"
                     End If
-
-                '■■■ [その他]型の場合 ■■■
-                Else
                 End If
             End If
+            If errMsg <> "" Then errMsgList.Add (tblAdrs & " (" & cellAdrs & ") : " & errMsg)
         Next
     Next
 
-    '■■■■■ PK重複チェック ■■■■■
-    'ここまでエラー無しの場合 & スキップフラグ OFF の場合
-    If errMsgList.Count = 0 And Not dupPkSkipFlg Then
-        '●PK(重複チェック用)
-        Dim pk1 As String
-        Dim pk2 As String
-        For i = rowStartIdx To rowEndIdx
-            '進捗度ステータスバー表示
-            Application.StatusBar = "Duplicate Check : " & i - 13 & " / " & rowEndIdx - 13
-            pk1 = ""
-            For Each pkColIdx In pkColIdxList
-                pk1 = pk1 & ws.Cells(i, pkColIdx).Value2 & "_"
-            Next pkColIdx
-            For j = rowStartIdx To rowEndIdx
-                '自行以外
-                If i <> j Then
-                    pk2 = ""
-                    For Each pkColIdx In pkColIdxList
-                        pk2 = pk2 & ws.Cells(j, pkColIdx).Value2 & "_"
-                    Next pkColIdx
-                    '重複の場合
-                    If pk1 = pk2 Then
-                        errMsgList.Add i - 13 & "行目と、" & j - 13 & "行目のPKが重複しています"
-                    End If
-                End If
-            Next j
-        Next i
-        'ステータスバー初期化
-        Application.StatusBar = False
+    '========== ▼PK重複チェック ==========
+    '(必須/型/桁)チェックエラー無しの場合
+    If errMsgList.Count = 0 Then
+        'PK列の全値リスト 再作成
+        ReDim pkVals(1 To endRowIdx - 13, 1 To pkColIdxList.Count)
+        '列ごとの値を全て取得しセット
+        colIdx = 0
+        For Each pkColIdx In pkColIdxList
+            colIdx = colIdx + 1
+            colVals = ws.Range(ws.Cells(startRowIdx, pkColIdx), ws.Cells(endRowIdx, pkColIdx)).Value2
+            For rowIdx = 1 To endRowIdx - 13
+                pkVals(rowIdx, colIdx) = CStr(colVals(rowIdx, 1))
+            Next
+        Next
+        '重複チェック
+        For rowIdx = 1 To endRowIdx - 13
+            '進捗度ステータスバー
+            Application.StatusBar = "Duplicate Check... " & rowIdx & " / " & endRowIdx - 13
+            'key作成(値をアンダーバー区切りで結合し1文字列にして保持)
+            pkKey = ""
+            For colIdx = 1 To pkColIdxList.Count
+                pkKey = pkKey & pkVals(rowIdx, colIdx) & "_"
+            Next
+            '重複の場合
+            If pkKeyDict.exists(pkKey) Then
+                 errMsgList.Add (pkKeyDict(pkKey) & "行目と、" & (rowIdx) & "行目のPKが重複しています")
+            Else
+                Call pkKeyDict.Add(pkKey, rowIdx)
+            End If
+        Next
     End If
 
-    '■■■■■ エラーFile 作成(処理終了) ■■■■■
+    'ステータスバー初期化
+    Application.StatusBar = False
+
+    '========== ファイル作成先フォルダ作成(存在しない場合) ==========
+    If Not IsExistsFolder(cratFilePath, datestamp) Then
+        If Not CreateFolderPath(cratFilePath & datestamp) Then
+            msg = "フォルダの作成に失敗しました" & vbCrLf & _
+                  "PATH : " & cratFilePath & datestamp
+            Call MsgBox(msg, vbCritical, "")
+            'ステータスバー初期化
+            Application.StatusBar = False
+            Exit Sub
+        End If
+    End If
+
+    '========== エラーファイル作成(エラー有りの場合 / 処理終了) ==========
     If 0 < errMsgList.Count Then
-        'ファイル作成
-        Set sqlFile = fso.CreateTextFile(cratFilePath & wsNm & "-ERROR_" & timestamp & ".txt", True)
+        'ファイル名 作成 & ファイル作成
+        cratFileNm1 = ChangeUniqueFileNm(cratFilePath & datestamp, "ERROR_" & IIf(cratFileNm1 <> "", cratFileNm1, wsNm), "txt")
+        Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm1)
+        'エラーメッセージ 出力
         For Each errMsg In errMsgList
-            sqlFile.WriteLine errMsg
-        Next errMsg
-        sqlFile.Close
-        MsgBox "ERRORファイルを作成しました"
+            cratFile.WriteLine (errMsg)
+        Next
+        cratFile.Close
+        'エラーメッセージ 表示
+        msg = "型桁入力チェックエラー" & vbCrLf & _
+              "エラーファイルを作成しました" & vbCrLf & _
+              "PATH : " & cratFilePath & datestamp & vbCrLf & _
+              "FILE名 : " & cratFileNm1
+        Call MsgBox(msg, vbCritical, "")
         Exit Sub
     End If
 
-    '■■■■■■■■■■■■■■■■■■■■
-    '  DELETE SQL File作成
-    '■■■■■■■■■■■■■■■■■■■■
-    If delMode Then
-        'ファイル作成
-        Set sqlFile = fso.CreateTextFile(cratFilePath & wsNm & "_" & timestamp & ".sql", True)
+    '========== SQLファイル作成 ==========
+    'ファイル名 作成 & ファイル作成
+    cratFileNm1 = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm1 <> "", cratFileNm1, wsNm), "sql")
+    Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm1)
 
-        '========== Header 作成 ==========
-        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
-        sqlFile.WriteLine "--  DELETE [" & logiTblNm & " / " & physiTblNm & "]"
-        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
-        '●項目一覧(論理)
-        line = "--"
-        For i = colStartIdx To colEndIdx
-            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(3, i).Value2 & "/"
-        Next i
-        line = Left$(line, Len(line) - 1)
-        sqlFile.WriteLine line
-        '●項目一覧(物理)
-        line = "--"
-        For i = colStartIdx To colEndIdx
-            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(4, i).Value2 & "/"
-        Next i
-        line = Left$(line, Len(line) - 1)
-        sqlFile.WriteLine line
+    '項目範囲 取得
+    cellVals = ws.Range(ws.Cells(1, startColIdx), ws.Cells(4, endColIdx)).Value2
 
-        '========== SQL内容 作成 ==========
-        line = ""
-        For i = rowStartIdx To rowEndIdx
-            '進捗度ステータスバー表示
-            Application.StatusBar = "Create Delete SQL File : " & i - 13 & " / " & rowEndIdx - 13
-            line = "DELETE FROM " & schemaNm & "." & physiTblNm & " WHERE "
-            For Each pkColIdx In pkColIdxList
-                colNm = ws.Cells(4, pkColIdx).Value2   '●項目名
-                colType = ws.Cells(5, pkColIdx).Value2 '●型
-                cellVal = ws.Cells(i, pkColIdx).Value2 '●Cell値
+    '========== SQLファイル書込 ==========
+    '***** Header *****
+    cratFile.WriteLine ("--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    cratFile.WriteLine ("--  INSERT [" & logiTblNm & " / " & physiTblNm & "]")
+    cratFile.WriteLine ("--■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■")
+    '***** 項目一覧(論理/物理) *****
+    line1 = "--[項目名(論理)] "
+    line2 = "--[項目名(物理)] "
+    For colIdx = startColIdx - 3 To endColIdx - 3
+        '項目名(論理/物理)
+        logiColNm = settingVals(3, colIdx)
+        physiColNm = settingVals(4, colIdx)
+        '桁数調整
+        Call AppendCharaToString(logiColNm, physiColNm, " ")
+        line1 = line1 & settingVals(1, colIdx) & ":" & logiColNm & " / "
+        line2 = line2 & settingVals(1, colIdx) & ":" & physiColNm & " / "
+    Next
+    '末尾除去
+    line1 = Left$(line1, Len(line1) - 3)
+    line2 = Left$(line2, Len(line2) - 3)
+    cratFile.WriteLine (line1)
+    cratFile.WriteLine (line2)
 
-                '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
-                If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
-                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & colNm & "=NULL AND "
-                    Else
-                        line = line & colNm & "='" & cellVal & "'AND "
+    '***** SQL *****
+    For rowIdx = startRowIdx To endRowIdx
+        '進捗度ステータスバー
+        Application.StatusBar = "Create INSERT SQL File... " & rowIdx - 13 & " / " & endRowIdx - 13
+        '内容 作成
+        line = "INSERT INTO " & schemaNm & "." & physiTblNm & " VALUES("
+        For colIdx = startColIdx To endColIdx
+            '設定値 取得
+            colNm = CStr(settingVals(4, colIdx - 3))      '項目名(物理)
+            colType = UCase$(settingVals(5, colIdx - 3))  '型
+            cellVal = CStr(ws.Cells(rowIdx, colIdx).Text) '値
+            '型末尾のかっこ 除去
+            If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+                bgnIdx = InStr(colType, "(") - 1
+                endIdx = InStr(colType, ")") + 1
+                colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+            End If
+            '■■■ NULL or DEFAULTの場合 ■■■
+            If cellVal = "null" Or cellVal = "NULL" Or cellVal = "DEFAULT" Then
+                line = line & cellVal & ", "
+            '■■■ [文字列]型の場合 ■■■
+            ElseIf colTypeDict_Str.exists(colType) Then
+                line = line & "'" & cellVal & "', "
+            '■■■ [数値]型の場合 ■■■
+            ElseIf colTypeDict_Num.exists(colType) Then
+                line = line & Replace(cellVal, ",", "") & ", "
+            '■■■ [日付]型の場合 ■■■
+            ElseIf colTypeDict_Date.exists(colType) Then
+                '現在日時セットの場合
+                If setCrntDateDict.exists(cellVal) Then
+                    line = line & cellVal & ", "
+                Else
+                    '曜日除去
+                    If 0 < InStr(cellVal, "(") And 0 < InStr(cellVal, ")") Then
+                        bgnIdx = InStr(cellVal, "(") - 1
+                        endIdx = InStr(cellVal, ")") + 1
+                        cellVal = Trim$(Left$(cellVal, bgnIdx) & Mid$(cellVal, endIdx))
                     End If
-
-                '========== NUMBER / NUMERIC / INTEGER ==========
-                ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
-                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & colNm & "=NULL AND "
-                    Else
-                        line = line & colNm & "=" & cellVal & " AND "
-                    End If
-
-                '========== TIMESTAMP / DATE ==========
-                ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
-                    If cellVal = "SYSDATE" Then
-                        line = line & colNm & "=" & cellVal & " AND "
-                    ElseIf IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & colNm & "=NULL AND "
-                    Else
-                        If Left$(colType, 9) - "TIMESTAMP" Then
-                            line = line & colNm & "='" & ConvertDateFormat(cellVal, dateFmt2) & "'AND "
-                        Else
-                            line = line & colNm & "='" & ConvertDateFormat(cellVal, dateFmt1) & "'AND "
-                        End If
-                    End If
+                    line = line & "'" & cellVal & "', "
                 End If
-            Next pkColIdx
-            line = Left$(line, Len(line) - 4) & ";"
-            sqlFile.WriteLine line
-        Next i
-        sqlFile.Close
-    End If
+            '■■■ その他の場合 ■■■
+            Else
+                line = line & "'" & cellVal & "', "
+            End If
+        Next
+        line = Trim$(Left$(line, Len(line) - 2)) & ");"
+        cratFile.WriteLine (line)
+    Next
+    cratFile.Close
 
-    '■■■■■■■■■■■■■■■■■■■■
-    '  INSERT SQL File作成
-    '■■■■■■■■■■■■■■■■■■■■
-    If Not delMode Then
-        'ファイル作成
-        Set sqlFile = fso.CreateTextFile(cratFilePath & wsNm & "_" & timestamp & ".sql", True)
+    '========== CSVファイル作成 ==========
+    'ファイル名 作成 & ファイル作成
+    cratFileNm2 = ChangeUniqueFileNm(cratFilePath & datestamp, "IMP-" & IIf(cratFileNm2 <> "", cratFileNm2, wsNm), "csv")
+    Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm2)
 
-        '========== Header 作成 ==========
-        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
-        sqlFile.WriteLine "--  INSERT [" & logiTblNm & " / " & physiTblNm & "]"
-        sqlFile.WriteLine "--■■■■■■■■■■■■■■■■■■■■"
-        '●項目一覧(論理)
-        line = "--"
-        For i = colStartIdx To colEndIdx
-            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(3, i).Value2 & "/"
-        Next i
-        line = Left$(line, Len(line) - 1)
-        sqlFile.WriteLine line
-        '●項目一覧(物理)
-        line = "--"
-        For i = colStartIdx To colEndIdx
-            line = line & "[" & ws.Cells(1, i).Value2 & "]" & ws.Cells(4, i).Value2 & "/"
-        Next i
-        line = Left$(line, Len(line) - 1)
-        sqlFile.WriteLine line
+    '========== CSVファイル書込 ==========
+    '***** Header *****
+    line = ""
+    For colIdx = startColIdx - 3 To endColIdx - 3
+        line = line & settingVals(4, colIdx) & ","
+    Next
+    '末尾除去
+    line = Left$(line, Len(line) - 1)
+    cratFile.WriteLine (line)
 
-        '========== SQL内容 作成 ==========
+    '***** Body *****
+    For rowIdx = startRowIdx To endRowIdx
+        '進捗度ステータスバー
+        Application.StatusBar = "Create INSERT CSV File... " & rowIdx - 13 & " / " & endRowIdx - 13
+        '内容 作成
         line = ""
-        For i = rowStartIdx To rowEndIdx
-            '進捗度ステータスバー表示
-            Application.StatusBar = "Create Insert SQL File : " & i - 13 & " / " & rowEndIdx - 13
-            line = "INSERT INTO " & schemaNm & "." & physiTblNm & " VALUES("
-            For j = colStartIdx To colEndIdx
-                colType = ws.Cells(5, j).Value2 '●型
-                cellVal = ws.Cells(i, j).Value2 '●Cell値
-
-                '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
-                If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
-                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & "NULL,"
-                    Else
-                        line = line & "'" & cellVal & "',"
+        For colIdx = startColIdx To endColIdx
+            '設定値 取得
+            colNm = CStr(settingVals(4, colIdx - 3))      '項目名(物理)
+            colType = UCase$(settingVals(5, colIdx - 3))  '型
+            cellVal = CStr(ws.Cells(rowIdx, colIdx).Text) '値
+            '型末尾のかっこ 除去
+            If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+                bgnIdx = InStr(colType, "(") - 1
+                endIdx = InStr(colType, ")") + 1
+                colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+            End If
+            '■■■ NULL or DEFAULTの場合 ■■■
+            If cellVal = "null" Or cellVal = "NULL" Or cellVal = "DEFAULT" Then
+                line = line & ","
+            '■■■ [文字列]型の場合 ■■■
+            ElseIf colTypeDict_Str.exists(colType) Then
+                line = line & """" & cellVal & ""","
+            '■■■ [数値]型の場合 ■■■
+            ElseIf colTypeDict_Num.exists(colType) Then
+                line = line & Replace(cellVal, ",", "") & ","
+            '■■■ [日付]型の場合 ■■■
+            ElseIf colTypeDict_Date.exists(colType) Then
+                '現在日時セットの場合
+                If setCrntDateDict.exists(cellVal) Then
+                    line = line & Format(Now, "yyyy/mm/dd/ hh:mm:ss") & ","
+                Else
+                    '曜日除去
+                    If 0 < InStr(cellVal, "(") And 0 < InStr(cellVal, ")") Then
+                        bgnIdx = InStr(cellVal, "(") - 1
+                        endIdx = InStr(cellVal, ")") + 1
+                        cellVal = Trim$(Left$(cellVal, bgnIdx) & Mid$(cellVal, endIdx))
                     End If
-
-                '========== NUMBER / NUMERIC / INTEGER ==========
-                ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
-                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & "NULL,"
-                    Else
-                        line = line & cellVal & ","
-                    End If
-
-                '========== TIMESTAMP / DATE ==========
-                ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
-                    If cellVal = "SYSDATE" Then
-                        line = line & cellVal & ","
-                    ElseIf IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & "NULL,"
-                    Else
-                        If Left$(colType, 9) = "TIMESTAMP" Then
-                            line = line & "'" & ConvertDateFormat(cellVal, dateFmt2) & "',"
-                        Else
-                            line = line & "'" & ConvertDateFormat(cellVal, dateFmt1) & "',"
-                        End If
-                    End If
-                End If
-            Next j
-            line = Left$(line, Len(line) - 1) & ");"
-            sqlFile.WriteLine line
-        Next i
-        sqlFile.Close
-    End If
-
-    '■■■■■■■■■■■■■■■■■■■■
-    '  IMPORT CSV File作成
-    '■■■■■■■■■■■■■■■■■■■■
-    If Not delMode Then
-        Set csvFile = fso.CreateTextFile(cratFilePath & schemaNm & "." & physiTblNm & ".csv", True)
-
-        '========== Header 作成 ==========
-        line = ""
-        For i = colStartIdx To colEndIdx
-            line = line & ws.Cells(4, i).Value2 & ","
-        Next i
-        line = Left$(line, Len(line) - 1)
-        csvFile.WriteLine line
-
-        '========== Body 作成 ==========
-        For i = rowStartIdx To rowEndIdx
-            '進捗度ステータスバー表示
-            Application.StatusBar = "Create Import CSV File : " & i - 13 & " / " & rowEndIdx - 13
-            line = ""
-            For j = colStartIdx To colEndIdx
-                colType = ws.Cells(5, j).Value2 '●型
-                'ダブルクォートエスケープ置換(1文字を2文字に)
-                cellVal = Replace$(ws.Cells(i, j).Value2, """", """""")
-
-                '========== VARCHAR / CHAR / NVARCHAR / NCHAR ==========
-                If Left$(colType, 7) = "VARCHAR" Or Left$(colType, 4) = "CHAR" Or Left$(colType, 8) = "NVARCHAR" Or Left$(colType, 5) = "NCHAR" Then
-                    If IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & ","
-                    Else
-                        line = line & """" & cellVal & ""","
-                    End If
-
-                '========== NUMBER / NUMERIC / INTEGER ==========
-                ElseIf Left$(colType, 6) = "NUMBER" Or Left$(colType, 7) = "NUMERIC" Or Left$(colType, 7) = "INTEGER" Then
                     line = line & cellVal & ","
-
-                '========== TIMESTAMP / DATE ==========
-                ElseIf Left$(colType, 9) = "TIMESTAMP" Or Left$(colType, 4) = "DATE" Then
-                    If cellVal = "SYSDATE" Then
-                        line = line & crntDatetime & ","
-                    ElseIf IsEmpty(cellVal) Or IsNull(cellVal) Then
-                        line = line & ","
-                    Else
-                        line = line & ConvertDateFormat(cellVal, dateFmt2) & ","
-                    End If
                 End If
-            Next j
-            line = Left$(line, Len(line) - 1)
-            csvFile.WriteLine line
-        Next i
-        csvFile.Close
-    End If
+            '■■■ その他の場合 ■■■
+            Else
+                line = line & cellVal & ","
+            End If
+        Next
+        line = Trim$(Left$(line, Len(line) - 1))
+        cratFile.WriteLine (line)
+    Next
+    cratFile.Close
 
-    If dupPkSkipFlg Then
-        If delMode Then MsgBox "SQLファイルを作成しました" & vbCrLf & "※1000行以上のため、PK重複チェックはスキップしました"
-        If Not delMode Then MsgBox "SQL & CSVファイルを作成しました" & vbCrLf & "※1000行以上のため、PK重複チェックはスキップしました"
-    Else
-        If delMode Then MsgBox "SQLファイルを作成しました"
-        If Not delMode Then MsgBox "SQL & CSVファイルを作成しました"
-    End If
+    '完了メッセージ
+    msg = "SQLファイルを作成しました！！" & vbCrLf & _
+          "PATH : " & cratFilePath & datestamp & vbCrLf & _
+          "SQL FILE名 : " & cratFileNm1 & vbCrLf & _
+          "CSV FILE名 : " & cratFileNm2
+    Call MsgBox(msg, vbInformation, "")
 
     'ステータスバー初期化
     Application.StatusBar = False
@@ -2487,7 +2491,7 @@ Private Function IsValidTime(ByVal str As String) As Boolean
     '時分秒 分離
     h = CLng(hmsArr(0))
     m = CLng(hmsArr(1))
-    s = IIf(UBound(hmsArr) = 2, CDbl(hmsArr(2)), 0)
+    If UBound(hmsArr) = 2 Then s = CDbl(hmsArr(2))
     '範囲チェック
     If h < 0 Or 23 < h Then
         IsValidTime = False
