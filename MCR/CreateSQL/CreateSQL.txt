@@ -2246,30 +2246,30 @@ End Sub
 '備考 : -
 '------------------------------------------------------------
 Private Function GetDbColTypeDict_String() As Object
-    Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
-    typeDict("CHAR") = True
-    typeDict("VARCHAR2") = True
-    typeDict("LONG") = True
-    typeDict("NCHAR") = True
-    typeDict("NVARCHAR2") = True
-    typeDict("CLOB") = True
-    typeDict("NCLOB") = True
+    dict("CHAR") = True
+    dict("VARCHAR2") = True
+    dict("LONG") = True
+    dict("NCHAR") = True
+    dict("NVARCHAR2") = True
+    dict("CLOB") = True
+    dict("NCLOB") = True
     '========== PostgreSQL ==========
-    'typeDict("CHAR") = True
-    typeDict("CHARACTER") = True
-    typeDict("VARCHAR") = True
-    typeDict("CHARACTER VARYING") = True
-    typeDict("TEXT") = True
-    typeDict("NAME") = True
+    'dict("CHAR") = True
+    dict("CHARACTER") = True
+    dict("VARCHAR") = True
+    dict("CHARACTER VARYING") = True
+    dict("TEXT") = True
+    dict("NAME") = True
     '========== SQL Server ==========
-    'typeDict("CHAR") = True
-    'typeDict("VARCHAR") = True
-    'typeDict("NCHAR") = True
-    typeDict("NVARCHAR") = True
-    'typeDict("TEXT") = True
-    typeDict("NTEXT") = True
-    Set GetDbColTypeDict_String = typeDict
+    'dict("CHAR") = True
+    'dict("VARCHAR") = True
+    'dict("NCHAR") = True
+    dict("NVARCHAR") = True
+    'dict("TEXT") = True
+    dict("NTEXT") = True
+    Set GetDbColTypeDict_String = dict
 End Function
 '------------------------------------------------------------
 '概要 : DB項目[数値]型の辞書を取得する
@@ -2279,40 +2279,40 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function GetDbColTypeDict_Numeric() As Object
-    Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
-    typeDict("NUMBER") = True
-    typeDict("FLOAT") = True
-    typeDict("INTEGER") = True
-    typeDict("SMALLINT") = True
-    typeDict("DECIMAL") = True
-    typeDict("NUMERIC") = True
-    typeDict("REAL") = True
-    typeDict("DOUBLE PRECISION") = True
-    typeDict("BINARY_FLOAT") = True
-    typeDict("BINARY_DOUBLE") = True
+    dict("NUMBER") = True
+    dict("FLOAT") = True
+    dict("INTEGER") = True
+    dict("SMALLINT") = True
+    dict("DECIMAL") = True
+    dict("NUMERIC") = True
+    dict("REAL") = True
+    dict("DOUBLE PRECISION") = True
+    dict("BINARY_FLOAT") = True
+    dict("BINARY_DOUBLE") = True
     '========== PostgreSQL ==========
-    'typeDict("SMALLINT") = True
-    'typeDict("INTEGER") = True
-    typeDict("BIGINT") = True
-    typeDict("SMALLSERIAL") = True
-    typeDict("SERIAL") = True
-    typeDict("BIGSERIAL") = True
-    'typeDict("NUMERIC") = True
-    'typeDict("REAL") = True
-    'typeDict("DOUBLE PRECISION") = True
+    'dict("SMALLINT") = True
+    'dict("INTEGER") = True
+    dict("BIGINT") = True
+    dict("SMALLSERIAL") = True
+    dict("SERIAL") = True
+    dict("BIGSERIAL") = True
+    'dict("NUMERIC") = True
+    'dict("REAL") = True
+    'dict("DOUBLE PRECISION") = True
     '========== SQL Server ==========
-    typeDict("TINYINT") = True
-    'typeDict("SMALLINT") = True
-    typeDict("INT") = True
-    'typeDict("BIGINT") = True
-    typeDict("DECIMAL") = True
-    typeDict("SMALLMONEY") = True
-    typeDict("MONEY") = True
-    'typeDict("REAL") = True
-    'typeDict("FLOAT") = True
-    typeDict("BIT") = True
-    Set GetDbColTypeDict_Numeric = typeDict
+    dict("TINYINT") = True
+    'dict("SMALLINT") = True
+    dict("INT") = True
+    'dict("BIGINT") = True
+    dict("DECIMAL") = True
+    dict("SMALLMONEY") = True
+    dict("MONEY") = True
+    'dict("REAL") = True
+    'dict("FLOAT") = True
+    dict("BIT") = True
+    Set GetDbColTypeDict_Numeric = dict
 End Function
 '------------------------------------------------------------
 '概要 : DB項目[日付]型の辞書を取得する
@@ -2322,30 +2322,30 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function GetDbColTypeDict_Date() As Object
-    Dim typeDict As Object: Set typeDict = CreateObject("Scripting.Dictionary")
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
     '========== Oracle ==========
-    typeDict("DATE") = True
-    typeDict("TIMESTAMP") = True
-    typeDict("TIMESTAMP WITH TIME ZONE") = True
-    typeDict("TIMESTAMP WITH LOCAL TIME ZONE") = True
+    dict("DATE") = True
+    dict("TIMESTAMP") = True
+    dict("TIMESTAMP WITH TIME ZONE") = True
+    dict("TIMESTAMP WITH LOCAL TIME ZONE") = True
     '========== PostgreSQL ==========
-    'typeDict("DATE") = True
-    typeDict("TIME") = True
-    typeDict("TIMETZ") = True
-    'typeDict("TIMESTAMP") = True
-    typeDict("TIMESTAMPTZ") = True
-    'typeDict("TIME WITHOUT TIME ZONE") = True
-    'typeDict("TIME WITH TIME ZONE") = True
-    'typeDict("TIMESTAMP WITHOUT TIME ZONE") = True
-    'typeDict("TIMESTAMP WITH TIME ZONE") = True
+    'dict("DATE") = True
+    dict("TIME") = True
+    dict("TIMETZ") = True
+    'dict("TIMESTAMP") = True
+    dict("TIMESTAMPTZ") = True
+    'dict("TIME WITHOUT TIME ZONE") = True
+    'dict("TIME WITH TIME ZONE") = True
+    'dict("TIMESTAMP WITHOUT TIME ZONE") = True
+    'dict("TIMESTAMP WITH TIME ZONE") = True
     '========== SQL Server ==========
-    'typeDict("DATE") = True
-    'typeDict("TIME") = True
-    typeDict("DATETIME") = True
-    typeDict("DATETIME2") = True
-    typeDict("DATETIMEOFFSET") = True
-    typeDict("SMALLDATETIME") = True
-    Set GetDbColTypeDict_Date = typeDict
+    'dict("DATE") = True
+    'dict("TIME") = True
+    dict("DATETIME") = True
+    dict("DATETIME2") = True
+    dict("DATETIMEOFFSET") = True
+    dict("SMALLDATETIME") = True
+    Set GetDbColTypeDict_Date = dict
 End Function
 '------------------------------------------------------------
 '概要 : DB項目[日付]型の現在日時セット記述辞書を取得する
