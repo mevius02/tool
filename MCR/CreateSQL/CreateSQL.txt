@@ -1384,7 +1384,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                 line = line & colNm & "=" & cellVal & " AND "
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & colNm & "='" & cellVal & "' AND "
+                line = line & colNm & "='" & ConvertCsvVal(cellVal) & "' AND "
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & colNm & "=" & Replace(cellVal, ",", "") & " AND "
@@ -1404,7 +1404,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & colNm & "='" & cellVal & "' AND "
+                line = line & colNm & "='" & ConvertCsvVal(cellVal) & "' AND "
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 4)) & ";"
@@ -1762,7 +1762,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 line = line & cellVal & ", "
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & "'" & cellVal & "', "
+                line = line & "'" & ConvertCsvVal(cellVal) & "', "
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & Replace(cellVal, ",", "") & ", "
@@ -1782,7 +1782,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & "'" & cellVal & "', "
+                line = line & "'" & ConvertCsvVal(cellVal) & "', "
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 2)) & ");"
@@ -1827,7 +1827,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 line = line & ","
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & """" & cellVal & ""","
+                line = line & """" & ConvertCsvVal(cellVal) & ""","
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & Replace(cellVal, ",", "") & ","
@@ -1847,7 +1847,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & cellVal & ","
+                line = line & """" & ConvertCsvVal(cellVal) & ""","
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 1))
@@ -2631,3 +2631,23 @@ Private Sub AppendCharaToString(ByRef str1 As String, ByRef str2 As String, ByVa
         str1 = str1 & String(diffLen, addCh)
     End If
 End Sub
+'------------------------------------------------------------
+'概要 : 文字列をCSV出力値に変換する
+'     : 1,改行を\nに変換
+'     : 2,タブを文字列に変換
+'     : 3,ダブルクォーテーションをエスケープ
+'引数 : str : 文字列
+'戻値 : CSV出力値
+'備考 : -
+'------------------------------------------------------------
+Private Function ConvertCsvVal(ByVal str As String) As String
+    '改行
+    str = Replace$(str, vbCr, "\n")
+    str = Replace$(str, vbLf, "\n")
+    str = Replace$(str, vbCrLf, "\n")
+    'タブ
+    str = Replace$(str, vbTab, "[TAB]")
+    'ダブルクォーテーション
+    str = Replace$(str, """", """""")
+    ConvertCsvVal = str
+End Function
