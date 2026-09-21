@@ -1081,7 +1081,7 @@ Private Function InputForm_Num(ByVal title As String, ByVal msg As String, ByVal
         inputValDbl = CDbl(inputVal)
         '範囲チェック
         If inputValDbl < minVal Or maxVal < inputValDbl Then
-            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, ""
         Else
             Exit Do
         End If
@@ -1119,12 +1119,12 @@ Private Function InputForm_Time(ByVal title As String, ByVal msg As String, ByVa
         inputVal = CStr(inputVal)
         'フォーマットチェック
         If InStr(inputVal, ":") = 0 Or Len(inputVal) < 4 Or 5 < Len(inputVal) Then
-            MsgBox "24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation
+            MsgBox "24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation, ""
             GoTo Continue
         End If
         '範囲チェック
         If CLng(Replace$(inputVal, ":", "")) < CLng(Replace$(minVal, ":", "")) Or CLng(Replace$(maxVal, ":", "")) < CLng(Replace$(inputVal, ":", "")) Then
-            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, ""
         Else
             Exit Do
         End If
@@ -1163,7 +1163,7 @@ Private Function InputForm_CustomTheme(ByVal initVal As Long, ByVal minVal As Lo
             End If
             '範囲チェック
             If inputVal < minVal Or maxVal < inputVal Then
-                MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+                MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, ""
             Else
                 Exit Do
             End If

@@ -1,0 +1,664 @@
+'変数未宣言エラー設定ON
+Option Explicit
+'●[定数]DB種別(Oracle/PostgreSQL/SQLServer)
+Private Const ORACLE = "Oracle"
+Private Const POSTGRESQL = "PostgreSQL"
+Private Const SQLSERVER = "SQLServer"
+'------------------------------------------------------------
+'概要 : Sheet[入力]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_Input()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim i As Long       'Loopカウンタ
+    Dim ws As Worksheet 'Sheet
+    Dim rng As Range    '範囲
+    '●図形/サイズ(横/縦)
+    Dim shp As Shape
+    Dim shpWidth As Double: shpWidth = 3.5
+    Dim shpHeight As Double: shpHeight = 1
+
+    '新規Sheet作成 & 新規Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("TBL")
+
+    '========== 書込 ==========
+    With ws
+        .Range("A1").value = "DB"
+        .Range("A2").value = "SCHEMA"
+        .Range("A3").value = "TBL(論)"
+        .Range("A4").value = "TBL(物)"
+        .Range("A5").value = "No"
+        .Range("D1").value = "TBL概要"
+        .Range("B5").value = "TBL定義"
+        .Range("B6").value = "PK"
+        .Range("C6").value = "COL論理名"
+        .Range("D6").value = "COL物理名"
+        .Range("E6").value = "型"
+        .Range("F6").value = "桁"
+        .Range("G6").value = "NULL" & vbCrLf & "不可"
+        .Range("H6").value = "初期値"
+        .Range("I5").value = "COL詳細"
+        .Range("I6").value = "データ" & vbCrLf & "分類"
+        .Range("J6").value = "日本語" & vbCrLf & "有無"
+        .Range("K6").value = "桁数"
+        .Range("L6").value = "小数" & vbCrLf & "桁数"
+        .Range("M6").value = "時間" & vbCrLf & "有無"
+        .Range("N6").value = "時差修正" & vbCrLf & "要否"
+        .Range("O5").value = "型候補"
+        .Range("O6").value = "1"
+        .Range("P6").value = "2"
+        .Range("Q6").value = "3"
+        .Range("R5").value = "COL概要"
+        .Range("S5").value = "備考"
+        .Range("T5").value = "エラー"
+        .Range("A7:A56").Formula2 = "=ROW()-6"
+        .Range("F7:F56").value = "0"
+        .Range("H7:H56").value = "NULL"
+        .Range("K7:L56").value = "0"
+        '=== ドロップダウン ==========
+        Set rng = .Range("B1")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=ORACLE & "," & POSTGRESQL & "," & SQLSERVER
+        rng.value = ORACLE
+        Set rng = .Range("B7:B56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="Y,N"
+        rng.value = "Y"
+        Set rng = .Range("G7:G56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="Y,N"
+        rng.value = "Y"
+        Set rng = .Range("I7:I56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="文字列,数値,日時,真偽値,バイナリ,JSON,XML,UUID"
+        rng.value = "文字列"
+        Set rng = .Range("J7:J56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="有,無"
+        rng.value = "無"
+        Set rng = .Range("M7:M56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="有,無"
+        rng.value = "無"
+        Set rng = .Range("N7:N56")
+        rng.Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="要,否"
+        rng.value = "否"
+        '=============================
+    End With
+
+    '========== Sheet設定 ==========
+    ws.Activate
+    With ws
+        'フォント
+        .Cells.Font.Name = "HGｺﾞｼｯｸM"
+        '背景色
+        .Range("A1:A4").Interior.Color = RGB(248, 203, 173) '#F8CBAD
+        .Range("B1:B4").Interior.Color = RGB(252, 228, 214) '#FCE4D6
+        .Range("D1:E1").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range("D2:E4").Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        .Range("A5:H6").Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        .Range("I5:N6").Interior.Color = RGB(198, 224, 180) '#C6E0B4
+        .Range("O5:Q6").Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range("R5:S6").Interior.Color = RGB(191, 191, 191) '#BFBFBF
+        .Range("T5:T6").Interior.Color = RGB(255, 0, 0) '#FF0000
+        '太字
+        .Range("T7:T56").Font.Bold = True
+        '文字色
+        .Range("T7:T56").Font.Color = RGB(255, 0, 0) '#FF0000
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Range("A5:T6").HorizontalAlignment = xlCenter
+        .Range("A7:B56").HorizontalAlignment = xlCenter
+        .Range("D1:E1").HorizontalAlignment = xlCenter
+        .Range("F7:F56").HorizontalAlignment = xlRight
+        .Range("G7:G56").HorizontalAlignment = xlCenter
+        .Range("J7:J56").HorizontalAlignment = xlCenter
+        .Range("K7:L56").HorizontalAlignment = xlRight
+        .Range("M7:N56").HorizontalAlignment = xlCenter
+        '列幅
+        .Columns("A").ColumnWidth = 6
+        .Columns("B").ColumnWidth = 4
+        .Columns("C:D").ColumnWidth = 30
+        .Columns("E").ColumnWidth = 20
+        .Columns("F").ColumnWidth = 4
+        .Columns("G").ColumnWidth = 5
+        .Columns("H").ColumnWidth = 20
+        .Columns("I").ColumnWidth = 7
+        .Columns("J").ColumnWidth = 6
+        .Columns("K:M").ColumnWidth = 4
+        .Columns("N").ColumnWidth = 8
+        .Columns("O:Q").ColumnWidth = 20
+        .Columns("R:S").ColumnWidth = 30
+        .Columns("T").ColumnWidth = 70
+        'グループ化
+        .Rows("1:4").Group
+        .Columns("O:S").Group
+        '折り返して表示
+        .Range("B2:E4").WrapText = True
+        .Range("C7:E56").WrapText = True
+        .Range("H7:H56").WrapText = True
+        .Range("O7:T56").WrapText = True
+        '条件付き書式
+        .Range("A7:T56").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
+        'フィルター
+        .Rows(6).AutoFilter
+        '罫線
+        Set rng = .Range("A1:T6")
+        rng.Borders(xlInsideHorizontal).Weight = xlThin
+        rng.Borders(xlInsideHorizontal).Color = RGB(255, 255, 255)
+        rng.Borders(xlInsideVertical).Weight = xlThin
+        rng.Borders(xlInsideVertical).Color = RGB(255, 255, 255)
+        'セル結合
+        .Range("B1:C4").Merge Across:=True
+        .Range("A5:A6").Merge
+        .Range("B5:H5").Merge
+        .Range("D1:E1").Merge
+        .Range("D2:E4").Merge
+        .Range("I5:N5").Merge
+        .Range("O5:Q5").Merge
+        .Range("R5:R6").Merge
+        .Range("S5:S6").Merge
+        .Range("T5:T6").Merge
+    End With
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+    'ウィンドウ枠の固定
+    ws.Range("B7").Select
+    ActiveWindow.FreezePanes = True
+
+    'メモ
+    Set rng = ws.Range("J6")
+    rng.AddComment "日本語の値を登録する場合[有]を選択"
+    rng.Comment.Shape.Width = 125
+    rng.Comment.Shape.Height = 30
+    rng.Comment.Visible = False
+    Set rng = ws.Range("K6")
+    rng.AddComment "[データ分類]が""数値""の場合[正数桁数]"
+    rng.Comment.Shape.Width = 140
+    rng.Comment.Shape.Height = 30
+    rng.Comment.Visible = False
+    Set rng = ws.Range("N6")
+    rng.AddComment "日本以外から日時を登録する場合[要]を選択"
+    rng.Comment.Shape.Width = 155
+    rng.Comment.Shape.Height = 30
+    rng.Comment.Visible = False
+
+    '========== マクロボタン(DDL/型候補) 作成 ==========
+    Dim btnNm As Variant: btnNm = Array("DDL作成", "型候補セット")
+    Dim btnColor As Variant: btnColor = Array(RGB(91, 155, 213), RGB(112, 173, 71))
+    Dim leftPos As Variant: leftPos = Array(10, 120)
+    Dim mcrNm As Variant: mcrNm = Array("Btn_CreateDdl", "Btn_SetColumnDataType")
+    For i = 0 To 1
+        Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
+        With shp
+            .Fill.ForeColor.RGB = btnColor(i)                                  '塗りつぶし色
+            .line.ForeColor.RGB = btnColor(i)                                  '枠線色
+            .TextFrame2.TextRange.Text = btnNm(i)                              '表示文字列
+            .TextFrame2.TextRange.Font.NameFarEast = "游ゴシック"              'フォント(JP)
+            .TextFrame2.TextRange.Font.Name = "游ゴシック"                     'フォント(EN)
+            .TextFrame2.TextRange.Font.Size = 12                               '文字サイズ
+            .TextFrame2.TextRange.Font.Bold = True                             '太字
+            .TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 255, 255) '#FFFFFF 文字色
+            .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
+            .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
+            .OnAction = mcrNm(i)                                               'マクロ登録
+            .Top = ws.Range("F2").Top                                          '配置場所(縦)
+            .Left = ws.Range("F2").Left + leftPos(i)                           '配置場所(横)
+        End With
+    Next
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : 処理中の画面描画を設定する
+'引数 : flg(True:ON / False:OFF)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub SettingRenderingProcess(ByVal flg As Boolean)
+    Application.ScreenUpdating = flg '画面再描画
+    Application.DisplayAlerts = flg  '確認ダイアログ表示
+    Application.EnableEvents = flg   'イベント発火
+    '再計算モード(セル値が変わるたびに再計算)
+    If flg Then
+        Application.Calculation = xlCalculationAutomatic '自動
+    Else
+        Application.Calculation = xlCalculationManual '手動
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet名のSheetが存在するか判定する
+'引数 : wsNm : Sheet名
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        '存在する場合
+        If ws.Name = wsNm Then
+            IsExistsSheet = True
+            Exit Function
+        End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 重複しないSheet名となるまで、末尾に連番を付与する
+'     : (同じ名前のSheetが存在しない場合、そのまま返す)
+'     : (同じ名前のSheetが存在する場合、2からの連番を末尾に付与し、重複しないSheet名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : wsNm : Sheet名
+'戻値 : Sheet名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueSheetNm(ByVal wsNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    For i = 2 To 1000
+        '存在しない場合
+        If Not IsExistsSheet(wsNm & uniqueNo) Then
+            ChangeUniqueSheetNm = wsNm & uniqueNo
+            Exit Function
+        End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 列番号から列名(アルファベット)を取得する
+'     : (範囲外の数値の場合、空を返す)
+'引数 : colIdx : 列番号
+'戻値 : 列名(アルファベット)
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColNm(ByVal colIdx As Long) As String
+    Dim result As String
+    '範囲外の場合
+    If colIdx < 1 Or Application.Columns.Count < colIdx Then
+        GetColNm = ""
+        Exit Function
+    End If
+    Do While 0 < colIdx
+        colIdx = colIdx - 1
+        result = Chr$(65 + (colIdx Mod 26)) & result
+        colIdx = colIdx \ 26
+    Loop
+    GetColNm = result
+End Function
+'------------------------------------------------------------
+'概要 : 列名(アルファベット)から列番号を取得する
+'     : (範囲外の列名の場合、0を返す)
+'引数 : colNm : 列名(アルファベット)
+'戻値 : 列番号
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColIdx(ByVal colNm As String) As Long
+    Dim i As Long
+    Dim result As Long
+    Dim baseA As Long: baseA = Asc("A") - 1
+    Dim colNmLen As Long: colNmLen = Len(UCase$(colNm))
+    Dim ch As Long
+    For i = 1 To colNmLen
+        ch = Asc(Mid$(colNm, i, 1)) - baseA
+        '範囲外の場合
+        If ch < 1 Or 26 < ch Then
+            GetColIdx = 0
+            Exit Function
+        End If
+        result = result * 26 + ch
+    Next
+    GetColIdx = result
+End Function
+'------------------------------------------------------------
+'概要 : 型の候補を書込する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub Btn_SetColumnDataType()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Sheet
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim rowIdx As Long    '行
+    Dim endRowIdx As Long '終了行
+    '●DB名
+    Dim dbNm As String: dbNm = ws.Range("B1").Value2
+    '●入力値範囲データ(データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否)
+    Dim inputRngData As Variant
+    '●型候補リスト
+    Dim dataTypeList As Variant
+    '●エラーメッセージ
+    Dim errMsg As String
+
+    '終了行 セット
+    endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    '入力チェック(DB)
+    If LenB(dbNm) = 0 Then
+        Call MsgBox("[B1] にDBを入力して下さい", vbExclamation, "")
+        Exit Sub
+    End If
+
+    '初期化
+    ws.Range("T7:T" & endRowIdx).value = ""
+    '全行Loop
+    For rowIdx = 7 To endRowIdx
+        '入力値範囲データ 取得(COL詳細)
+        inputRngData = ws.Range(ws.Cells(rowIdx, "I"), ws.Cells(rowIdx, "N")).Value2
+        '入力チェック
+        errMsg = Valid_SetDataType(inputRngData)
+        'エラー有りの場合
+        If 0 < LenB(errMsg) Then
+            ws.Cells(rowIdx, "T").value = errMsg
+        Else
+            '型候補 取得
+            dataTypeList = GetColDataTypes(dbNm, inputRngData)
+            '書込
+            ws.Cells(rowIdx, "O").value = CStr(dataTypeList(0))
+            ws.Cells(rowIdx, "P").value = CStr(dataTypeList(1))
+            ws.Cells(rowIdx, "Q").value = CStr(dataTypeList(2))
+        End If
+    Next
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : 入力チェック(型候補セット用)
+'引数 : inputRngData : 入力値範囲データ(データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否)
+'戻値 : エラーメッセージ
+'備考 : -
+'------------------------------------------------------------
+Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
+    '●データ分類
+    Dim dataType As String: dataType = CStr(inputRngData(1, 1))
+    '●エラーメッセージ/冒頭メッセージ
+    Dim errMsg As String
+    Dim errAtartMsg As String: errAtartMsg = "[データ分類]が""" & dataType & """の場合"
+
+    '========== 入力チェック ==========
+    '[データ分類]
+    If LenB(dataType) = 0 Then
+        errMsg = errMsg & "[データ分類]を入力して下さい" & vbCrLf
+    End If
+
+    '***** 文字列 *****
+    If dataType = "文字列" Then
+        '[日本語有無]未入力
+        If LenB(inputRngData(1, 2)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]を指定して下さい" & vbCrLf
+        End If
+        '[桁数]未入力 or 数値以外 or 0
+        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
+        End If
+        '[小数桁数]入力有
+        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
+        End If
+        '[時間有無]入力有
+        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
+        End If
+        '[時差修正要否]入力有
+        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
+        End If
+    End If
+
+    '***** 数値 *****
+    If dataType = "数値" Then
+        '[日本語有無]入力有
+        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
+        End If
+        '[桁数]未入力 or 数値以外 or 0
+        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
+        End If
+        '[小数桁数]未入力 or 数値以外
+        If LenB(inputRngData(1, 4)) = 0 Or Not IsNumeric(inputRngData(1, 4)) Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]に0以上を入力して下さい" & vbCrLf
+        End If
+        '[小数桁数] [全体桁数] 逆転
+        If IsNumeric(inputRngData(1, 3)) And IsNumeric(inputRngData(1, 4)) Then
+            If CLng(inputRngData(1, 3)) <= CLng(inputRngData(1, 4)) Then
+                errMsg = errMsg & "[桁数]は[小数桁数]より大きい数値を入力して下さい" & vbCrLf
+            End If
+        End If
+        '[時間有無]入力有
+        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
+        End If
+        '[時差修正要否]入力有
+        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
+        End If
+    End If
+
+    '***** 日時 *****
+    If dataType = "日時" Then
+        '[日本語有無]入力有
+        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
+        End If
+        '[桁数]入力有
+        If 0 < LenB(inputRngData(1, 3)) And inputRngData(1, 3) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[桁数]は指定できません" & vbCrLf
+        End If
+        '[小数桁数]入力有
+        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
+        End If
+        '[時間有無]未入力
+        If LenB(inputRngData(1, 5)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]を指定して下さい" & vbCrLf
+        End If
+        '[時差修正要否]未入力
+        If LenB(inputRngData(1, 6)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]を指定して下さい" & vbCrLf
+        End If
+    End If
+
+    '***** 真偽値 *****
+    If dataType = "真偽値" Then
+        '[日本語有無]入力有
+        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
+        End If
+        '[桁数]入力有
+        If 0 < LenB(inputRngData(1, 3)) And inputRngData(1, 3) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[桁数]は指定できません" & vbCrLf
+        End If
+        '[小数桁数]入力有
+        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
+        End If
+        '[時間有無]入力有
+        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
+        End If
+        '[時差修正要否]入力有
+        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
+        End If
+    End If
+
+    '***** バイナリ *****
+    If dataType = "バイナリ" Then
+        '[日本語有無]入力有
+        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
+        End If
+        '[桁数]未入力 or 数値以外 or 0
+        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
+        End If
+        '[小数桁数]入力有
+        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
+        End If
+        '[時間有無]入力有
+        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
+        End If
+        '[時差修正要否]入力有
+        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
+        End If
+    End If
+
+    '***** JSON / XML / UUID *****
+    If dataType = "JSON" Or dataType = "XML" Or dataType = "UUID" Then
+        '[日本語有無]入力有
+        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
+        End If
+        '[桁数]未入力 or 数値以外 or 0
+        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
+        End If
+        '[小数桁数]入力有
+        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
+            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
+        End If
+        '[時間有無]入力有
+        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
+            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
+        End If
+        '[時差修正要否]入力有
+        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
+            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
+        End If
+    End If
+
+    '末尾除去
+    If 0 < LenB(errMsg) Then errMsg = Left$(errMsg, Len(errMsg) - Len(vbCrLf))
+    Valid_SetDataType = errMsg
+End Function
+'------------------------------------------------------------
+'概要 : 型候補リストを取得する
+'引数 : dbNm         : DB名(Oracle / PostgreSQL / SQLServer)
+'     : inputRngData : 入力値範囲データ(データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否)
+'戻値 : 型候補リスト
+'備考 : -
+'------------------------------------------------------------
+Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Variant) As Variant
+    '●データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否
+    Dim dataType As String: dataType = CStr(inputRngData(1, 1))
+    Dim jpFlg As String: jpFlg = CStr(inputRngData(1, 2))
+    Dim maxLen As String: maxLen = CStr(inputRngData(1, 3))
+    Dim dcmlLen As String: dcmlLen = CStr(inputRngData(1, 4))
+    Dim timeFlg As String: timeFlg = CStr(inputRngData(1, 5))
+    Dim timeZoneFlg As String: timeZoneFlg = CStr(inputRngData(1, 6))
+    '判定
+    GetColDataTypes = Array("", "", "")
+    Select Case dbNm
+        Case ORACLE
+            Select Case dataType
+                Case "文字列"
+                    If 4000 <= CLng(maxLen) Then
+                        If jpFlg = "有" Then
+                            GetColDataTypes = Array("CLOB", "NCLOB", "VARCHAR2(" & maxLen & ")")
+                        Else
+                            GetColDataTypes = Array("CLOB", "VARCHAR2(" & maxLen & ")", "")
+                        End If
+                    ElseIf jpFlg = "有" Then
+                        GetColDataTypes = Array("NVARCHAR2(" & maxLen & ")", "VARCHAR2(" & maxLen & ")", "")
+                    Else
+                        GetColDataTypes = Array("VARCHAR2(" & maxLen & ")", "NVARCHAR2(" & maxLen & ")", "")
+                    End If
+                Case "数値"
+                    GetColDataTypes = Array("NUMBER(" & maxLen & "," & dcmlLen & ")", "BINARY_DOUBLE", "BINARY_FLOAT")
+                Case "日時"
+                    If timeZoneFlg = "要" Then
+                        GetColDataTypes = Array("TIMESTAMP WITH TIME ZONE", "TIMESTAMP", "")
+                    ElseIf timeFlg = "有" Then
+                        GetColDataTypes = Array("TIMESTAMP", "DATE", "")
+                    Else
+                        GetColDataTypes = Array("DATE", "TIMESTAMP", "")
+                    End If
+                Case "真偽値"
+                    GetColDataTypes = Array("NUMBER(1)", "CHAR(1)", "")
+                Case "バイナリ"
+                    GetColDataTypes = Array("BLOB", "RAW", "")
+                Case "JSON"
+                    GetColDataTypes = Array("JSON", "CLOB", "")
+                Case "XML"
+                    GetColDataTypes = Array("XMLTYPE", "CLOB", "")
+                Case "UUID"
+                    GetColDataTypes = Array("RAW(16)", "VARCHAR2(36)", "")
+            End Select
+        Case POSTGRESQL
+            Select Case dataType
+                Case "文字列"
+                    If 4000 <= CLng(maxLen) Then
+                        GetColDataTypes = Array("text", "varchar(" & maxLen & ")", "char(" & maxLen & ")")
+                    Else
+                        GetColDataTypes = Array("varchar(" & maxLen & ")", "text", "char(" & maxLen & ")")
+                    End If
+                Case "数値"
+                    GetColDataTypes = Array("numeric(" & maxLen & "," & dcmlLen & ")", "double precision", "real")
+                Case "日時"
+                    If timeZoneFlg = "要" Then
+                        GetColDataTypes = Array("timestamp with time zone", "timestamp", "")
+                    ElseIf timeFlg = "有" Then
+                        GetColDataTypes = Array("timestamp", "date", "")
+                    Else
+                        GetColDataTypes = Array("date", "timestamp", "")
+                    End If
+                Case "真偽値"
+                    GetColDataTypes = Array("boolean", "smallint", "")
+                Case "バイナリ"
+                    GetColDataTypes = Array("bytea", "", "")
+                Case "JSON"
+                    GetColDataTypes = Array("jsonb", "json", "")
+                Case "XML"
+                    GetColDataTypes = Array("xml", "", "")
+                Case "UUID"
+                    GetColDataTypes = Array("uuid", "varchar(36)", "")
+            End Select
+        Case SQLSERVER
+            Select Case dataType
+                Case "文字列"
+                    If 4000 <= CLng(maxLen) Then
+                        If jpFlg = "有" Then
+                            GetColDataTypes = Array("nvarchar(max)", "varchar(max)", "")
+                        Else
+                            GetColDataTypes = Array("varchar(max)", "nvarchar(max)", "")
+                        End If
+                    Else
+                        If jpFlg = "有" Then
+                            GetColDataTypes = Array("nvarchar(" & maxLen & ")", "varchar(" & maxLen & ")", "")
+                        Else
+                            GetColDataTypes = Array("varchar(" & maxLen & ")", "nvarchar(" & maxLen & ")", "")
+                        End If
+                    End If
+                Case "数値"
+                    GetColDataTypes = Array("decimal(" & maxLen & "," & dcmlLen & ")", "float", "real")
+                Case "日時"
+                    If timeZoneFlg = "要" Then
+                        GetColDataTypes = Array("datetimeoffset", "datetime2", "")
+                    ElseIf timeFlg = "有" Then
+                        GetColDataTypes = Array("datetime2", "date", "")
+                    Else
+                        GetColDataTypes = Array("date", "datetime2", "")
+                    End If
+                Case "真偽値"
+                    GetColDataTypes = Array("bit", "tinyint", "")
+                Case "バイナリ"
+                    GetColDataTypes = Array("varbinary", "binary", "")
+                Case "JSON"
+                    GetColDataTypes = Array("nvarchar(max)", "varchar(max)", "")
+                Case "XML"
+                    GetColDataTypes = Array("xml", "nvarchar(max)", "")
+                Case "UUID"
+                    GetColDataTypes = Array("uniqueidentifier", "nvarchar(36)", "")
+            End Select
+    End Select
+End Function
