@@ -439,7 +439,7 @@ Private Function ConvertCsvVal(ByVal str As String) As String
     str = Replace$(str, """", """""")
     ConvertCsvVal = str
 End Function
- '------------------------------------------------------------
+'------------------------------------------------------------
 '概要 : ファイル名から使用不可文字を除去する
 '引数 : fileNm : ファイル名
 '戻値 : ファイル名

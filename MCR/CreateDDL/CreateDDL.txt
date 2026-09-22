@@ -132,7 +132,7 @@ Public Sub CreateSheet_Input()
         .Columns("T").ColumnWidth = 70
         'グループ化
         .Rows("1:4").Group
-        .Columns("O:S").Group
+        .Columns("O:Q").Group
         '折り返して表示
         .Range("B2:E4").WrapText = True
         .Range("C7:E56").WrapText = True
@@ -175,12 +175,12 @@ Public Sub CreateSheet_Input()
     rng.Comment.Shape.Height = 30
     rng.Comment.Visible = False
     Set rng = ws.Range("K6")
-    rng.AddComment "[データ分類]が""数値""の場合[正数桁数]"
+    rng.AddComment "[データ分類]が""数値""の場合[正数桁数]" & vbCrLf & "[データ分類]が""日時""の場合[ミリ秒桁数]"
     rng.Comment.Shape.Width = 140
-    rng.Comment.Shape.Height = 30
+    rng.Comment.Shape.Height = 50
     rng.Comment.Visible = False
     Set rng = ws.Range("N6")
-    rng.AddComment "日本以外から日時を登録する場合[要]を選択"
+    rng.AddComment "日本以外から日時を登録する場合""要""を選択"
     rng.Comment.Shape.Width = 155
     rng.Comment.Shape.Height = 30
     rng.Comment.Visible = False
@@ -188,8 +188,8 @@ Public Sub CreateSheet_Input()
     '========== マクロボタン(DDL/型候補) 作成 ==========
     Dim btnNm As Variant: btnNm = Array("DDL作成", "型候補セット")
     Dim btnColor As Variant: btnColor = Array(RGB(91, 155, 213), RGB(112, 173, 71))
-    Dim leftPos As Variant: leftPos = Array(10, 120)
-    Dim mcrNm As Variant: mcrNm = Array("Btn_CreateDdl", "Btn_SetColumnDataType")
+    Dim leftPos As Variant: leftPos = Array(20, 130)
+    Dim mcrNm As Variant: mcrNm = Array("Btn_CreateDdlFile", "Btn_SetColumnDataType")
     For i = 0 To 1
         Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
         With shp
@@ -204,8 +204,8 @@ Public Sub CreateSheet_Input()
             .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
             .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
             .OnAction = mcrNm(i)                                               'マクロ登録
-            .Top = ws.Range("F2").Top                                          '配置場所(縦)
-            .Left = ws.Range("F2").Left + leftPos(i)                           '配置場所(横)
+            .Top = ws.Range("H2").Top                                          '配置場所(縦)
+            .Left = ws.Range("H2").Left + leftPos(i)                           '配置場所(横)
         End With
     Next
 
@@ -243,6 +243,44 @@ Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
             IsExistsSheet = True
             Exit Function
         End If
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : ファイルが存在するか判定する
+'引数 : path   : ファイルまでのパス(絶対パス)
+'     : fileNm : ファイル名
+'     : ext    : 拡張子
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsFile(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As Boolean
+    'パス末尾付与
+    If Right$(path, 1) <> "\" Then path = path & "\"
+    '判定
+    IsExistsFile = (Dir(path & fileNm & "." & ext) <> "")
+End Function
+'------------------------------------------------------------
+'概要 : 重複しないファイル名となるまで、末尾に連番を付与する
+'     : (同じ名前のファイルが存在しない場合、そのまま返す)
+'     : (同じ名前のファイルが存在する場合、2からの連番を末尾に付与し、重複しないファイル名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : path   : ファイルまでのパス
+'     : fileNm : ファイル名
+'     : ext    : 拡張子
+'戻値 : ファイル名(拡張子付き)
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueFileNm(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    For i = 2 To 1000
+        '存在しない場合
+        If Not IsExistsFile(path, fileNm & uniqueNo, ext) Then
+            ChangeUniqueFileNm = fileNm & uniqueNo & "." & ext
+            Exit Function
+        End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
     Next
 End Function
 '------------------------------------------------------------
@@ -313,6 +351,70 @@ Private Function GetColIdx(ByVal colNm As String) As Long
     GetColIdx = result
 End Function
 '------------------------------------------------------------
+'概要 : Sheet[目次]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_TableOfContents()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Book/Sheet/Sheet(TOP)/行/範囲
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    Dim ws As Worksheet
+    Dim wsTop As Worksheet
+    Dim wsNmTop As String: wsNmTop = "目次"
+    Dim rowIdx As Long: rowIdx = 4
+    Dim rng As Range
+    '●項目No
+    Dim colNo As Long: colNo = 1
+
+    '新規Sheet作成 & 新規Sheet名セット
+    Set wsTop = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    wsNmTop = ChangeUniqueSheetNm(wsNmTop)
+    wsTop.Name = wsNmTop
+
+    '書込
+    wsTop.Range("B2").value = "目次"
+
+    '全Sheet Loop
+    For Each ws In wb.Worksheets
+        '自分以外の場合
+        If ws.Name <> wsNmTop Then
+            wsTop.Cells(rowIdx, "B").value = colNo & ","
+            'セル場所 セット
+            Set rng = wsTop.Cells(rowIdx, "C")
+            'Sheet名 書込
+            rng.value = ws.Name
+            'ハイパーリンク セット
+            Call wsTop.Hyperlinks.Add(Anchor:=rng, Address:="", SubAddress:="'" & ws.Name & "'!B7", TextToDisplay:=ws.Name)
+            'インクリメント
+            colNo = colNo + 1
+            rowIdx = rowIdx + 1
+        End If
+    Next
+
+    'Sheet設定
+    With wsTop
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        '列幅
+        .Columns.ColumnWidth = 2
+        .Columns("B").ColumnWidth = 4
+        .Columns("C").ColumnWidth = 50
+    End With
+    wsTop.Activate
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
 '概要 : 型の候補を書込する
 '引数 : -
 '戻値 : -
@@ -340,18 +442,19 @@ Private Sub Btn_SetColumnDataType()
 
     '入力チェック(DB)
     If LenB(dbNm) = 0 Then
-        Call MsgBox("[B1] にDBを入力して下さい", vbExclamation, "")
+        Call MsgBox("[B1] にDBを入力して下さい", vbExclamation, "ERROR")
         Exit Sub
     End If
 
     '初期化
+    ws.Range("O7:Q" & endRowIdx).value = ""
     ws.Range("T7:T" & endRowIdx).value = ""
     '全行Loop
     For rowIdx = 7 To endRowIdx
         '入力値範囲データ 取得(COL詳細)
         inputRngData = ws.Range(ws.Cells(rowIdx, "I"), ws.Cells(rowIdx, "N")).Value2
         '入力チェック
-        errMsg = Valid_SetDataType(inputRngData)
+        errMsg = Valid_SetDataType(dbNm, inputRngData)
         'エラー有りの場合
         If 0 < LenB(errMsg) Then
             ws.Cells(rowIdx, "T").value = errMsg
@@ -370,21 +473,22 @@ Private Sub Btn_SetColumnDataType()
 End Sub
 '------------------------------------------------------------
 '概要 : 入力チェック(型候補セット用)
-'引数 : inputRngData : 入力値範囲データ(データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否)
+'引数 : dbNm         : DB名(Oracle / PostgreSQL / SQLServer)
+'     : inputRngData : 入力値範囲データ(データ分類/日本語有無/桁数/小数桁数/時間有無/時差修正要否)
 '戻値 : エラーメッセージ
 '備考 : -
 '------------------------------------------------------------
-Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
+Private Function Valid_SetDataType(ByVal dbNm As String, ByVal inputRngData As Variant) As String
     '●データ分類
     Dim dataType As String: dataType = CStr(inputRngData(1, 1))
     '●エラーメッセージ/冒頭メッセージ
     Dim errMsg As String
     Dim errAtartMsg As String: errAtartMsg = "[データ分類]が""" & dataType & """の場合"
 
-    '========== 入力チェック ==========
-    '[データ分類]
+    '[データ分類]未入力
     If LenB(dataType) = 0 Then
-        errMsg = errMsg & "[データ分類]を入力して下さい" & vbCrLf
+        Valid_SetDataType = "[データ分類]を入力して下さい"
+        Exit Function
     End If
 
     '***** 文字列 *****
@@ -394,7 +498,11 @@ Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
             errMsg = errMsg & errAtartMsg & "[日本語有無]を指定して下さい" & vbCrLf
         End If
         '[桁数]未入力 or 数値以外 or 0
-        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+        If LenB(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]を入力して下さい" & vbCrLf
+        ElseIf Not IsNumeric(inputRngData(1, 3)) Then
+            errMsg = errMsg & "[桁数]は数値を入力して下さい" & vbCrLf
+        ElseIf CLng(inputRngData(1, 3)) = 0 Then
             errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
         End If
         '[小数桁数]入力有
@@ -417,18 +525,30 @@ Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
         If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
             errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
         End If
-        '[桁数]未入力 or 数値以外 or 0
-        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
+        '[桁数]未入力 or 数値以外 or 0 or 16以上
+        If LenB(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]を入力して下さい" & vbCrLf
+        ElseIf Not IsNumeric(inputRngData(1, 3)) Then
+            errMsg = errMsg & "[桁数]は数値を入力して下さい" & vbCrLf
+        ElseIf CLng(inputRngData(1, 3)) = 0 Then
             errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
+        ElseIf 15 < CLng(inputRngData(1, 3)) Then
+            errMsg = errMsg & errAtartMsg & "[桁数]は15以下で入力して下さい" & vbCrLf
         End If
-        '[小数桁数]未入力 or 数値以外
-        If LenB(inputRngData(1, 4)) = 0 Or Not IsNumeric(inputRngData(1, 4)) Then
+        '[小数桁数]未入力 or 数値以外 or 6以上
+        If LenB(inputRngData(1, 4)) = 0 Then
             errMsg = errMsg & errAtartMsg & "[小数桁数]に0以上を入力して下さい" & vbCrLf
+        ElseIf Not IsNumeric(inputRngData(1, 4)) Then
+            errMsg = errMsg & "[小数桁数]は数値を入力して下さい" & vbCrLf
+        ElseIf 5 < CLng(inputRngData(1, 4)) Then
+            errMsg = errMsg & "[小数桁数]は5以下で入力して下さい" & vbCrLf
         End If
-        '[小数桁数] [全体桁数] 逆転
-        If IsNumeric(inputRngData(1, 3)) And IsNumeric(inputRngData(1, 4)) Then
-            If CLng(inputRngData(1, 3)) <= CLng(inputRngData(1, 4)) Then
-                errMsg = errMsg & "[桁数]は[小数桁数]より大きい数値を入力して下さい" & vbCrLf
+        '[小数桁数/全体桁数] 逆転
+        If 0 < LenB(inputRngData(1, 3)) And 0 < LenB(inputRngData(1, 4)) Then
+            If IsNumeric(inputRngData(1, 3)) And IsNumeric(inputRngData(1, 4)) Then
+                If CLng(inputRngData(1, 3)) <= CLng(inputRngData(1, 4)) Then
+                    errMsg = errMsg & "[桁数]は[小数桁数]より大きい数値を入力して下さい" & vbCrLf
+                End If
             End If
         End If
         '[時間有無]入力有
@@ -447,9 +567,17 @@ Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
         If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
             errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
         End If
-        '[桁数]入力有
-        If 0 < LenB(inputRngData(1, 3)) And inputRngData(1, 3) <> "0" Then
-            errMsg = errMsg & errAtartMsg & "[桁数]は指定できません" & vbCrLf
+        '[桁数]未入力/数値以外/範囲外
+        If LenB(inputRngData(1, 3)) = 0 Then
+            errMsg = errMsg & errAtartMsg & "[桁数]を入力して下さい" & vbCrLf
+        ElseIf Not IsNumeric(inputRngData(1, 3)) Then
+            errMsg = errMsg & "[桁数]は数値を入力して下さい" & vbCrLf
+        ElseIf dbNm = ORACLE And 9 < CLng(inputRngData(1, 3)) Then
+            errMsg = errMsg & ORACLE & "の場合[桁数]は0～9で入力して下さい" & vbCrLf
+        ElseIf dbNm = POSTGRESQL And 6 < CLng(inputRngData(1, 3)) Then
+            errMsg = errMsg & POSTGRESQL & "の場合[桁数]は0～6で入力して下さい" & vbCrLf
+        ElseIf dbNm = SQLSERVER And 7 < CLng(inputRngData(1, 3)) Then
+            errMsg = errMsg & SQLSERVER & "の場合[桁数]は0～7で入力して下さい" & vbCrLf
         End If
         '[小数桁数]入力有
         If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
@@ -465,63 +593,15 @@ Private Function Valid_SetDataType(ByVal inputRngData As Variant) As String
         End If
     End If
 
-    '***** 真偽値 *****
-    If dataType = "真偽値" Then
+    '***** 真偽値 / バイナリ / JSON / XML / UUID *****
+    If dataType = "真偽値" Or dataType = "バイナリ" Or dataType = "JSON" Or dataType = "XML" Or dataType = "UUID" Then
         '[日本語有無]入力有
         If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
             errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
         End If
-        '[桁数]入力有
+        '[桁数]未入力 or 数値以外 or 0
         If 0 < LenB(inputRngData(1, 3)) And inputRngData(1, 3) <> "0" Then
             errMsg = errMsg & errAtartMsg & "[桁数]は指定できません" & vbCrLf
-        End If
-        '[小数桁数]入力有
-        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
-            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
-        End If
-        '[時間有無]入力有
-        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
-            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
-        End If
-        '[時差修正要否]入力有
-        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
-            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
-        End If
-    End If
-
-    '***** バイナリ *****
-    If dataType = "バイナリ" Then
-        '[日本語有無]入力有
-        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
-            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
-        End If
-        '[桁数]未入力 or 数値以外 or 0
-        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
-            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
-        End If
-        '[小数桁数]入力有
-        If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
-            errMsg = errMsg & errAtartMsg & "[小数桁数]は指定できません" & vbCrLf
-        End If
-        '[時間有無]入力有
-        If 0 < LenB(inputRngData(1, 5)) And inputRngData(1, 5) <> "無" Then
-            errMsg = errMsg & errAtartMsg & "[時間有無]は指定できません" & vbCrLf
-        End If
-        '[時差修正要否]入力有
-        If 0 < LenB(inputRngData(1, 6)) And inputRngData(1, 6) <> "否" Then
-            errMsg = errMsg & errAtartMsg & "[時差修正要否]は指定できません" & vbCrLf
-        End If
-    End If
-
-    '***** JSON / XML / UUID *****
-    If dataType = "JSON" Or dataType = "XML" Or dataType = "UUID" Then
-        '[日本語有無]入力有
-        If 0 < LenB(inputRngData(1, 2)) And inputRngData(1, 2) <> "無" Then
-            errMsg = errMsg & errAtartMsg & "[日本語有無]は指定できません" & vbCrLf
-        End If
-        '[桁数]未入力 or 数値以外 or 0
-        If LenB(inputRngData(1, 3)) = 0 Or Not IsNumeric(inputRngData(1, 3)) Or CLng(inputRngData(1, 3)) = 0 Then
-            errMsg = errMsg & errAtartMsg & "[桁数]に1以上を入力して下さい" & vbCrLf
         End If
         '[小数桁数]入力有
         If 0 < LenB(inputRngData(1, 4)) And inputRngData(1, 4) <> "0" Then
@@ -574,14 +654,14 @@ Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Var
                         GetColDataTypes = Array("VARCHAR2(" & maxLen & ")", "NVARCHAR2(" & maxLen & ")", "")
                     End If
                 Case "数値"
-                    GetColDataTypes = Array("NUMBER(" & maxLen & "," & dcmlLen & ")", "BINARY_DOUBLE", "BINARY_FLOAT")
+                    GetColDataTypes = Array("NUMBER(" & (CLng(maxLen) + CLng(dcmlLen)) & "," & dcmlLen & ")", "BINARY_DOUBLE", "BINARY_FLOAT")
                 Case "日時"
                     If timeZoneFlg = "要" Then
-                        GetColDataTypes = Array("TIMESTAMP WITH TIME ZONE", "TIMESTAMP", "")
+                        GetColDataTypes = Array("TIMESTAMP WITH TIME ZONE(" & maxLen & ")", "TIMESTAMP(" & maxLen & ")", "")
                     ElseIf timeFlg = "有" Then
-                        GetColDataTypes = Array("TIMESTAMP", "DATE", "")
+                        GetColDataTypes = Array("TIMESTAMP(" & maxLen & ")", "DATE", "")
                     Else
-                        GetColDataTypes = Array("DATE", "TIMESTAMP", "")
+                        GetColDataTypes = Array("DATE", "TIMESTAMP(" & maxLen & ")", "")
                     End If
                 Case "真偽値"
                     GetColDataTypes = Array("NUMBER(1)", "CHAR(1)", "")
@@ -603,14 +683,14 @@ Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Var
                         GetColDataTypes = Array("varchar(" & maxLen & ")", "text", "char(" & maxLen & ")")
                     End If
                 Case "数値"
-                    GetColDataTypes = Array("numeric(" & maxLen & "," & dcmlLen & ")", "double precision", "real")
+                    GetColDataTypes = Array("numeric(" & (CLng(maxLen) + CLng(dcmlLen)) & "," & dcmlLen & ")", "double precision", "real")
                 Case "日時"
                     If timeZoneFlg = "要" Then
-                        GetColDataTypes = Array("timestamp with time zone", "timestamp", "")
+                        GetColDataTypes = Array("timestamp with time zone(" & maxLen & ")", "timestamp(" & maxLen & ")", "")
                     ElseIf timeFlg = "有" Then
-                        GetColDataTypes = Array("timestamp", "date", "")
+                        GetColDataTypes = Array("timestamp(" & maxLen & ")", "date", "")
                     Else
-                        GetColDataTypes = Array("date", "timestamp", "")
+                        GetColDataTypes = Array("date", "timestamp(" & maxLen & ")", "")
                     End If
                 Case "真偽値"
                     GetColDataTypes = Array("boolean", "smallint", "")
@@ -640,14 +720,14 @@ Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Var
                         End If
                     End If
                 Case "数値"
-                    GetColDataTypes = Array("decimal(" & maxLen & "," & dcmlLen & ")", "float", "real")
+                    GetColDataTypes = Array("decimal(" & (CLng(maxLen) + CLng(dcmlLen)) & "," & dcmlLen & ")", "float", "real")
                 Case "日時"
                     If timeZoneFlg = "要" Then
-                        GetColDataTypes = Array("datetimeoffset", "datetime2", "")
+                        GetColDataTypes = Array("datetimeoffset(" & maxLen & ")", "datetime2(" & maxLen & ")", "")
                     ElseIf timeFlg = "有" Then
-                        GetColDataTypes = Array("datetime2", "date", "")
+                        GetColDataTypes = Array("datetime2(" & maxLen & ")", "date", "")
                     Else
-                        GetColDataTypes = Array("date", "datetime2", "")
+                        GetColDataTypes = Array("date", "datetime2(" & maxLen & ")", "")
                     End If
                 Case "真偽値"
                     GetColDataTypes = Array("bit", "tinyint", "")
@@ -661,4 +741,1047 @@ Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Var
                     GetColDataTypes = Array("uniqueidentifier", "nvarchar(36)", "")
             End Select
     End Select
+End Function
+'------------------------------------------------------------
+'概要 : DDLファイルを作成する
+'     : (このExcelファイルと同じ場所に作成する)
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub Btn_CreateDdlFile()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    Dim i As Long, j As Long                  'Loopカウンタ
+    Dim ws As Worksheet: Set ws = ActiveSheet 'Sheet
+    Dim rowIdx As Long                        '行
+    Dim colIdx As Long                        '列
+    Dim endRowIdx As Long                     '終了行
+    Dim endColIdx As Long                     '終了列
+    Dim rng As Range                          '範囲
+    '●CSV/TSVフラグ(True=CSV/False=TSV)
+    Dim csvTsvFlg As Boolean
+    '●Header有無フラグ(True=有/False=無)
+    Dim headerFlg As Boolean
+    '●論理/物理フラグ(True=論理/False=物理)
+    Dim physiLogiFlg As Boolean
+    '●ファイルパス/ファイル名/拡張子
+    Dim filePath As String: filePath = ThisWorkbook.path & "\"
+    Dim fileNm As String: fileNm = "DDL-" & ws.Name
+    Dim fileExt As String: fileExt = "sql"
+    '●CSV内容/1行/文字列/区切り文字
+    Dim csvBody As String
+    Dim line As String
+    Dim str As Variant
+    Dim delimiter As String
+    '●コピー元範囲
+    Dim sourceRng As Range
+    '●ヘッダー項目リスト/ヘッダー項目/ダブルクォート設定値リスト
+    Dim headerValCol As New Collection
+    Dim headerVal As Variant
+    Dim dblQtValList As Variant
+    '●メッセージ内容
+    Dim msg As String
+
+    '●始点/終点
+    Dim bgnIdx As Long
+    Dim endIdx As Long
+
+    '●DB項目型辞書(文字列/数値/日付)
+    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
+    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
+    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
+    '●DB予約語辞書(Oracle/PostgreSQL/SQLServer)
+    Dim dbReservedWordDict_Ora As Object: Set dbReservedWordDict_Ora = GetDbReservedWordDict_Ora
+    Dim dbReservedWordDict_Pos As Object: Set dbReservedWordDict_Pos = GetDbReservedWordDict_Pos
+    Dim dbReservedWordDict_Sql As Object: Set dbReservedWordDict_Sql = GetDbReservedWordDict_Sql
+    '●現在日時セット記述 辞書
+    Dim setCrntDateDict As Object: Set setCrntDateDict = GetDbSetCrntDateDict
+
+    '●DB名/スキーマ名/テーブル名(論理/物理)/項目名(論理/物理)
+    Dim dbNm As String: dbNm = ws.Range("B1").Value2
+    Dim schemaNm As String: schemaNm = Trim$(ws.Range("B2").Value2)
+    Dim logiTblNm As String: logiTblNm = Trim$(ws.Range("B3").Value2)
+    Dim physiTblNm As String: physiTblNm = Trim$(ws.Range("B4").Value2)
+
+    '●PK/項目名(論理/物理)/型/桁/NULL不可/初期値/正数部/小数部
+    Dim pk As String
+    Dim logiColNm As String
+    Dim physiColNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    Dim initVal As String
+    Dim intPart As Long
+    Dim dcmlPart As Long
+
+    '●項目定義データ
+    Dim colInfo As Variant
+
+    '●エラーメッセージ内容
+    Dim errMsg As String
+
+    '終了行 セット
+    endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    '========== ▼入力チェック(TBL定義) ==========
+    '[DB]未選択
+    If LenB(dbNm) = 0 Then
+        Call MsgBox("(B1) [DB] を選択して下さい", vbCritical, "ERROR")
+        Exit Sub
+    End If
+    '[SCHEMA]未入力
+    If LenB(schemaNm) = 0 Then
+        Call MsgBox("(B2) [SCHEMA] を入力して下さい", vbCritical, "ERROR")
+        Exit Sub
+    End If
+    '[TBL物理名]未入力 / 不正物理名
+    If LenB(physiTblNm) = 0 Then
+        Call MsgBox("(B4) [TBL(物理名)] を入力して下さい", vbCritical, "ERROR")
+        Exit Sub
+    ElseIf IsErrPhysicalNm(dbNm, physiTblNm) Then
+        Call MsgBox("TBL(物理名) [" & physiTblNm & "]" & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
+        Exit Sub
+    End If
+    'データなし
+    If endRowIdx < 7 Then
+        Call MsgBox("出力データがありません", vbCritical, "ERROR")
+        Exit Sub
+    End If
+
+    '項目定義 取得
+    colInfo = ws.Range(ws.Range("B7"), ws.Cells(endRowIdx, "H")).Value2
+
+    '========== ▼入力チェック(項目定義) ==========
+    '全行Loop
+    For i = 1 To UBound(colInfo, 1)
+        msg = i & "行目："
+        '項目定義 セット(COL物理名/型/桁/NULL不可/初期値)
+        pk = Trim$(colInfo(i, 1))
+        logiColNm = Trim$(colInfo(i, 2))
+        physiColNm = Trim$(colInfo(i, 3))
+        colType = Trim$(colInfo(i, 4))
+        colLen = Trim$(colInfo(i, 5))
+        notNull = Trim$(colInfo(i, 6))
+        initVal = Trim$(colInfo(i, 7))
+        '型末尾のかっこ 除去
+        If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+            bgnIdx = InStr(colType, "(") - 1
+            endIdx = InStr(colType, ")") + 1
+            colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+        End If
+        '未入力の場合(COL物理名/型)
+        If LenB(physiColNm) = 0 Then
+            Call MsgBox(msg & "COL物理名" & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
+            Exit Sub
+        ElseIf LenB(colType) = 0 Then
+            Call MsgBox(msg & "型" & "を入力して下さい", vbCritical, "ERROR")
+            Exit Sub
+        '不正な項目名の場合(COL物理名)
+        ElseIf IsErrPhysicalNm(dbNm, physiColNm) Then
+            Call MsgBox(msg & physiColNm & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
+            Exit Sub
+        End If
+        '予約語の場合(COL物理名)
+        If dbNm = ORACLE And dbReservedWordDict_Ora.exists(UCase$(physiColNm)) Then
+            Call MsgBox(msg & physiColNm & vbCrLf & "この項目名は予約語の為、登録できません", vbCritical, "ERROR")
+            Exit Sub
+        ElseIf dbNm = POSTGRESQL And dbReservedWordDict_Pos.exists(UCase$(physiColNm)) Then
+            Call MsgBox(msg & physiColNm & vbCrLf & "この項目名は予約語の為、登録できません", vbCritical, "ERROR")
+            Exit Sub
+        ElseIf dbNm = SQLSERVER And dbReservedWordDict_Sql.exists(UCase$(physiColNm)) Then
+            Call MsgBox(msg & physiColNm & vbCrLf & "この項目名は予約語の為、登録できません", vbCritical, "ERROR")
+            Exit Sub
+        End If
+        '[文字列]型の場合
+        If colTypeDict_Str.exists(colType) Then
+            '未入力の場合
+            If LenB(colLen) = 0 Then
+                Call MsgBox(msg & "文字列型の場合、桁を1以上で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '小数桁有りの場合
+            ElseIf 0 < InStr(colLen, ",") Or 0 < InStr(colLen, ".") Then
+                Call MsgBox(msg & "文字列型の場合、桁に小数は登録できません", vbCritical, "ERROR")
+                Exit Sub
+            '数値以外の場合
+            ElseIf Not IsNumeric(colLen) Then
+                Call MsgBox(msg & "桁は数値で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '0の場合
+            ElseIf CLng(colLen) = 0 Then
+                Call MsgBox(msg & "文字列型の場合、桁に0以上を入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            'NULL不可 & 初期値=NULL の場合
+            ElseIf notNull = "Y" And initVal = "NULL" Then
+                Call MsgBox(msg & "NULL不可の場合、初期値にNULLを登録することはできません", vbCritical, "ERROR")
+                Exit Sub
+            End If
+        '[数値]型の場合
+        ElseIf colTypeDict_Num.exists(colType) Then
+            '未入力の場合
+            If LenB(colLen) = 0 Then
+                Call MsgBox(msg & "数値型の場合、桁を入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '小数点有りの場合
+            ElseIf 0 < InStr(colLen, ".") Then
+                Call MsgBox(msg & "桁に小数点は登録できません" & vbCrLf & "例：(10,0)", vbCritical, "ERROR")
+                Exit Sub
+            '小数桁無しの場合
+            ElseIf InStr(colLen, ",") = 0 Then
+                Call MsgBox(msg & "数値型の場合、桁に小数桁を0以上で入力して下さい" & vbCrLf & "例：(10,0)", vbCritical, "ERROR")
+                Exit Sub
+            End If
+            '正数桁/小数桁 セット
+            intPart = CLng(Split(colLen, ",")(0))
+            dcmlPart = CLng(Split(colLen, ",")(1))
+            '範囲外の場合
+            If 15 < intPart Then
+                Call MsgBox(msg & "数値型の場合、正数桁は15以下で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            ElseIf 5 < dcmlPart Then
+                Call MsgBox(msg & "数値型の場合、小数桁は5以下で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '逆転の場合
+            ElseIf intPart <= dcmlPart Then
+                Call MsgBox(msg & "正数桁は小数桁より大きい数値を入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            'NULL不可 & 初期値=NULL の場合
+            ElseIf notNull = "Y" And initVal = "NULL" Then
+                Call MsgBox(msg & "NULL不可の場合、初期値にNULLを登録することはできません", vbCritical, "ERROR")
+                Exit Sub
+            '数値以外の場合
+            ElseIf notNull <> "Y" And Not IsNumeric(initVal) Then
+                Call MsgBox(msg & "数値型の場合、初期値に数値以外は登録できません", vbCritical, "ERROR")
+                Exit Sub
+            End If
+        '[日付]型の場合
+        ElseIf colTypeDict_Date.exists(colType) Then
+            '未入力の場合
+            If LenB(colLen) = 0 Then
+                Call MsgBox(msg & "日付型の場合、桁にミリ秒桁を0以上で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '小数桁有りの場合
+            ElseIf 0 < InStr(colLen, ",") Or 0 < InStr(colLen, ".") Then
+                Call MsgBox(msg & "日付型の場合、桁に小数は登録できません", vbCritical, "ERROR")
+                Exit Sub
+            '数値以外の場合
+            ElseIf Not IsNumeric(colLen) Then
+                Call MsgBox(msg & "桁は数値で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            '範囲外の場合
+            ElseIf dbNm = ORACLE And 9 < CLng(colLen) Then
+                Call MsgBox(msg & "日付型の場合、桁は9以下で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            ElseIf dbNm = POSTGRESQL And 6 < CLng(colLen) Then
+                Call MsgBox(msg & "日付型の場合、桁は6以下で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            ElseIf dbNm = SQLSERVER And 7 < CLng(colLen) Then
+                Call MsgBox(msg & "日付型の場合、桁は7以下で入力して下さい", vbCritical, "ERROR")
+                Exit Sub
+            'NULL不可 & 初期値=NULL の場合
+            ElseIf notNull = "Y" And initVal = "NULL" Then
+                Call MsgBox(msg & "NULL不可の場合、初期値にNULLを登録することはできません", vbCritical, "ERROR")
+                Exit Sub
+            End If
+        End If
+    Next
+
+    'ファイル名 作成
+    fileNm = ChangeUniqueFileNm(filePath, fileNm, fileExt)
+
+    'ファイル作成(UTF-8(BOMあり))
+    'Call CreateTxtFile(filePath, fileNm, fileExt, csvBody, "UTF-8", True)
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : DB項目[文字列]型の辞書を取得する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : -
+'戻値 : 項目型辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbColTypeDict_String() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    dict("CHAR") = True
+    dict("VARCHAR2") = True
+    dict("LONG") = True
+    dict("NCHAR") = True
+    dict("NVARCHAR2") = True
+    dict("CLOB") = True
+    dict("NCLOB") = True
+    '========== PostgreSQL ==========
+    dict("CHAR") = True
+    dict("CHARACTER") = True
+    dict("VARCHAR") = True
+    dict("CHARACTER VARYING") = True
+    dict("TEXT") = True
+    dict("NAME") = True
+    '========== SQL Server ==========
+    dict("CHAR") = True
+    dict("VARCHAR") = True
+    dict("NCHAR") = True
+    dict("NVARCHAR") = True
+    dict("TEXT") = True
+    dict("NTEXT") = True
+    Set GetDbColTypeDict_String = dict
+End Function
+'------------------------------------------------------------
+'概要 : DB項目[数値]型の辞書を取得する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : -
+'戻値 : 項目型辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbColTypeDict_Numeric() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    dict("NUMBER") = True
+    dict("FLOAT") = True
+    dict("INTEGER") = True
+    dict("SMALLINT") = True
+    dict("DECIMAL") = True
+    dict("NUMERIC") = True
+    dict("REAL") = True
+    dict("DOUBLE PRECISION") = True
+    dict("BINARY_FLOAT") = True
+    dict("BINARY_DOUBLE") = True
+    '========== PostgreSQL ==========
+    dict("SMALLINT") = True
+    dict("INTEGER") = True
+    dict("BIGINT") = True
+    dict("SMALLSERIAL") = True
+    dict("SERIAL") = True
+    dict("BIGSERIAL") = True
+    dict("NUMERIC") = True
+    dict("REAL") = True
+    dict("DOUBLE PRECISION") = True
+    '========== SQL Server ==========
+    dict("TINYINT") = True
+    dict("SMALLINT") = True
+    dict("INT") = True
+    dict("BIGINT") = True
+    dict("DECIMAL") = True
+    dict("SMALLMONEY") = True
+    dict("MONEY") = True
+    dict("REAL") = True
+    dict("FLOAT") = True
+    dict("BIT") = True
+    Set GetDbColTypeDict_Numeric = dict
+End Function
+'------------------------------------------------------------
+'概要 : DB項目[日付]型の辞書を取得する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : -
+'戻値 : 項目型辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbColTypeDict_Date() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    '========== Oracle ==========
+    dict("DATE") = True
+    dict("TIMESTAMP") = True
+    dict("TIMESTAMP WITH TIME ZONE") = True
+    dict("TIMESTAMP WITH LOCAL TIME ZONE") = True
+    '========== PostgreSQL ==========
+    dict("DATE") = True
+    dict("TIME") = True
+    dict("TIMETZ") = True
+    dict("TIMESTAMP") = True
+    dict("TIMESTAMPTZ") = True
+    dict("TIME WITHOUT TIME ZONE") = True
+    dict("TIME WITH TIME ZONE") = True
+    dict("TIMESTAMP WITHOUT TIME ZONE") = True
+    dict("TIMESTAMP WITH TIME ZONE") = True
+    '========== SQL Server ==========
+    dict("DATE") = True
+    dict("TIME") = True
+    dict("DATETIME") = True
+    dict("DATETIME2") = True
+    dict("DATETIMEOFFSET") = True
+    dict("SMALLDATETIME") = True
+    Set GetDbColTypeDict_Date = dict
+End Function
+'------------------------------------------------------------
+'概要 : DB項目[日付]型の現在日時セット記述辞書を取得する
+'     : 対象DB(Oracle/PostgreSQL/SQLServer)
+'引数 : -
+'戻値 : 現在日時セット記述辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbSetCrntDateDict() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    '========== 共通 ==========
+    dict("CURRENT_TIMESTAMP") = True
+    '========== Oracle ==========
+    dict("SYSDATE") = True
+    dict("SYSTIMESTAMP") = True
+    '========== PostgreSQL ==========
+    dict("CURRENT_DATE") = True
+    dict("now()") = True
+    '========== SQLServer ==========
+    dict("GETDATE()") = True
+    dict("SYSDATETIME()") = True
+    Set GetDbSetCrntDateDict = dict
+End Function
+'------------------------------------------------------------
+'概要 : テキストファイルを作成する(UTF-8)
+'引数 : filePath  : ファイルパス
+'     : fileNm    : ファイル名
+'     : fileExt   : ファイル拡張子
+'     : contents  : 書込内容
+'     : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'     : bomFlg    : BOM有無フラグ(True=有 / False=無)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVal fileExt As String, ByVal contents As String, ByVal charsetNm As String, ByVal bomFlg As Boolean)
+    '●ファイル書込用
+    Dim stream As Object: Set stream = CreateObject("ADODB.Stream")
+    Dim binStream As Object
+    Dim byteData() As Byte
+    Dim bomLen As Integer: bomLen = GetBomLen(charsetNm)
+
+    '末尾付与
+    If Right$(filePath, 1) <> "\" Then filePath = filePath & "\"
+    '先頭付与
+    If Left$(fileExt, 1) <> "." Then fileExt = "." & fileExt
+
+    With stream
+        .Type = 2
+        .Charset = charsetNm
+        .Open
+        .WriteText contents
+        .SaveToFile filePath & fileNm, 2 '既存ファイル上書き設定
+        .Close
+    End With
+    Set stream = Nothing
+
+    'BOMなしの場合、先頭nバイト(BOM)除去で作り直す
+    If Not bomFlg And 0 < bomLen Then
+        '===== 読込 =====
+        Set binStream = CreateObject("ADODB.Stream")
+        With binStream
+            .Type = 1
+            .Open
+            .LoadFromFile filePath & fileNm
+            .Position = bomLen
+            byteData = .Read
+            .Close
+        End With
+        '===== 書込 =====
+        With binStream
+            .Type = 1
+            .Open
+            .Write byteData
+            .SaveToFile filePath & fileNm, 2
+            .Close
+        End With
+        Set binStream = Nothing
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : 文字コード名のBOMバイト数を取得する
+'引数 : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Function GetBomLen(ByVal charsetNm As String) As Integer
+    Select Case UCase$(charsetNm)
+        Case "UTF-8"
+            GetBomLen = 3
+        Case "UTF-16", "UNICODE", "UTF-16LE", "UTF-16BE"
+            GetBomLen = 2
+        Case "UTF-32"
+            GetBomLen = 4
+        Case Else
+            GetBomLen = 0
+    End Select
+End Function
+Option Explicit
+Sub CreateDDL()
+    Dim wsSrc As Worksheet
+    Dim wsDDL As Worksheet
+    Dim dbName As String
+    Dim schemaName As String
+    Dim tableLogicalName As String
+    Dim tablePhysicalName As String
+    Dim lastRow As Long
+    Dim r As Long
+    Dim pk As String
+    Dim itemLogicalName As String
+    Dim itemPhysicalName As String
+    Dim typeName As String
+    Dim lengthValue As String
+    Dim notNull As String
+    Dim defaultValue As String
+    Dim columnDefs As String
+    Dim pkColumns As String
+    Dim ddl As String
+    '----------------------------------------
+    ' 入力Sheet
+    '----------------------------------------
+    Set wsSrc = ActiveSheet
+    '----------------------------------------
+    ' 基本情報取得
+    '----------------------------------------
+    dbName = Trim(wsSrc.Range("B1").value)
+    schemaName = Trim(wsSrc.Range("B2").value)
+    tableLogicalName = Trim(wsSrc.Range("B3").value)
+    tablePhysicalName = Trim(wsSrc.Range("B4").value)
+    '----------------------------------------
+    ' 最終行取得
+    ' D列（項目物理名）を基準にする
+    '----------------------------------------
+    lastRow = wsSrc.Cells(wsSrc.Rows.Count, "D").End(xlUp).Row
+    ' データがない場合
+    If lastRow < 7 Then
+        MsgBox "項目が入力されていません。", vbExclamation
+        Exit Sub
+    End If
+    '----------------------------------------
+    ' DDL Sheet作成
+    '----------------------------------------
+    Set wsDDL = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+    On Error Resume Next
+    wsDDL.Name = "DDL"
+    On Error GoTo 0
+    '----------------------------------------
+    ' カラム定義作成
+    '----------------------------------------
+    For r = 7 To lastRow
+        pk = Trim(wsSrc.Cells(r, "B").value)
+        itemLogicalName = Trim(wsSrc.Cells(r, "C").value)
+        itemPhysicalName = Trim(wsSrc.Cells(r, "D").value)
+        typeName = Trim(wsSrc.Cells(r, "E").value)
+        lengthValue = Trim(wsSrc.Cells(r, "F").value)
+        notNull = Trim(wsSrc.Cells(r, "G").value)
+        defaultValue = Trim(wsSrc.Cells(r, "H").value)
+        '------------------------------------
+        ' 項目物理名が空ならスキップ
+        '------------------------------------
+        If itemPhysicalName <> "" Then
+            Dim columnDef As String
+            columnDef = "    " & itemPhysicalName & " " & typeName
+            '--------------------------------
+            ' NULL不可
+            '--------------------------------
+            If UCase(notNull) = "Y" Then
+                columnDef = columnDef & " NOT NULL"
+            End If
+            '--------------------------------
+            ' 初期値
+            '--------------------------------
+            If defaultValue <> "" Then
+                columnDef = columnDef & " DEFAULT " & defaultValue
+            End If
+            '--------------------------------
+            ' カラム追加
+            '--------------------------------
+            If columnDefs <> "" Then
+                columnDefs = columnDefs & "," & vbCrLf
+            End If
+            columnDefs = columnDefs & columnDef
+            '--------------------------------
+            ' PK
+            '--------------------------------
+            If UCase(pk) = "Y" Then
+                If pkColumns <> "" Then
+                    pkColumns = pkColumns & ", "
+                End If
+                pkColumns = pkColumns & itemPhysicalName
+            End If
+        End If
+    Next r
+    '----------------------------------------
+    ' PK追加
+    '----------------------------------------
+    If pkColumns <> "" Then
+        columnDefs = columnDefs & "," & vbCrLf
+        columnDefs = columnDefs _
+            & "    PRIMARY KEY (" & pkColumns & ")"
+    End If
+    '----------------------------------------
+    ' CREATE TABLE
+    '----------------------------------------
+    ddl = "CREATE TABLE " _
+        & schemaName & "." _
+        & tablePhysicalName _
+        & " (" _
+        & vbCrLf _
+        & columnDefs _
+        & vbCrLf _
+        & ");"
+    '----------------------------------------
+    ' DDL Sheetへ出力
+    '----------------------------------------
+    wsDDL.Range("A1").value = ddl
+    wsDDL.Columns("A").ColumnWidth = 100
+    wsDDL.Range("A1").WrapText = False
+    '----------------------------------------
+    ' 完了
+    '----------------------------------------
+    MsgBox "DDLを作成しました。", vbInformation
+End Sub
+'------------------------------------------------------------
+'概要 : 物理名の命名エラーチェック
+'引数 : dbNm    : DB名(Oracle / PostgreSQL / SQLServer)
+'     : physiNm : 物理名
+'戻値 : エラーメッセージ
+'備考 : -
+'------------------------------------------------------------
+Private Function IsErrPhysicalNm(ByVal dbNm As String, ByVal physiNm As String) As Boolean
+    Dim i As Long
+    Dim c As String
+    Dim code As Long
+    '空の場合
+    If LenB(physiNm) = 0 Then
+        IsErrPhysicalNm = True
+        Exit Function
+    End If
+    '先頭数字の場合
+    c = Mid$(physiNm, 1, 1)
+    code = AscW(c)
+    '(0-9)(_)
+    If (48 <= code And code <= 57) Or (code = 95) Then
+        IsErrPhysicalNm = True
+        Exit Function
+    End If
+    '[半角英数字 / 半角アンダーバー] 以外の場合
+    For i = 2 To Len(physiNm)
+        c = Mid$(physiNm, i, 1)
+        code = AscW(c)
+        '(A-Z)(a-z)(0-9)(_)
+        If Not ((65 <= code And code <= 90) Or (97 <= code And code <= 122) Or (48 <= code And code <= 57) Or (code = 95)) Then
+            IsErrPhysicalNm = True
+            Exit Function
+        End If
+    Next
+    IsErrPhysicalNm = False
+End Function
+'------------------------------------------------------------
+'概要 : DBの予約語辞書を取得する(Oracle用)
+'引数 : -
+'戻値 : 予約語辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbReservedWordDict_Ora() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    dict("ACCESS") = True
+    dict("ADD") = True
+    dict("ALL") = True
+    dict("ALTER") = True
+    dict("AND") = True
+    dict("ANY") = True
+    dict("AS") = True
+    dict("ASC") = True
+    dict("AUDIT") = True
+    dict("BETWEEN") = True
+    dict("BY") = True
+    dict("CHAR") = True
+    dict("CHECK") = True
+    dict("CLUSTER") = True
+    dict("COLUMN") = True
+    dict("COMMENT") = True
+    dict("COMPRESS") = True
+    dict("CONNECT") = True
+    dict("CREATE") = True
+    dict("CURRENT") = True
+    dict("DATE") = True
+    dict("DECIMAL") = True
+    dict("DEFAULT") = True
+    dict("DELETE") = True
+    dict("DESC") = True
+    dict("DISTINCT") = True
+    dict("DROP") = True
+    dict("ELSE") = True
+    dict("EXCLUSIVE") = True
+    dict("EXISTS") = True
+    dict("FILE") = True
+    dict("FLOAT") = True
+    dict("FOR") = True
+    dict("FROM") = True
+    dict("GRANT") = True
+    dict("GROUP") = True
+    dict("HAVING") = True
+    dict("IDENTIFIED") = True
+    dict("IMMEDIATE") = True
+    dict("IN") = True
+    dict("INCREMENT") = True
+    dict("INDEX") = True
+    dict("INITIAL") = True
+    dict("INSERT") = True
+    dict("INTEGER") = True
+    dict("INTERSECT") = True
+    dict("INTO") = True
+    dict("IS") = True
+    dict("LEVEL") = True
+    dict("LIKE") = True
+    dict("LOCK") = True
+    dict("LONG") = True
+    dict("MAXEXTENTS") = True
+    dict("MINUS") = True
+    dict("MLSLABEL") = True
+    dict("MODE") = True
+    dict("MODIFY") = True
+    dict("NOAUDIT") = True
+    dict("NOCOMPRESS") = True
+    dict("NOT") = True
+    dict("NOWAIT") = True
+    dict("NULL") = True
+    dict("NUMBER") = True
+    dict("OF") = True
+    dict("OFFLINE") = True
+    dict("ON") = True
+    dict("ONLINE") = True
+    dict("OPTION") = True
+    dict("OR") = True
+    dict("ORDER") = True
+    dict("PRIOR") = True
+    dict("PRIVILEGES") = True
+    dict("PUBLIC") = True
+    dict("RAW") = True
+    dict("RENAME") = True
+    dict("RESOURCE") = True
+    dict("REVOKE") = True
+    dict("ROW") = True
+    dict("ROWID") = True
+    dict("ROWNUM") = True
+    dict("ROWS") = True
+    dict("SELECT") = True
+    dict("SESSION") = True
+    dict("SET") = True
+    dict("SHARE") = True
+    dict("SIZE") = True
+    dict("SMALLINT") = True
+    dict("START") = True
+    dict("SUCCESSFUL") = True
+    dict("SYNONYM") = True
+    dict("SYSDATE") = True
+    dict("TABLE") = True
+    dict("THEN") = True
+    dict("TO") = True
+    dict("TRIGGER") = True
+    dict("UID") = True
+    dict("UNION") = True
+    dict("UNIQUE") = True
+    dict("UPDATE") = True
+    dict("USER") = True
+    dict("VALIDATE") = True
+    dict("VALUES") = True
+    dict("VARCHAR") = True
+    dict("VARCHAR2") = True
+    dict("VIEW") = True
+    dict("WHENEVER") = True
+    dict("WHERE") = True
+    dict("WITH") = True
+    Set GetDbReservedWordDict_Ora = dict
+End Function
+'------------------------------------------------------------
+'概要 : DBの予約語辞書を取得する(PostgreSQL用)
+'引数 : -
+'戻値 : 予約語辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbReservedWordDict_Pos() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    dict("ALL") = True
+    dict("ANALYSE") = True
+    dict("ANALYZE") = True
+    dict("AND") = True
+    dict("ANY") = True
+    dict("ARRAY") = True
+    dict("AS") = True
+    dict("ASC") = True
+    dict("ASYMMETRIC") = True
+    dict("AUTHORIZATION") = True
+    dict("BINARY") = True
+    dict("BOTH") = True
+    dict("CASE") = True
+    dict("CAST") = True
+    dict("CHECK") = True
+    dict("COLLATE") = True
+    dict("COLLATION") = True
+    dict("COLUMN") = True
+    dict("CONCURRENTLY") = True
+    dict("CONSTRAINT") = True
+    dict("CREATE") = True
+    dict("CROSS") = True
+    dict("CURRENT_CATALOG") = True
+    dict("CURRENT_DATE") = True
+    dict("CURRENT_ROLE") = True
+    dict("CURRENT_SCHEMA") = True
+    dict("CURRENT_TIME") = True
+    dict("CURRENT_TIMESTAMP") = True
+    dict("CURRENT_USER") = True
+    dict("DEFAULT") = True
+    dict("DEFERRABLE") = True
+    dict("DESC") = True
+    dict("DISTINCT") = True
+    dict("DO") = True
+    dict("ELSE") = True
+    dict("END") = True
+    dict("EXCEPT") = True
+    dict("FALSE") = True
+    dict("FETCH") = True
+    dict("FOR") = True
+    dict("FOREIGN") = True
+    dict("FREEZE") = True
+    dict("FROM") = True
+    dict("FULL") = True
+    dict("GRANT") = True
+    dict("GROUP") = True
+    dict("HAVING") = True
+    dict("ILIKE") = True
+    dict("IN") = True
+    dict("INITIALLY") = True
+    dict("INNER") = True
+    dict("INTERSECT") = True
+    dict("INTO") = True
+    dict("IS") = True
+    dict("ISNULL") = True
+    dict("JOIN") = True
+    dict("LATERAL") = True
+    dict("LEADING") = True
+    dict("LEFT") = True
+    dict("LIKE") = True
+    dict("LIMIT") = True
+    dict("LOCALTIME") = True
+    dict("LOCALTIMESTAMP") = True
+    dict("NATURAL") = True
+    dict("NOT") = True
+    dict("NOTNULL") = True
+    dict("NULL") = True
+    dict("OFFSET") = True
+    dict("ON") = True
+    dict("ONLY") = True
+    dict("OR") = True
+    dict("ORDER") = True
+    dict("OUTER") = True
+    dict("OVERLAPS") = True
+    dict("PLACING") = True
+    dict("PRIMARY") = True
+    dict("REFERENCES") = True
+    dict("RETURNING") = True
+    dict("RIGHT") = True
+    dict("SELECT") = True
+    dict("SESSION_USER") = True
+    dict("SIMILAR") = True
+    dict("SOME") = True
+    dict("SYMMETRIC") = True
+    dict("TABLE") = True
+    dict("TABLESAMPLE") = True
+    dict("THEN") = True
+    dict("TO") = True
+    dict("TRAILING") = True
+    dict("TRUE") = True
+    dict("UNION") = True
+    dict("UNIQUE") = True
+    dict("USER") = True
+    dict("USING") = True
+    dict("VARIADIC") = True
+    dict("VERBOSE") = True
+    dict("WHEN") = True
+    dict("WHERE") = True
+    dict("WINDOW") = True
+    dict("WITH") = True
+    Set GetDbReservedWordDict_Pos = dict
+End Function
+'------------------------------------------------------------
+'概要 : DBの予約語辞書を取得する(SQLServer用)
+'引数 : -
+'戻値 : 予約語辞書
+'備考 : -
+'------------------------------------------------------------
+Private Function GetDbReservedWordDict_Sql() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    dict("ADD") = True
+    dict("ALL") = True
+    dict("ALTER") = True
+    dict("AND") = True
+    dict("ANY") = True
+    dict("AS") = True
+    dict("ASC") = True
+    dict("AUTHORIZATION") = True
+    dict("BACKUP") = True
+    dict("BEGIN") = True
+    dict("BETWEEN") = True
+    dict("BREAK") = True
+    dict("BROWSE") = True
+    dict("BULK") = True
+    dict("BY") = True
+    dict("CASCADE") = True
+    dict("CASE") = True
+    dict("CHECK") = True
+    dict("CHECKPOINT") = True
+    dict("CLOSE") = True
+    dict("CLUSTERED") = True
+    dict("COALESCE") = True
+    dict("COLLATE") = True
+    dict("COLUMN") = True
+    dict("COMMIT") = True
+    dict("COMPUTE") = True
+    dict("CONSTRAINT") = True
+    dict("CONTAINS") = True
+    dict("CONTAINSTABLE") = True
+    dict("CONTINUE") = True
+    dict("CONVERT") = True
+    dict("CREATE") = True
+    dict("CROSS") = True
+    dict("CURRENT") = True
+    dict("CURRENT_DATE") = True
+    dict("CURRENT_TIME") = True
+    dict("CURRENT_TIMESTAMP") = True
+    dict("CURRENT_USER") = True
+    dict("CURSOR") = True
+    dict("DATABASE") = True
+    dict("DBCC") = True
+    dict("DEALLOCATE") = True
+    dict("DECLARE") = True
+    dict("DEFAULT") = True
+    dict("DELETE") = True
+    dict("DENY") = True
+    dict("DESC") = True
+    dict("DISK") = True
+    dict("DISTINCT") = True
+    dict("DISTRIBUTED") = True
+    dict("DOUBLE") = True
+    dict("DROP") = True
+    dict("DUMP") = True
+    dict("ELSE") = True
+    dict("END") = True
+    dict("ERRLVL") = True
+    dict("ESCAPE") = True
+    dict("EXCEPT") = True
+    dict("EXEC") = True
+    dict("EXECUTE") = True
+    dict("EXISTS") = True
+    dict("EXIT") = True
+    dict("EXTERNAL") = True
+    dict("FETCH") = True
+    dict("FILE") = True
+    dict("FILLFACTOR") = True
+    dict("FOR") = True
+    dict("FOREIGN") = True
+    dict("FREETEXT") = True
+    dict("FREETEXTTABLE") = True
+    dict("FROM") = True
+    dict("FULL") = True
+    dict("FUNCTION") = True
+    dict("GOTO") = True
+    dict("GRANT") = True
+    dict("GROUP") = True
+    dict("HAVING") = True
+    dict("HOLDLOCK") = True
+    dict("IDENTITY") = True
+    dict("IDENTITYCOL") = True
+    dict("IDENTITY_INSERT") = True
+    dict("IF") = True
+    dict("IN") = True
+    dict("INDEX") = True
+    dict("INNER") = True
+    dict("INSERT") = True
+    dict("INTERSECT") = True
+    dict("INTO") = True
+    dict("IS") = True
+    dict("JOIN") = True
+    dict("KEY") = True
+    dict("KILL") = True
+    dict("LEFT") = True
+    dict("LIKE") = True
+    dict("LINENO") = True
+    dict("LOAD") = True
+    dict("MERGE") = True
+    dict("NATIONAL") = True
+    dict("NOCHECK") = True
+    dict("NONCLUSTERED") = True
+    dict("NOT") = True
+    dict("NULL") = True
+    dict("NULLIF") = True
+    dict("OF") = True
+    dict("OFF") = True
+    dict("OFFSETS") = True
+    dict("ON") = True
+    dict("OPEN") = True
+    dict("OPENDATASOURCE") = True
+    dict("OPENQUERY") = True
+    dict("OPENROWSET") = True
+    dict("OPENXML") = True
+    dict("OPTION") = True
+    dict("OR") = True
+    dict("ORDER") = True
+    dict("OUTER") = True
+    dict("OVER") = True
+    dict("PERCENT") = True
+    dict("PIVOT") = True
+    dict("PLAN") = True
+    dict("PRECISION") = True
+    dict("PRIMARY") = True
+    dict("PRINT") = True
+    dict("PROC") = True
+    dict("PROCEDURE") = True
+    dict("PUBLIC") = True
+    dict("RAISERROR") = True
+    dict("READ") = True
+    dict("READTEXT") = True
+    dict("RECONFIGURE") = True
+    dict("REFERENCES") = True
+    dict("REPLICATION") = True
+    dict("RESTORE") = True
+    dict("RESTRICT") = True
+    dict("RETURN") = True
+    dict("REVERT") = True
+    dict("REVOKE") = True
+    dict("RIGHT") = True
+    dict("ROLLBACK") = True
+    dict("ROWCOUNT") = True
+    dict("ROWGUIDCOL") = True
+    dict("RULE") = True
+    dict("SAVE") = True
+    dict("SCHEMA") = True
+    dict("SECURITYAUDIT") = True
+    dict("SELECT") = True
+    dict("SEMANTICKEYPHRASETABLE") = True
+    dict("SEMANTICSIMILARITYDETAILSTABLE") = True
+    dict("SEMANTICSIMILARITYTABLE") = True
+    dict("SESSION_USER") = True
+    dict("SET") = True
+    dict("SETUSER") = True
+    dict("SHUTDOWN") = True
+    dict("SOME") = True
+    dict("STATISTICS") = True
+    dict("SYSTEM_USER") = True
+    dict("TABLE") = True
+    dict("TABLESAMPLE") = True
+    dict("TEXTSIZE") = True
+    dict("THEN") = True
+    dict("TO") = True
+    dict("TOP") = True
+    dict("TRAN") = True
+    dict("TRANSACTION") = True
+    dict("TRIGGER") = True
+    dict("TRUNCATE") = True
+    dict("TRY_CONVERT") = True
+    dict("TSEQUAL") = True
+    dict("UNION") = True
+    dict("UNIQUE") = True
+    dict("UNPIVOT") = True
+    dict("UPDATE") = True
+    dict("UPDATETEXT") = True
+    dict("USE") = True
+    dict("USER") = True
+    dict("VALUES") = True
+    dict("VARYING") = True
+    dict("VIEW") = True
+    dict("WAITFOR") = True
+    dict("WHEN") = True
+    dict("WHERE") = True
+    dict("WHILE") = True
+    dict("WITH") = True
+    dict("WITHIN") = True
+    dict("WRITETEXT") = True
+    Set GetDbReservedWordDict_Sql = dict
 End Function

@@ -657,7 +657,7 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
     Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
 
-    '●PK/項目名/型/桁/NULL不可/初期値/整数部/小数部
+    '●PK/項目名/型/桁/NULL不可/初期値/正数部/小数部
     Dim pk As String
     Dim colNm As String
     Dim colType As String
@@ -891,7 +891,7 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
             End If
         '■■■ [数値]型の場合 ■■■
         ElseIf colTypeDict_Num.exists(colType) Then
-            '整数桁/小数桁 セット
+            '正数桁/小数桁 セット
             If InStr(colLen, ",") = 0 Then
                 dcmlPart = 0
             Else
@@ -1085,7 +1085,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '●設定値範囲データ
     Dim settingVals As Variant
-    '●項目名/型/桁/NULL不可/整数部/小数部
+    '●項目名/型/桁/NULL不可/正数部/小数部
     Dim colNm As String
     Dim colType As String
     Dim colLen As Variant
@@ -1212,7 +1212,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                     End If
                 '■■■ [数値]型の場合 ■■■
                 ElseIf colTypeDict_Num.exists(colType) Then
-                    '整数桁/小数桁 セット
+                    '正数桁/小数桁 セット
                     dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
                     intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
                     'カンマ除去
@@ -1240,7 +1240,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                         If InStr(cellVal, ".") = 0 Then
                             '桁数超過の場合
                             If intPart < Len(cellVal) Then
-                                errMsg = "整数が桁数超過しています"
+                                errMsg = "正数が桁数超過しています"
                             End If
                         '少数有りの場合
                         Else
@@ -1462,7 +1462,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '●設定値範囲データ
     Dim settingVals As Variant
-    '●項目名/型/桁/NULL不可/整数部/小数部
+    '●項目名/型/桁/NULL不可/正数部/小数部
     Dim colNm As String
     Dim colType As String
     Dim colLen As Variant
@@ -1590,7 +1590,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                     End If
                 '■■■ [数値]型の場合 ■■■
                 ElseIf colTypeDict_Num.exists(colType) Then
-                    '整数桁/小数桁 セット
+                    '正数桁/小数桁 セット
                     dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
                     intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
                     'カンマ除去
@@ -1618,7 +1618,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                         If InStr(cellVal, ".") = 0 Then
                             '桁数超過の場合
                             If intPart < Len(cellVal) Then
-                                errMsg = "整数が桁数超過しています"
+                                errMsg = "正数が桁数超過しています"
                             End If
                         '少数有りの場合
                         Else
