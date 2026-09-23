@@ -34,6 +34,7 @@ Public Sub CreateSheet_Input()
         .Range("A4").value = "TBL(物)"
         .Range("A5").value = "No"
         .Range("D1").value = "TBL概要"
+        .Range("F1").value = "TBLオプション"
         .Range("B5").value = "TBL定義"
         .Range("B6").value = "PK"
         .Range("C6").value = "COL論理名"
@@ -95,6 +96,8 @@ Public Sub CreateSheet_Input()
         .Range("B1:B4").Interior.Color = RGB(252, 228, 214) '#FCE4D6
         .Range("D1:E1").Interior.Color = RGB(217, 217, 217) '#D9D9D9
         .Range("D2:E4").Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        .Range("F1:H1").Interior.Color = RGB(255, 230, 153) '#FFE699
+        .Range("F2:H4").Interior.Color = RGB(255, 242, 204) '#FFF2CC
         .Range("A5:H6").Interior.Color = RGB(189, 215, 238) '#BDD7EE
         .Range("I5:N6").Interior.Color = RGB(198, 224, 180) '#C6E0B4
         .Range("O5:Q6").Interior.Color = RGB(217, 217, 217) '#D9D9D9
@@ -109,7 +112,7 @@ Public Sub CreateSheet_Input()
         .Cells.HorizontalAlignment = xlLeft
         .Range("A5:T6").HorizontalAlignment = xlCenter
         .Range("A7:B56").HorizontalAlignment = xlCenter
-        .Range("D1:E1").HorizontalAlignment = xlCenter
+        .Range("D1:H1").HorizontalAlignment = xlCenter
         .Range("F7:F56").HorizontalAlignment = xlRight
         .Range("G7:G56").HorizontalAlignment = xlCenter
         .Range("J7:J56").HorizontalAlignment = xlCenter
@@ -134,7 +137,7 @@ Public Sub CreateSheet_Input()
         .Rows("1:4").Group
         .Columns("O:Q").Group
         '折り返して表示
-        .Range("B2:E4").WrapText = True
+        .Range("B2:H4").WrapText = True
         .Range("C7:E56").WrapText = True
         .Range("H7:H56").WrapText = True
         .Range("O7:T56").WrapText = True
@@ -154,6 +157,8 @@ Public Sub CreateSheet_Input()
         .Range("B5:H5").Merge
         .Range("D1:E1").Merge
         .Range("D2:E4").Merge
+        .Range("F1:H1").Merge
+        .Range("F2:H4").Merge
         .Range("I5:N5").Merge
         .Range("O5:Q5").Merge
         .Range("R5:R6").Merge
@@ -169,6 +174,11 @@ Public Sub CreateSheet_Input()
     ActiveWindow.FreezePanes = True
 
     'メモ
+    Set rng = ws.Range("F1")
+    rng.AddComment "FKなどのオプションを書く場所"
+    rng.Comment.Shape.Width = 150
+    rng.Comment.Shape.Height = 20
+    rng.Comment.Visible = False
     Set rng = ws.Range("J6")
     rng.AddComment "日本語の値を登録する場合[有]を選択"
     rng.Comment.Shape.Width = 125
@@ -188,7 +198,7 @@ Public Sub CreateSheet_Input()
     '========== マクロボタン(DDL/型候補) 作成 ==========
     Dim btnNm As Variant: btnNm = Array("DDL作成", "型候補セット")
     Dim btnColor As Variant: btnColor = Array(RGB(91, 155, 213), RGB(112, 173, 71))
-    Dim leftPos As Variant: leftPos = Array(20, 130)
+    Dim leftPos As Variant: leftPos = Array(5, 120)
     Dim mcrNm As Variant: mcrNm = Array("Btn_CreateDdlFile", "Btn_SetColumnDataType")
     For i = 0 To 1
         Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
@@ -204,8 +214,8 @@ Public Sub CreateSheet_Input()
             .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
             .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
             .OnAction = mcrNm(i)                                               'マクロ登録
-            .Top = ws.Range("H2").Top                                          '配置場所(縦)
-            .Left = ws.Range("H2").Left + leftPos(i)                           '配置場所(横)
+            .Top = ws.Range("I2").Top                                          '配置場所(縦)
+            .Left = ws.Range("I2").Left + leftPos(i)                           '配置場所(横)
         End With
     Next
 
@@ -246,6 +256,90 @@ Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Next
 End Function
 '------------------------------------------------------------
+'概要 : フォルダが存在するか判定する
+'引数 : path     : フォルダまでのパス(絶対パス)
+'     : folderNm : フォルダ名
+'戻値 : 判定結果(True:する / False:しない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsExistsFolder(ByVal path As String, ByVal folderNm As String) As Boolean
+    '末尾付与
+    If Right$(path, 1) <> "\" Then path = path & "\"
+    '判定(Dirだけだと同名ファイルにもヒットするためGetAttrで再確認)
+    If Dir(path & folderNm, vbDirectory) = "" Then
+        IsExistsFolder = False
+    Else
+        IsExistsFolder = (GetAttr(path & folderNm) And vbDirectory) = vbDirectory
+    End If
+End Function
+'------------------------------------------------------------
+'概要 : 重複しないフォルダ名となるまで、末尾に連番を付与する
+'     : (同じ名前のフォルダが存在しない場合、そのまま返す)
+'     : (同じ名前のフォルダが存在する場合、2からの連番を末尾に付与し、重複しないフォルダ名で返す)
+'     : "AAA" → "AAA (2)" → "AAA (3)"
+'引数 : path     : フォルダまでのパス
+'     : folderNm : フォルダ名
+'戻値 : フォルダ名
+'備考 : -
+'------------------------------------------------------------
+Private Function ChangeUniqueFolderNm(ByVal path As String, ByVal folderNm As String) As String
+    Dim i As Long
+    Dim uniqueNo As String
+    '存在する場合
+    For i = 2 To 1000
+        '存在しない場合
+        If Not IsExistsFolder(path, folderNm & uniqueNo) Then
+            ChangeUniqueFolderNm = folderNm & uniqueNo
+            Exit Function
+        End If
+        '末尾付与
+        uniqueNo = " (" & i & ")"
+    Next
+End Function
+'------------------------------------------------------------
+'概要 : 指定パスとなるフォルダを、存在しない階層も含めて全て作成する
+'     : (途中でエラーが発生した場合、今回新規作成した分だけを削除してロールバックする)
+'引数 : path : 作成したいフォルダの絶対パス
+'戻値 : 判定結果(True:全て作成できた(元々あった場合も含む) / False:途中でエラー発生、ロールバック済み)
+'備考 : -
+'------------------------------------------------------------
+Private Function CreateFolderPath(ByVal path As String) As Boolean
+    On Error GoTo ErrHandler
+    Dim i As Long
+    Dim parts() As String
+    Dim crntPath As String
+    '作成フォルダパス(ロールバック用)
+    Dim cratPaths() As String
+    Dim cratCnt As Long
+    '最大分だけ確保
+    ReDim cratPaths(UBound(Split(path, "\")))
+    cratCnt = 0
+    '末尾除去
+    If Right$(path, 1) = "\" Then path = Left$(path, Len(path) - 1)
+    parts = Split(path, "\")
+    crntPath = parts(0)
+    For i = 1 To UBound(parts)
+        If Not IsExistsFolder(crntPath, parts(i)) Then
+            MkDir crntPath & "\" & parts(i)
+            '作成フォルダパス 追加
+            cratPaths(cratCnt) = crntPath & "\" & parts(i)
+            cratCnt = cratCnt + 1
+        End If
+        crntPath = crntPath & "\" & parts(i)
+    Next
+    CreateFolderPath = True
+    Exit Function
+ErrHandler:
+    'ロールバック(逆順で削除)
+    For i = cratCnt - 1 To 0 Step -1
+        '削除中の追加エラーは無視して続行
+        On Error Resume Next
+        RmDir cratPaths(i)
+        On Error GoTo 0
+    Next
+    CreateFolderPath = False
+End Function
+'------------------------------------------------------------
 '概要 : ファイルが存在するか判定する
 '引数 : path   : ファイルまでのパス(絶対パス)
 '     : fileNm : ファイル名
@@ -254,10 +348,11 @@ End Function
 '備考 : -
 '------------------------------------------------------------
 Private Function IsExistsFile(ByVal path As String, ByVal fileNm As String, ByVal ext As String) As Boolean
-    'パス末尾付与
+    '末尾付与 & 先頭付与
     If Right$(path, 1) <> "\" Then path = path & "\"
+    If Left$(ext, 1) <> "." Then ext = "." & ext
     '判定
-    IsExistsFile = (Dir(path & fileNm & "." & ext) <> "")
+    IsExistsFile = (Dir(path & fileNm & ext) <> "")
 End Function
 '------------------------------------------------------------
 '概要 : 重複しないファイル名となるまで、末尾に連番を付与する
@@ -388,7 +483,7 @@ Public Sub CreateSheet_TableOfContents()
             'Sheet名 書込
             rng.value = ws.Name
             'ハイパーリンク セット
-            Call wsTop.Hyperlinks.Add(Anchor:=rng, Address:="", SubAddress:="'" & ws.Name & "'!B7", TextToDisplay:=ws.Name)
+            Call wsTop.Hyperlinks.Add(Anchor:=rng, Address:="", SubAddress:="'" & ws.Name & "'!A1", TextToDisplay:=ws.Name)
             'インクリメント
             colNo = colNo + 1
             rowIdx = rowIdx + 1
@@ -755,34 +850,7 @@ Private Sub Btn_CreateDdlFile()
 
     Dim i As Long, j As Long                  'Loopカウンタ
     Dim ws As Worksheet: Set ws = ActiveSheet 'Sheet
-    Dim rowIdx As Long                        '行
-    Dim colIdx As Long                        '列
     Dim endRowIdx As Long                     '終了行
-    Dim endColIdx As Long                     '終了列
-    Dim rng As Range                          '範囲
-    '●CSV/TSVフラグ(True=CSV/False=TSV)
-    Dim csvTsvFlg As Boolean
-    '●Header有無フラグ(True=有/False=無)
-    Dim headerFlg As Boolean
-    '●論理/物理フラグ(True=論理/False=物理)
-    Dim physiLogiFlg As Boolean
-    '●ファイルパス/ファイル名/拡張子
-    Dim filePath As String: filePath = ThisWorkbook.path & "\"
-    Dim fileNm As String: fileNm = "DDL-" & ws.Name
-    Dim fileExt As String: fileExt = "sql"
-    '●CSV内容/1行/文字列/区切り文字
-    Dim csvBody As String
-    Dim line As String
-    Dim str As Variant
-    Dim delimiter As String
-    '●コピー元範囲
-    Dim sourceRng As Range
-    '●ヘッダー項目リスト/ヘッダー項目/ダブルクォート設定値リスト
-    Dim headerValCol As New Collection
-    Dim headerVal As Variant
-    Dim dblQtValList As Variant
-    '●メッセージ内容
-    Dim msg As String
 
     '●始点/終点
     Dim bgnIdx As Long
@@ -799,12 +867,14 @@ Private Sub Btn_CreateDdlFile()
     '●現在日時セット記述 辞書
     Dim setCrntDateDict As Object: Set setCrntDateDict = GetDbSetCrntDateDict
 
-    '●DB名/スキーマ名/テーブル名(論理/物理)/項目名(論理/物理)
+    '●DB名/スキーマ名/テーブル名(論理/物理)
     Dim dbNm As String: dbNm = ws.Range("B1").Value2
     Dim schemaNm As String: schemaNm = Trim$(ws.Range("B2").Value2)
     Dim logiTblNm As String: logiTblNm = Trim$(ws.Range("B3").Value2)
     Dim physiTblNm As String: physiTblNm = Trim$(ws.Range("B4").Value2)
 
+    '●項目定義データ
+    Dim colInfo As Variant
     '●PK/項目名(論理/物理)/型/桁/NULL不可/初期値/正数部/小数部
     Dim pk As String
     Dim logiColNm As String
@@ -816,42 +886,54 @@ Private Sub Btn_CreateDdlFile()
     Dim intPart As Long
     Dim dcmlPart As Long
 
-    '●項目定義データ
-    Dim colInfo As Variant
+    '●内容/PK行/行
+    Dim contents As String
+    Dim contents2 As String
+    Dim pkLine As String
+    Dim line1 As String
+    Dim line2 As String
+    '●TBLオプション
+    Dim tblOp As String
+    '●追加フラグ
+    Dim addFlg As Boolean: addFlg = False
 
-    '●エラーメッセージ内容
-    Dim errMsg As String
+    '●メッセージ
+    Dim msg As String
+    '●日付スタンプ
+    Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
+    '●ファイルObject
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    '●作成ファイルPath/ファイル名/作成ファイル
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\"
+    Dim cratFileNm As String: cratFileNm = "DDL-" & ws.Name
+    Dim cratFile As Object
 
     '終了行 セット
     endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    '項目定義 取得
+    colInfo = ws.Range(ws.Range("B7"), ws.Cells(endRowIdx, "H")).Value2
 
     '========== ▼入力チェック(TBL定義) ==========
     '[DB]未選択
     If LenB(dbNm) = 0 Then
         Call MsgBox("(B1) [DB] を選択して下さい", vbCritical, "ERROR")
         Exit Sub
-    End If
     '[SCHEMA]未入力
-    If LenB(schemaNm) = 0 Then
+    ElseIf LenB(schemaNm) = 0 Then
         Call MsgBox("(B2) [SCHEMA] を入力して下さい", vbCritical, "ERROR")
         Exit Sub
-    End If
     '[TBL物理名]未入力 / 不正物理名
-    If LenB(physiTblNm) = 0 Then
+    ElseIf LenB(physiTblNm) = 0 Then
         Call MsgBox("(B4) [TBL(物理名)] を入力して下さい", vbCritical, "ERROR")
         Exit Sub
     ElseIf IsErrPhysicalNm(dbNm, physiTblNm) Then
         Call MsgBox("TBL(物理名) [" & physiTblNm & "]" & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
         Exit Sub
-    End If
     'データなし
-    If endRowIdx < 7 Then
+    ElseIf endRowIdx < 7 Then
         Call MsgBox("出力データがありません", vbCritical, "ERROR")
         Exit Sub
     End If
-
-    '項目定義 取得
-    colInfo = ws.Range(ws.Range("B7"), ws.Cells(endRowIdx, "H")).Value2
 
     '========== ▼入力チェック(項目定義) ==========
     '全行Loop
@@ -871,6 +953,11 @@ Private Sub Btn_CreateDdlFile()
             endIdx = InStr(colType, ")") + 1
             colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
         End If
+        '桁のかっこ 除去
+        If 0 < InStr(colLen, "(") And 0 < InStr(colLen, ")") Then
+            colLen = Replace(colLen, "(", "")
+            colLen = Replace(colLen, ")", "")
+        End If
         '未入力の場合(COL物理名/型)
         If LenB(physiColNm) = 0 Then
             Call MsgBox(msg & "COL物理名" & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
@@ -882,9 +969,8 @@ Private Sub Btn_CreateDdlFile()
         ElseIf IsErrPhysicalNm(dbNm, physiColNm) Then
             Call MsgBox(msg & physiColNm & vbCrLf & "半角英数字 & 半角アンダーバーで入力して下さい" & vbCrLf & "(先頭数字もNG)", vbCritical, "ERROR")
             Exit Sub
-        End If
         '予約語の場合(COL物理名)
-        If dbNm = ORACLE And dbReservedWordDict_Ora.exists(UCase$(physiColNm)) Then
+        ElseIf dbNm = ORACLE And dbReservedWordDict_Ora.exists(UCase$(physiColNm)) Then
             Call MsgBox(msg & physiColNm & vbCrLf & "この項目名は予約語の為、登録できません", vbCritical, "ERROR")
             Exit Sub
         ElseIf dbNm = POSTGRESQL And dbReservedWordDict_Pos.exists(UCase$(physiColNm)) Then
@@ -895,7 +981,7 @@ Private Sub Btn_CreateDdlFile()
             Exit Sub
         End If
         '[文字列]型の場合
-        If colTypeDict_Str.exists(colType) Then
+        If colTypeDict_Str.exists(UCase$(colType)) Then
             '未入力の場合
             If LenB(colLen) = 0 Then
                 Call MsgBox(msg & "文字列型の場合、桁を1以上で入力して下さい", vbCritical, "ERROR")
@@ -918,7 +1004,7 @@ Private Sub Btn_CreateDdlFile()
                 Exit Sub
             End If
         '[数値]型の場合
-        ElseIf colTypeDict_Num.exists(colType) Then
+        ElseIf colTypeDict_Num.exists(UCase$(colType)) Then
             '未入力の場合
             If LenB(colLen) = 0 Then
                 Call MsgBox(msg & "数値型の場合、桁を入力して下さい", vbCritical, "ERROR")
@@ -956,45 +1042,339 @@ Private Sub Btn_CreateDdlFile()
                 Exit Sub
             End If
         '[日付]型の場合
-        ElseIf colTypeDict_Date.exists(colType) Then
-            '未入力の場合
-            If LenB(colLen) = 0 Then
-                Call MsgBox(msg & "日付型の場合、桁にミリ秒桁を0以上で入力して下さい", vbCritical, "ERROR")
-                Exit Sub
-            '小数桁有りの場合
-            ElseIf 0 < InStr(colLen, ",") Or 0 < InStr(colLen, ".") Then
-                Call MsgBox(msg & "日付型の場合、桁に小数は登録できません", vbCritical, "ERROR")
-                Exit Sub
-            '数値以外の場合
-            ElseIf Not IsNumeric(colLen) Then
-                Call MsgBox(msg & "桁は数値で入力して下さい", vbCritical, "ERROR")
-                Exit Sub
-            '範囲外の場合
-            ElseIf dbNm = ORACLE And 9 < CLng(colLen) Then
-                Call MsgBox(msg & "日付型の場合、桁は9以下で入力して下さい", vbCritical, "ERROR")
-                Exit Sub
-            ElseIf dbNm = POSTGRESQL And 6 < CLng(colLen) Then
-                Call MsgBox(msg & "日付型の場合、桁は6以下で入力して下さい", vbCritical, "ERROR")
-                Exit Sub
-            ElseIf dbNm = SQLSERVER And 7 < CLng(colLen) Then
-                Call MsgBox(msg & "日付型の場合、桁は7以下で入力して下さい", vbCritical, "ERROR")
-                Exit Sub
+        ElseIf colTypeDict_Date.exists(UCase$(colType)) Then
+            '時間無しの型の場合
+            If colType = "DATE" Then
+                '入力有の場合
+                If 0 < LenB(colLen) Then
+                    If Not IsNumeric(colLen) Then
+                        Call MsgBox(msg & "日付型(DATE)の場合、桁は登録できません", vbCritical, "ERROR")
+                        Exit Sub
+                    ElseIf CLng(colLen) <> 0 Then
+                        Call MsgBox(msg & "日付型(DATE)の場合、桁は登録できません", vbCritical, "ERROR")
+                        Exit Sub
+                    End If
+                End If
+                '時間有りの現在日時セットの場合(SQLServer用)
+                If dbNm = SQLSERVER And UCase$(initVal) <> "GETDATE()" And UCase$(initVal) <> "CURRENT_DATE" And setCrntDateDict.exists(UCase$(initVal)) Then
+                    Call MsgBox(msg & "SQLServerのDATE型の場合、初期値に時間付きの現在日時記述は登録できません", vbCritical, "ERROR")
+                    Exit Sub
+                End If
+            Else
+                '未入力の場合
+                If LenB(colLen) = 0 Then
+                    Call MsgBox(msg & "日付型の場合、桁にミリ秒桁を0以上で入力して下さい", vbCritical, "ERROR")
+                    Exit Sub
+                '小数桁有りの場合
+                ElseIf 0 < InStr(colLen, ",") Or 0 < InStr(colLen, ".") Then
+                    Call MsgBox(msg & "日付型の場合、桁に小数は登録できません", vbCritical, "ERROR")
+                    Exit Sub
+                '数値以外の場合
+                ElseIf Not IsNumeric(colLen) Then
+                    Call MsgBox(msg & "桁は数値で入力して下さい", vbCritical, "ERROR")
+                    Exit Sub
+                '範囲外の場合
+                ElseIf dbNm = ORACLE And 9 < CLng(colLen) Then
+                    Call MsgBox(msg & "日付型の場合、桁は9以下で入力して下さい", vbCritical, "ERROR")
+                    Exit Sub
+                ElseIf dbNm = POSTGRESQL And 6 < CLng(colLen) Then
+                    Call MsgBox(msg & "日付型の場合、桁は6以下で入力して下さい", vbCritical, "ERROR")
+                    Exit Sub
+                ElseIf dbNm = SQLSERVER And 7 < CLng(colLen) Then
+                    Call MsgBox(msg & "日付型の場合、桁は7以下で入力して下さい", vbCritical, "ERROR")
+                    Exit Sub
+                End If
+            End If
             'NULL不可 & 初期値=NULL の場合
-            ElseIf notNull = "Y" And initVal = "NULL" Then
+            If notNull = "Y" And UCase$(initVal) = "NULL" Then
                 Call MsgBox(msg & "NULL不可の場合、初期値にNULLを登録することはできません", vbCritical, "ERROR")
                 Exit Sub
             End If
         End If
     Next
 
-    'ファイル名 作成
-    fileNm = ChangeUniqueFileNm(filePath, fileNm, fileExt)
+    '========== DDL内容 作成 ==========
+    pkLine = "    PRIMARY KEY("
+    contents = ""
+    contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+    contents = contents & "--   TBL削除(存在する場合) [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+    contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+    contents = contents & "DROP TABLE IF EXISTS " & schemaNm & "." & physiTblNm & ";" & vbCrLf
+    If dbNm = SQLSERVER Then
+        contents = contents & "-- ===== OLD ver =====" & vbCrLf
+        contents = contents & "-- IF OBJECT_ID('" & schemaNm & "." & physiTblNm & "', 'U') IS NOT NULL DROP TABLE " & schemaNm & "." & physiTblNm & ";" & vbCrLf
+    End If
+    contents = contents & vbCrLf
+    contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+    contents = contents & "--   TBL作成 [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+    contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
 
-    'ファイル作成(UTF-8(BOMあり))
-    'Call CreateTxtFile(filePath, fileNm, fileExt, csvBody, "UTF-8", True)
+    '=== 見出し ==========
+    line1 = "--[項目名(論理)] "
+    line2 = "--[項目名(物理)] "
+    For i = 1 To UBound(colInfo, 1)
+        'COL名(論理/物理)
+        logiColNm = Trim$(colInfo(i, 2))
+        physiColNm = Trim$(colInfo(i, 3))
+        '桁数調整
+        Call AppendCharaToString(logiColNm, physiColNm, " ")
+        line1 = line1 & i & ":" & logiColNm & " / "
+        line2 = line2 & i & ":" & physiColNm & " / "
+    Next
+    '末尾除去
+    line1 = Left$(line1, Len(line1) - 3)
+    line2 = Left$(line2, Len(line2) - 3)
+    '追加
+    contents = contents & line1 & vbCrLf
+    contents = contents & line2 & vbCrLf
+
+    '=== 内容 ==========
+    contents = contents & "CREATE TABLE " & schemaNm & "." & physiTblNm & "(" & vbCrLf
+    For i = 1 To UBound(colInfo, 1)
+        '項目定義 セット(COL名(論理/物理)/型/桁/NULL不可/初期値)
+        pk = Trim$(colInfo(i, 1))
+        logiColNm = Trim$(colInfo(i, 2))
+        physiColNm = Trim$(colInfo(i, 3))
+        colType = Trim$(colInfo(i, 4))
+        colLen = Trim$(colInfo(i, 5))
+        notNull = Trim$(colInfo(i, 6))
+        initVal = Trim$(colInfo(i, 7))
+        '型末尾のかっこ 除去
+        If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+            bgnIdx = InStr(colType, "(") - 1
+            endIdx = InStr(colType, ")") + 1
+            colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+        End If
+        '桁のかっこ 付与
+        If 0 < LenB(colLen) Then
+            If Left$(colLen, 1) <> "(" Then
+                colLen = "(" & colLen
+            End If
+            If Right$(colLen, 1) <> ")" Then
+                colLen = colLen & ")"
+            End If
+        End If
+        '初期値 整形(シングルクォート付与)
+        If 0 < LenB(initVal) Then
+            '[文字列]型 or [日付]型の場合
+            If (colTypeDict_Str.exists(UCase$(colType)) And UCase$(initVal) <> "NULL") Or (colTypeDict_Date.exists(UCase$(colType)) And Not setCrntDateDict.exists(UCase$(initVal)) And UCase$(initVal) <> "NULL") Then
+                If Left$(initVal, 1) <> "'" Then
+                    initVal = "'" & initVal
+                End If
+                If Right$(initVal, 1) <> "'" Then
+                    initVal = initVal & "'"
+                End If
+            End If
+            initVal = " DEFAULT " & initVal
+        End If
+        'NULL不可の場合
+        If notNull = "Y" Then notNull = " NOT NULL"
+        'PKの場合
+        If pk = "Y" Then pkLine = pkLine & physiColNm & ", "
+        '内容追加
+        contents = contents & "    " & physiColNm & " " & colType & colLen & initVal & notNull & "," & vbCrLf
+    Next
+    '末尾除去 & 付与
+    If 16 < Len(pkLine) Then
+        pkLine = Left$(pkLine, Len(pkLine) - 2) & ")" & vbCrLf
+        contents = contents & vbCrLf & pkLine
+    Else
+        contents = Left$(contents, Len(contents) - (Len(vbCrLf) + 1)) & vbCrLf
+    End If
+    contents = contents & ");" & vbCrLf
+
+    '=== TBLオプション ==========
+    tblOp = ws.Range("F2").Value2
+    If 0 < LenB(tblOp) Then
+        contents = contents & "-- ===== TBLオプション =====" & vbCrLf
+        contents = contents & tblOp & vbCrLf
+    End If
+
+    '=== 論理名 ==========
+    contents2 = "" & vbCrLf
+    contents2 = contents2 & "-- ==================================================" & vbCrLf
+    contents2 = contents2 & "--  論理名 追加 [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+    contents2 = contents2 & "-- ==================================================" & vbCrLf
+    If 0 < LenB(logiTblNm) Then
+        If dbNm = ORACLE Or dbNm = POSTGRESQL Then
+            contents2 = contents2 & "COMMENT ON TABLE " & schemaNm & "." & physiTblNm & " IS '" & logiTblNm & "';" & vbCrLf
+        ElseIf dbNm = SQLSERVER Then
+            contents2 = contents2 & "EXEC sp_addextendedproperty @name=N'MS_Description', @level0type=N'SCHEMA', @level0name=N'" & schemaNm & "', @level1type=N'TABLE', @level1name=N'" & physiTblNm & "', @value=N'" & logiTblNm & "';" & vbCrLf
+        End If
+        addFlg = True
+    End If
+    For i = 1 To UBound(colInfo, 1)
+        'COL名(論理/物理)
+        logiColNm = Trim$(colInfo(i, 2))
+        physiColNm = Trim$(colInfo(i, 3))
+        If 0 < LenB(logiColNm) Then
+            If dbNm = ORACLE Or dbNm = POSTGRESQL Then
+                contents2 = contents2 & "COMMENT ON COLUMN " & schemaNm & "." & physiTblNm & "." & physiColNm & " IS '" & logiColNm & "';" & vbCrLf
+            ElseIf dbNm = SQLSERVER Then
+                contents2 = contents2 & "EXEC sp_addextendedproperty @name=N'MS_Description', @level0type=N'SCHEMA', @level0name=N'" & schemaNm & "', @level1type=N'TABLE', @level1name=N'" & physiTblNm & "', @level2type=N'COLUMN', @level2name=N'" & physiColNm & "',   @value=N'" & logiColNm & "';" & vbCrLf
+            End If
+        addFlg = True
+        End If
+    Next
+    '追加
+    If addFlg Then contents = contents & contents2
+
+    '========== ファイル作成先フォルダ作成(存在しない場合) ==========
+    If Not IsExistsFolder(cratFilePath, datestamp) Then
+        If Not CreateFolderPath(cratFilePath & datestamp) Then
+            msg = "フォルダの作成に失敗しました" & vbCrLf & _
+                  "PATH : " & cratFilePath & datestamp
+            Call MsgBox(msg, vbCritical, "")
+            Exit Sub
+        End If
+    End If
+
+    '========== ファイル名 作成 & ファイル作成 ==========
+    cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm <> "", cratFileNm, ws.Name), "sql")
+    Call CreateTxtFile(cratFilePath & datestamp, cratFileNm, "sql", contents, "UTF-8", False)
+
+    '完了メッセージ
+    msg = "DDLファイルを作成しました！！" & vbCrLf & _
+          "PATH : " & cratFilePath & datestamp & vbCrLf & _
+          "FILE名 : " & cratFileNm
+    Call MsgBox(msg, vbInformation, "")
 
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : テキストファイルを作成する(UTF-8)
+'引数 : filePath  : ファイルパス
+'     : fileNm    : ファイル名
+'     : fileExt   : ファイル拡張子
+'     : contents  : 書込内容
+'     : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'     : bomFlg    : BOM有無フラグ(True=有 / False=無)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVal fileExt As String, ByVal contents As String, ByVal charsetNm As String, ByVal bomFlg As Boolean)
+    '●ファイル書込用
+    Dim stream As Object: Set stream = CreateObject("ADODB.Stream")
+    Dim binStream As Object
+    Dim byteData() As Byte
+    Dim bomLen As Integer: bomLen = GetBomLen(charsetNm)
+
+    '末尾付与
+    If Right$(filePath, 1) <> "\" Then filePath = filePath & "\"
+    '先頭付与
+    If Left$(fileExt, 1) <> "." Then fileExt = "." & fileExt
+
+    With stream
+        .Type = 2
+        .Charset = charsetNm
+        .Open
+        .WriteText contents
+        .SaveToFile filePath & fileNm, 2 '既存ファイル上書き設定
+        .Close
+    End With
+    Set stream = Nothing
+
+    'BOMなしの場合、先頭nバイト(BOM)除去で作り直す
+    If Not bomFlg And 0 < bomLen Then
+        '===== 読込 =====
+        Set binStream = CreateObject("ADODB.Stream")
+        With binStream
+            .Type = 1
+            .Open
+            .LoadFromFile filePath & fileNm
+            .Position = bomLen
+            byteData = .Read
+            .Close
+        End With
+        '===== 書込 =====
+        With binStream
+            .Type = 1
+            .Open
+            .Write byteData
+            .SaveToFile filePath & fileNm, 2
+            .Close
+        End With
+        Set binStream = Nothing
+    End If
+End Sub
+'------------------------------------------------------------
+'概要 : 文字コード名のBOMバイト数を取得する
+'引数 : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Function GetBomLen(ByVal charsetNm As String) As Integer
+    Select Case UCase$(charsetNm)
+        Case "UTF-8"
+            GetBomLen = 3
+        Case "UTF-16", "UNICODE", "UTF-16LE", "UTF-16BE"
+            GetBomLen = 2
+        Case "UTF-32"
+            GetBomLen = 4
+        Case Else
+            GetBomLen = 0
+    End Select
+End Function
+'------------------------------------------------------------
+'概要 : 物理名の命名エラーチェック
+'引数 : dbNm    : DB名(Oracle / PostgreSQL / SQLServer)
+'     : physiNm : 物理名
+'戻値 : エラーメッセージ
+'備考 : -
+'------------------------------------------------------------
+Private Function IsErrPhysicalNm(ByVal dbNm As String, ByVal physiNm As String) As Boolean
+    Dim i As Long
+    Dim c As String
+    Dim code As Long
+    '空の場合
+    If LenB(physiNm) = 0 Then
+        IsErrPhysicalNm = True
+        Exit Function
+    End If
+    '先頭数字の場合
+    c = Mid$(physiNm, 1, 1)
+    code = AscW(c)
+    '(0-9)(_)
+    If (48 <= code And code <= 57) Or (code = 95) Then
+        IsErrPhysicalNm = True
+        Exit Function
+    End If
+    '[半角英数字 / 半角アンダーバー] 以外の場合
+    For i = 2 To Len(physiNm)
+        c = Mid$(physiNm, i, 1)
+        code = AscW(c)
+        '(A-Z)(a-z)(0-9)(_)
+        If Not ((65 <= code And code <= 90) Or (97 <= code And code <= 122) Or (48 <= code And code <= 57) Or (code = 95)) Then
+            IsErrPhysicalNm = True
+            Exit Function
+        End If
+    Next
+    IsErrPhysicalNm = False
+End Function
+'------------------------------------------------------------
+'概要 : 2つの文字列の桁数を比較し、大きい方に合わせて、小さい方の文字列の末尾に半角文字を追記し、桁数を合わせる
+'引数 : str1  : 文字列1
+'     : str2  : 文字列2
+'     : addCh : 追記文字(半角)
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub AppendCharaToString(ByRef str1 As String, ByRef str2 As String, ByVal addCh As String)
+    Dim len1 As Long
+    Dim len2 As Long
+    Dim diffLen As Long
+    '桁数セット(半角=1/全角=2)
+    len1 = LenB(StrConv(str1, vbFromUnicode))
+    len2 = LenB(StrConv(str2, vbFromUnicode))
+    '桁数を比較して、小さい方の末尾に半角スペース（Space関数）を補充
+    If len2 < len1 Then
+        diffLen = len1 - len2
+        str2 = str2 & String(diffLen, addCh)
+    ElseIf len1 < len2 Then
+        diffLen = len2 - len1
+        str1 = str1 & String(diffLen, addCh)
+    End If
 End Sub
 '------------------------------------------------------------
 '概要 : DB項目[文字列]型の辞書を取得する
@@ -1126,241 +1506,6 @@ Private Function GetDbSetCrntDateDict() As Object
     dict("GETDATE()") = True
     dict("SYSDATETIME()") = True
     Set GetDbSetCrntDateDict = dict
-End Function
-'------------------------------------------------------------
-'概要 : テキストファイルを作成する(UTF-8)
-'引数 : filePath  : ファイルパス
-'     : fileNm    : ファイル名
-'     : fileExt   : ファイル拡張子
-'     : contents  : 書込内容
-'     : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
-'     : bomFlg    : BOM有無フラグ(True=有 / False=無)
-'戻値 : -
-'備考 : -
-'------------------------------------------------------------
-Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVal fileExt As String, ByVal contents As String, ByVal charsetNm As String, ByVal bomFlg As Boolean)
-    '●ファイル書込用
-    Dim stream As Object: Set stream = CreateObject("ADODB.Stream")
-    Dim binStream As Object
-    Dim byteData() As Byte
-    Dim bomLen As Integer: bomLen = GetBomLen(charsetNm)
-
-    '末尾付与
-    If Right$(filePath, 1) <> "\" Then filePath = filePath & "\"
-    '先頭付与
-    If Left$(fileExt, 1) <> "." Then fileExt = "." & fileExt
-
-    With stream
-        .Type = 2
-        .Charset = charsetNm
-        .Open
-        .WriteText contents
-        .SaveToFile filePath & fileNm, 2 '既存ファイル上書き設定
-        .Close
-    End With
-    Set stream = Nothing
-
-    'BOMなしの場合、先頭nバイト(BOM)除去で作り直す
-    If Not bomFlg And 0 < bomLen Then
-        '===== 読込 =====
-        Set binStream = CreateObject("ADODB.Stream")
-        With binStream
-            .Type = 1
-            .Open
-            .LoadFromFile filePath & fileNm
-            .Position = bomLen
-            byteData = .Read
-            .Close
-        End With
-        '===== 書込 =====
-        With binStream
-            .Type = 1
-            .Open
-            .Write byteData
-            .SaveToFile filePath & fileNm, 2
-            .Close
-        End With
-        Set binStream = Nothing
-    End If
-End Sub
-'------------------------------------------------------------
-'概要 : 文字コード名のBOMバイト数を取得する
-'引数 : charsetNm : 文字コード名(UTF-8 / Shift-JIS など)
-'戻値 : -
-'備考 : -
-'------------------------------------------------------------
-Private Function GetBomLen(ByVal charsetNm As String) As Integer
-    Select Case UCase$(charsetNm)
-        Case "UTF-8"
-            GetBomLen = 3
-        Case "UTF-16", "UNICODE", "UTF-16LE", "UTF-16BE"
-            GetBomLen = 2
-        Case "UTF-32"
-            GetBomLen = 4
-        Case Else
-            GetBomLen = 0
-    End Select
-End Function
-Option Explicit
-Sub CreateDDL()
-    Dim wsSrc As Worksheet
-    Dim wsDDL As Worksheet
-    Dim dbName As String
-    Dim schemaName As String
-    Dim tableLogicalName As String
-    Dim tablePhysicalName As String
-    Dim lastRow As Long
-    Dim r As Long
-    Dim pk As String
-    Dim itemLogicalName As String
-    Dim itemPhysicalName As String
-    Dim typeName As String
-    Dim lengthValue As String
-    Dim notNull As String
-    Dim defaultValue As String
-    Dim columnDefs As String
-    Dim pkColumns As String
-    Dim ddl As String
-    '----------------------------------------
-    ' 入力Sheet
-    '----------------------------------------
-    Set wsSrc = ActiveSheet
-    '----------------------------------------
-    ' 基本情報取得
-    '----------------------------------------
-    dbName = Trim(wsSrc.Range("B1").value)
-    schemaName = Trim(wsSrc.Range("B2").value)
-    tableLogicalName = Trim(wsSrc.Range("B3").value)
-    tablePhysicalName = Trim(wsSrc.Range("B4").value)
-    '----------------------------------------
-    ' 最終行取得
-    ' D列（項目物理名）を基準にする
-    '----------------------------------------
-    lastRow = wsSrc.Cells(wsSrc.Rows.Count, "D").End(xlUp).Row
-    ' データがない場合
-    If lastRow < 7 Then
-        MsgBox "項目が入力されていません。", vbExclamation
-        Exit Sub
-    End If
-    '----------------------------------------
-    ' DDL Sheet作成
-    '----------------------------------------
-    Set wsDDL = Worksheets.Add(After:=Worksheets(Worksheets.Count))
-    On Error Resume Next
-    wsDDL.Name = "DDL"
-    On Error GoTo 0
-    '----------------------------------------
-    ' カラム定義作成
-    '----------------------------------------
-    For r = 7 To lastRow
-        pk = Trim(wsSrc.Cells(r, "B").value)
-        itemLogicalName = Trim(wsSrc.Cells(r, "C").value)
-        itemPhysicalName = Trim(wsSrc.Cells(r, "D").value)
-        typeName = Trim(wsSrc.Cells(r, "E").value)
-        lengthValue = Trim(wsSrc.Cells(r, "F").value)
-        notNull = Trim(wsSrc.Cells(r, "G").value)
-        defaultValue = Trim(wsSrc.Cells(r, "H").value)
-        '------------------------------------
-        ' 項目物理名が空ならスキップ
-        '------------------------------------
-        If itemPhysicalName <> "" Then
-            Dim columnDef As String
-            columnDef = "    " & itemPhysicalName & " " & typeName
-            '--------------------------------
-            ' NULL不可
-            '--------------------------------
-            If UCase(notNull) = "Y" Then
-                columnDef = columnDef & " NOT NULL"
-            End If
-            '--------------------------------
-            ' 初期値
-            '--------------------------------
-            If defaultValue <> "" Then
-                columnDef = columnDef & " DEFAULT " & defaultValue
-            End If
-            '--------------------------------
-            ' カラム追加
-            '--------------------------------
-            If columnDefs <> "" Then
-                columnDefs = columnDefs & "," & vbCrLf
-            End If
-            columnDefs = columnDefs & columnDef
-            '--------------------------------
-            ' PK
-            '--------------------------------
-            If UCase(pk) = "Y" Then
-                If pkColumns <> "" Then
-                    pkColumns = pkColumns & ", "
-                End If
-                pkColumns = pkColumns & itemPhysicalName
-            End If
-        End If
-    Next r
-    '----------------------------------------
-    ' PK追加
-    '----------------------------------------
-    If pkColumns <> "" Then
-        columnDefs = columnDefs & "," & vbCrLf
-        columnDefs = columnDefs _
-            & "    PRIMARY KEY (" & pkColumns & ")"
-    End If
-    '----------------------------------------
-    ' CREATE TABLE
-    '----------------------------------------
-    ddl = "CREATE TABLE " _
-        & schemaName & "." _
-        & tablePhysicalName _
-        & " (" _
-        & vbCrLf _
-        & columnDefs _
-        & vbCrLf _
-        & ");"
-    '----------------------------------------
-    ' DDL Sheetへ出力
-    '----------------------------------------
-    wsDDL.Range("A1").value = ddl
-    wsDDL.Columns("A").ColumnWidth = 100
-    wsDDL.Range("A1").WrapText = False
-    '----------------------------------------
-    ' 完了
-    '----------------------------------------
-    MsgBox "DDLを作成しました。", vbInformation
-End Sub
-'------------------------------------------------------------
-'概要 : 物理名の命名エラーチェック
-'引数 : dbNm    : DB名(Oracle / PostgreSQL / SQLServer)
-'     : physiNm : 物理名
-'戻値 : エラーメッセージ
-'備考 : -
-'------------------------------------------------------------
-Private Function IsErrPhysicalNm(ByVal dbNm As String, ByVal physiNm As String) As Boolean
-    Dim i As Long
-    Dim c As String
-    Dim code As Long
-    '空の場合
-    If LenB(physiNm) = 0 Then
-        IsErrPhysicalNm = True
-        Exit Function
-    End If
-    '先頭数字の場合
-    c = Mid$(physiNm, 1, 1)
-    code = AscW(c)
-    '(0-9)(_)
-    If (48 <= code And code <= 57) Or (code = 95) Then
-        IsErrPhysicalNm = True
-        Exit Function
-    End If
-    '[半角英数字 / 半角アンダーバー] 以外の場合
-    For i = 2 To Len(physiNm)
-        c = Mid$(physiNm, i, 1)
-        code = AscW(c)
-        '(A-Z)(a-z)(0-9)(_)
-        If Not ((65 <= code And code <= 90) Or (97 <= code And code <= 122) Or (48 <= code And code <= 57) Or (code = 95)) Then
-            IsErrPhysicalNm = True
-            Exit Function
-        End If
-    Next
-    IsErrPhysicalNm = False
 End Function
 '------------------------------------------------------------
 '概要 : DBの予約語辞書を取得する(Oracle用)
