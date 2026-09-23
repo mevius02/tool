@@ -5,6 +5,70 @@ Private Const ORACLE = "Oracle"
 Private Const POSTGRESQL = "PostgreSQL"
 Private Const SQLSERVER = "SQLServer"
 '------------------------------------------------------------
+'概要 : Sheet[目次]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_TableOfContents()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Book/Sheet/Sheet(TOP)/行/範囲
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    Dim ws As Worksheet
+    Dim wsTop As Worksheet
+    Dim wsNmTop As String: wsNmTop = "目次"
+    Dim rowIdx As Long: rowIdx = 4
+    Dim rng As Range
+    '●項目No
+    Dim colNo As Long: colNo = 1
+
+    '新規Sheet作成 & 新規Sheet名セット
+    Set wsTop = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    wsNmTop = ChangeUniqueSheetNm(wsNmTop)
+    wsTop.Name = wsNmTop
+
+    '書込
+    wsTop.Range("B2").value = "目次"
+
+    '全Sheet Loop
+    For Each ws In wb.Worksheets
+        '自分以外の場合
+        If ws.Name <> wsNmTop Then
+            wsTop.Cells(rowIdx, "B").value = colNo & ","
+            'セル場所 セット
+            Set rng = wsTop.Cells(rowIdx, "C")
+            'Sheet名 書込
+            rng.value = ws.Name
+            'ハイパーリンク セット
+            Call wsTop.Hyperlinks.Add(Anchor:=rng, Address:="", SubAddress:="'" & ws.Name & "'!A1", TextToDisplay:=ws.Name)
+            'インクリメント
+            colNo = colNo + 1
+            rowIdx = rowIdx + 1
+        End If
+    Next
+
+    'Sheet設定
+    With wsTop
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        '列幅
+        .Columns.ColumnWidth = 2
+        .Columns("B").ColumnWidth = 4
+        .Columns("C").ColumnWidth = 50
+    End With
+    wsTop.Activate
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
 '概要 : Sheet[入力]を作成する
 '引数 : -
 '戻値 : -
@@ -218,6 +282,146 @@ Public Sub CreateSheet_Input()
             .Left = ws.Range("I2").Left + leftPos(i)                           '配置場所(横)
         End With
     Next
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[TBL定義書]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateSheet_TableInfo()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Book/Sheet/Sheet(TBL定義書)
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    Dim ws As Worksheet
+    Dim wsInfo As Worksheet
+    Dim wsNmInfo As String: wsNmInfo = "TBL定義書"
+    'Loopカウンタ/終了行/書込行
+    Dim i As Long
+    Dim endRowIdx As Long
+    Dim wtriteRowIdx As Long: wtriteRowIdx = 2
+
+    '●TBLNo/項目No
+    Dim tblNo As Long: tblNo = 1
+    Dim colNo As Long
+    '●テーブル名(論理/物理)
+    Dim logiTblNm As String
+    Dim physiTblNm As String
+    '●項目定義データ
+    Dim colInfo As Variant
+    '●PK/項目名(論理/物理)/型/桁/NULL不可/初期値
+    Dim pk As String
+    Dim logiColNm As String
+    Dim physiColNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    Dim initVal As String
+    '●一括書込用
+    Dim balkDatas As Variant
+
+    '●A5M2緑色
+    Dim a5m2Color As Long: a5m2Color = RGB(135, 231, 173) '#87E7AD
+
+    '新規Sheet作成 & 新規Sheet名セット
+    Set wsInfo = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    wsNmInfo = ChangeUniqueSheetNm(wsNmInfo)
+    wsInfo.Name = wsNmInfo
+
+    '========== 書込 ==========
+    wsInfo.Range("A1").value = "TBL-No"
+    wsInfo.Range("B1").value = "TBL(論理)"
+    wsInfo.Range("C1").value = "TBL(物理)"
+    wsInfo.Range("D1").value = "COL-No"
+    wsInfo.Range("E1").value = "PK"
+    wsInfo.Range("F1").value = "COL(論理)"
+    wsInfo.Range("G1").value = "COL(物理)"
+    wsInfo.Range("H1").value = "型"
+    wsInfo.Range("I1").value = "桁"
+    wsInfo.Range("J1").value = "NULL不可"
+    wsInfo.Range("K1").value = "初期値"
+    '全Sheet Loop
+    For Each ws In wb.Worksheets
+        '自分以外 & TBL定義Sheetの場合
+        If ws.Name <> wsNmInfo And Trim$(ws.Range("A1").Value2) = "DB" Then
+            '終了行 セット
+            endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            'データ有の場合
+            If 7 <= endRowIdx Then
+                '項目定義 取得
+                colInfo = ws.Range(ws.Range("B7"), ws.Cells(endRowIdx, "H")).Value2
+                '一括書込変数 再設定
+                ReDim balkDatas(1 To endRowIdx - 6, 1 To 11)
+                '全行Loop
+                colNo = 1
+                For i = 1 To UBound(colInfo, 1)
+                    '一括セット
+                    balkDatas(i, 1) = tblNo                        'TBL-No
+                    balkDatas(i, 2) = Trim$(ws.Range("B3").Value2) 'TBL名(論理)
+                    balkDatas(i, 3) = Trim$(ws.Range("B4").Value2) 'TBL名(物理)
+                    balkDatas(i, 4) = colNo                        'COL-No
+                    balkDatas(i, 5) = Trim$(colInfo(i, 1))         'PK
+                    balkDatas(i, 6) = Trim$(colInfo(i, 2))         '項目名(論理)
+                    balkDatas(i, 7) = Trim$(colInfo(i, 3))         '項目名(物理)
+                    balkDatas(i, 8) = Trim$(colInfo(i, 4))         '型
+                    balkDatas(i, 9) = Trim$(colInfo(i, 5))         '桁
+                    balkDatas(i, 10) = Trim$(colInfo(i, 6))        'NULL不可
+                    balkDatas(i, 11) = Trim$(colInfo(i, 7))        '初期値
+                    colNo = colNo + 1
+                Next
+                '書込
+                wsInfo.Cells(wtriteRowIdx, "A").Resize(UBound(colInfo, 1), 11).value = balkDatas
+                tblNo = tblNo + 1
+                wtriteRowIdx = wtriteRowIdx + UBound(colInfo, 1)
+            End If
+        End If
+    Next
+
+    '========== Sheet設定 ==========
+    With wsInfo
+        'Tab色
+        .Tab.Color = a5m2Color
+        '背景色
+        .Range("A1:K1").Interior.Color = a5m2Color
+        '太字
+        .Range("A1:K1").Font.Bold = True
+        '文字揃え
+        .Cells.VerticalAlignment = xlTop
+        .Cells.HorizontalAlignment = xlLeft
+        .Columns("A").HorizontalAlignment = xlCenter
+        .Columns("D:E").HorizontalAlignment = xlCenter
+        .Columns("I").HorizontalAlignment = xlRight
+        .Columns("J").HorizontalAlignment = xlCenter
+        .Rows(1).HorizontalAlignment = xlCenter
+        '列幅
+        .Columns("A").ColumnWidth = 10
+        .Columns("B:C").ColumnWidth = 30
+        .Columns("D").ColumnWidth = 10
+        .Columns("E").ColumnWidth = 5
+        .Columns("F:G").ColumnWidth = 30
+        .Columns("H").ColumnWidth = 20
+        .Columns("I").ColumnWidth = 10
+        .Columns("J").ColumnWidth = 12
+        .Columns("K").ColumnWidth = 20
+        'フィルター
+        .Rows(1).AutoFilter
+    End With
+    '罫線
+    Call DrawRuledLine_Grid(wsInfo.Range("A1:K" & (wtriteRowIdx - 1)))
+    Call ApplyLineStyle_01(wsInfo, wsInfo.Range("A2:K" & (wtriteRowIdx - 2)), GetColIdx("A"))
+    wsInfo.Activate
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
+    'ウィンドウ枠の固定
+    wsInfo.Range("C2").Select
+    ActiveWindow.FreezePanes = True
 
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
@@ -446,68 +650,47 @@ Private Function GetColIdx(ByVal colNm As String) As Long
     GetColIdx = result
 End Function
 '------------------------------------------------------------
-'概要 : Sheet[目次]を作成する
-'引数 : -
+'概要 : 罫線を引く(格子)
+'引数 : rng : 範囲
 '戻値 : -
 '備考 : -
 '------------------------------------------------------------
-Public Sub CreateSheet_TableOfContents()
-    '処理中描画OFF設定
-    Call SettingRenderingProcess(False)
-
-    'Book/Sheet/Sheet(TOP)/行/範囲
-    Dim wb As Workbook: Set wb = ThisWorkbook
-    Dim ws As Worksheet
-    Dim wsTop As Worksheet
-    Dim wsNmTop As String: wsNmTop = "目次"
-    Dim rowIdx As Long: rowIdx = 4
-    Dim rng As Range
-    '●項目No
-    Dim colNo As Long: colNo = 1
-
-    '新規Sheet作成 & 新規Sheet名セット
-    Set wsTop = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
-    wsNmTop = ChangeUniqueSheetNm(wsNmTop)
-    wsTop.Name = wsNmTop
-
-    '書込
-    wsTop.Range("B2").value = "目次"
-
-    '全Sheet Loop
-    For Each ws In wb.Worksheets
-        '自分以外の場合
-        If ws.Name <> wsNmTop Then
-            wsTop.Cells(rowIdx, "B").value = colNo & ","
-            'セル場所 セット
-            Set rng = wsTop.Cells(rowIdx, "C")
-            'Sheet名 書込
-            rng.value = ws.Name
-            'ハイパーリンク セット
-            Call wsTop.Hyperlinks.Add(Anchor:=rng, Address:="", SubAddress:="'" & ws.Name & "'!A1", TextToDisplay:=ws.Name)
-            'インクリメント
-            colNo = colNo + 1
-            rowIdx = rowIdx + 1
+Private Sub DrawRuledLine_Grid(rng As Range)
+    '●罫線位置区分
+    Dim borderType As Variant
+    '外
+    rng.BorderAround LineStyle:=xlContinuous, Weight:=xlThin
+    '内
+    For Each borderType In Array(xlInsideHorizontal, xlInsideVertical)
+        rng.Borders(borderType).LineStyle = xlContinuous
+        rng.Borders(borderType).Weight = xlThin
+    Next
+End Sub
+'------------------------------------------------------------
+'概要 : 罫線(行境界線)[01]
+'     : 境界判定列のセル値が変わる行の境界に罫線を引く
+'引数 : ws     : Sheet
+'     : rng    : 適用範囲
+'     : colIdx : 境界判定列番号
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub ApplyLineStyle_01(ByRef ws As Worksheet, ByRef rng As Range, ByVal colIdx As Long)
+    Dim i As Long
+    '●名称(前/現在)
+    Dim preVal As String
+    Dim crntVal As String
+    preVal = Left$(CStr(ws.Cells(rng.Row + 1, rng.Column + colIdx - 1)), 4)
+    For i = rng.Row + 1 To rng.Row + rng.Rows.Count
+        crntVal = Left$(CStr(ws.Cells(i, rng.Column + colIdx - 1)), 4)
+        '値が異なる場合
+        If preVal <> crntVal Then
+            '罫線
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.Count)).Borders(xlEdgeTop).LineStyle = xlDouble
+            ws.Range(ws.Cells(i, rng.Column), ws.Cells(i, rng.Columns.Count)).Borders(xlEdgeTop).Weight = xlThick
+            preVal = crntVal
         End If
     Next
-
-    'Sheet設定
-    With wsTop
-        '文字揃え
-        .Cells.VerticalAlignment = xlTop
-        .Cells.HorizontalAlignment = xlLeft
-        '列幅
-        .Columns.ColumnWidth = 2
-        .Columns("B").ColumnWidth = 4
-        .Columns("C").ColumnWidth = 50
-    End With
-    wsTop.Activate
-    '表示倍率
-    ActiveWindow.Zoom = 85
-    '目盛線
-    ActiveWindow.DisplayGridlines = False
-
-    '処理中描画ON設定
-    Call SettingRenderingProcess(True)
 End Sub
 '------------------------------------------------------------
 '概要 : 型の候補を書込する

@@ -374,7 +374,7 @@ Private Sub CreateSheet_TblInfo()
     End With
     ActiveWindow.DisplayGridlines = False           '目盛線
     ActiveWindow.Zoom = 85                          '表示倍率
-    ws.Range("B2").Select                           'ウィンドウ枠の固定
+    ws.Range("C2").Select                           'ウィンドウ枠の固定
     ActiveWindow.FreezePanes = True
 
     '1～4 コピー作成
