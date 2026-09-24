@@ -998,7 +998,7 @@ Private Function GetColDataTypes(ByVal dbNm As String, ByVal inputRngData As Var
                         End If
                     End If
                 Case "数値"
-                    GetColDataTypes = Array("decimal(" & (CLng(maxLen) + CLng(dcmlLen)) & "," & dcmlLen & ")", "float", "real")
+                    GetColDataTypes = Array("numeric(" & (CLng(maxLen) + CLng(dcmlLen)) & "," & dcmlLen & ")", "float", "real")
                 Case "日時"
                     If timeZoneFlg = "要" Then
                         GetColDataTypes = Array("datetimeoffset(" & maxLen & ")", "datetime2(" & maxLen & ")", "")

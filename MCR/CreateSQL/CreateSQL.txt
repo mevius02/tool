@@ -2263,11 +2263,11 @@ Private Function GetDbColTypeDict_String() As Object
     dict("TEXT") = True
     dict("NAME") = True
     '========== SQL Server ==========
-    'dict("CHAR") = True
-    'dict("VARCHAR") = True
-    'dict("NCHAR") = True
+    dict("CHAR") = True
+    dict("VARCHAR") = True
+    dict("NCHAR") = True
     dict("NVARCHAR") = True
-    'dict("TEXT") = True
+    dict("TEXT") = True
     dict("NTEXT") = True
     Set GetDbColTypeDict_String = dict
 End Function
@@ -2292,25 +2292,25 @@ Private Function GetDbColTypeDict_Numeric() As Object
     dict("BINARY_FLOAT") = True
     dict("BINARY_DOUBLE") = True
     '========== PostgreSQL ==========
-    'dict("SMALLINT") = True
-    'dict("INTEGER") = True
+    dict("SMALLINT") = True
+    dict("INTEGER") = True
     dict("BIGINT") = True
     dict("SMALLSERIAL") = True
     dict("SERIAL") = True
     dict("BIGSERIAL") = True
-    'dict("NUMERIC") = True
-    'dict("REAL") = True
-    'dict("DOUBLE PRECISION") = True
+    dict("NUMERIC") = True
+    dict("REAL") = True
+    dict("DOUBLE PRECISION") = True
     '========== SQL Server ==========
     dict("TINYINT") = True
-    'dict("SMALLINT") = True
+    dict("SMALLINT") = True
     dict("INT") = True
-    'dict("BIGINT") = True
+    dict("BIGINT") = True
     dict("DECIMAL") = True
     dict("SMALLMONEY") = True
     dict("MONEY") = True
-    'dict("REAL") = True
-    'dict("FLOAT") = True
+    dict("REAL") = True
+    dict("FLOAT") = True
     dict("BIT") = True
     Set GetDbColTypeDict_Numeric = dict
 End Function
@@ -2329,18 +2329,18 @@ Private Function GetDbColTypeDict_Date() As Object
     dict("TIMESTAMP WITH TIME ZONE") = True
     dict("TIMESTAMP WITH LOCAL TIME ZONE") = True
     '========== PostgreSQL ==========
-    'dict("DATE") = True
+    dict("DATE") = True
     dict("TIME") = True
     dict("TIMETZ") = True
-    'dict("TIMESTAMP") = True
+    dict("TIMESTAMP") = True
     dict("TIMESTAMPTZ") = True
-    'dict("TIME WITHOUT TIME ZONE") = True
-    'dict("TIME WITH TIME ZONE") = True
-    'dict("TIMESTAMP WITHOUT TIME ZONE") = True
-    'dict("TIMESTAMP WITH TIME ZONE") = True
+    dict("TIME WITHOUT TIME ZONE") = True
+    dict("TIME WITH TIME ZONE") = True
+    dict("TIMESTAMP WITHOUT TIME ZONE") = True
+    dict("TIMESTAMP WITH TIME ZONE") = True
     '========== SQL Server ==========
-    'dict("DATE") = True
-    'dict("TIME") = True
+    dict("DATE") = True
+    dict("TIME") = True
     dict("DATETIME") = True
     dict("DATETIME2") = True
     dict("DATETIMEOFFSET") = True

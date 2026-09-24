@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN" "https://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+
+    <context id="DB2Java" targetRuntime="MyBatis3">
+
+        <!-- DB接続情報 -->
+        <!-- Oracle -->
+        <!-- <jdbcConnection
+            driverClass="oracle.jdbc.OracleDriver"
+            connectionURL="jdbc:oracle:thin:@localhost:1521/FREE"
+            userId="system"
+            password="oracle">
+        </jdbcConnection> -->
+        <!-- PostgreSQL -->
+        <!-- <jdbcConnection
+            driverClass="org.postgresql.Driver"
+            connectionURL="jdbc:postgresql://localhost:5432/postgres"
+            userId="postgres"
+            password="postgres">
+        </jdbcConnection> -->
+        <!-- SQLServer -->
+        <jdbcConnection
+            driverClass="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            connectionURL="jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false"
+            userId="mbg_user"
+            password="sqlserver">
+        </jdbcConnection>
+
+        <!-- Java Model -->
+        <javaModelGenerator
+            targetPackage="com.example.entity"
+            targetProject="generated">
+            <property name="enableSubPackages" value="true" />
+        </javaModelGenerator>
+
+        <!-- Mapper XML -->
+        <sqlMapGenerator
+            targetPackage="mapper"
+            targetProject="generated">
+            <property name="enableSubPackages" value="true" />
+        </sqlMapGenerator>
+
+        <!-- Mapper Interface -->
+        <javaClientGenerator
+            type="XMLMAPPER"
+            targetPackage="com.example.mapper"
+            targetProject="generated">
+            <property name="enableSubPackages" value="true" />
+        </javaClientGenerator>
+
+        <!-- Oracle -->
+        <!-- <table schema="SYSTEM" tableName="CUSTOMERS" domainObjectName="Customers" />
+        <table schema="SYSTEM" tableName="ORDERS" domainObjectName="Orders" />
+        <table schema="SYSTEM" tableName="ORDER_DETAILS" domainObjectName="OrderDetails" />
+        <table schema="SYSTEM" tableName="PRODUCTS" domainObjectName="Products" /> -->
+        <!-- PostgreSQL -->
+        <!-- <table schema="public" tableName="customers" domainObjectName="Customers" />
+        <table schema="public" tableName="orders" domainObjectName="Orders" />
+        <table schema="public" tableName="order_details" domainObjectName="OrderDetails" />
+        <table schema="public" tableName="products" domainObjectName="Products" /> -->
+        <!-- SQLServer -->
+        <table schema="dbo" tableName="CUSTOMERS" domainObjectName="Customers" />
+        <table schema="dbo" tableName="ORDERS" domainObjectName="Orders" />
+        <table schema="dbo" tableName="ORDER_DETAILS" domainObjectName="OrderDetails" />
+        <table schema="dbo" tableName="PRODUCTS" domainObjectName="Products" />
+
+    </context>
+
+</generatorConfiguration>
