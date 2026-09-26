@@ -22,6 +22,8 @@ Public Sub CreateSheet_Init()
     Call SettingRenderingProcess(False)
 
     '========== Sheet作成 ==========
+    '使い方
+    CreateSheet_HowToUse
     'SQL
     CreateSheet_GetTblInfoSql
     'TBL1～5
@@ -460,6 +462,14 @@ Private Sub CreateSheet_CreateTemplateSql()
     ws.Range("C3").Select
     ActiveWindow.FreezePanes = True
 
+    'メモ書込
+    ws.Range("G2").AddComment "未入力の場合、TBL物理名で作成"
+    ws.Range("G2").Comment.Shape.Width = 150
+    ws.Range("G2").Comment.Shape.Height = 20
+    ws.Range("G2").Comment.Shape.TextFrame.HorizontalAlignment = xlHAlignCenter
+    ws.Range("G2").Comment.Shape.TextFrame.VerticalAlignment = xlVAlignCenter
+    ws.Range("G2").Comment.Visible = False
+
     'マクロボタン作成
     Set shp = ws.Shapes.AddShape(msoShapeBevel, 0, 0, Application.CentimetersToPoints(shpWidth), Application.CentimetersToPoints(shpHeight))
     With shp
@@ -477,6 +487,499 @@ Private Sub CreateSheet_CreateTemplateSql()
         .Top = ws.Range("B1").Top + 4                                      '配置場所(縦)
         .Left = ws.Range("B1").Left                                        '配置場所(横)
     End With
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[使い方]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet_HowToUse()
+    Dim ws As Worksheet       'Sheet
+    Dim i As Long             'Loopカウンタ
+    Dim startRowIdx As Long   '開始行
+    Dim rng As Range          '範囲
+    Dim borderType As Variant '罫線位置区分
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("使い方")
+
+    '========== 書込 ==========
+    With ws
+        .Range("B2").Value = "使い方"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 3
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "1,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "TBL情報Sheetを作成する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 4
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "1-1,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "Sheet[SQL]のSQLをA5M2で実行し、実行結果を全てコピーし、Sheet[TBL1]の赤枠(A1)に貼り付け"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = "(TBL量が多い場合、大まかに分けて、TBL2以降に貼り付け)"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 7
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "A5M2(検索結果)"
+        .Cells(startRowIdx, "F").Offset(2, 0).Value = "TBL-No"
+        .Cells(startRowIdx, "K").Offset(2, 0).Value = "TBL(論理)"
+        .Cells(startRowIdx, "P").Offset(2, 0).Value = "TBL(物理)"
+        .Cells(startRowIdx, "F").Offset(3, 0).Value = "1"
+        .Cells(startRowIdx, "F").Offset(4, 0).Value = "2"
+        .Cells(startRowIdx, "F").Offset(5, 0).Value = "3"
+        .Cells(startRowIdx, "K").Offset(3, 0).Value = "顧客"
+        .Cells(startRowIdx, "K").Offset(4, 0).Value = "受注"
+        .Cells(startRowIdx, "K").Offset(5, 0).Value = "受注明細"
+        .Cells(startRowIdx, "P").Offset(3, 0).Value = "CUSTOMERS"
+        .Cells(startRowIdx, "P").Offset(4, 0).Value = "ORDERS"
+        .Cells(startRowIdx, "P").Offset(5, 0).Value = "ORDER_DETAILS"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 13
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "↓全選択、コピー、貼り付け"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 15
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "Sheet[TBL1]"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = "TBL-No"
+        .Cells(startRowIdx, "H").Offset(2, 0).Value = "TBL(論理)"
+        .Cells(startRowIdx, "L").Offset(2, 0).Value = "TBL(物理)"
+        .Cells(startRowIdx, "E").Offset(3, 0).Value = "↑ 検索結果をA1に貼り付け"
+        .Cells(startRowIdx, "S").Offset(3, 0).Value = "→"
+        .Cells(startRowIdx, "U").Offset(2, 0).Value = "TBL-No"
+        .Cells(startRowIdx, "X").Offset(2, 0).Value = "TBL(論理)"
+        .Cells(startRowIdx, "AB").Offset(2, 0).Value = "TBL(物理)"
+        .Cells(startRowIdx, "U").Offset(3, 0).Value = "1"
+        .Cells(startRowIdx, "U").Offset(4, 0).Value = "2"
+        .Cells(startRowIdx, "U").Offset(5, 0).Value = "3"
+        .Cells(startRowIdx, "X").Offset(3, 0).Value = "顧客"
+        .Cells(startRowIdx, "X").Offset(4, 0).Value = "受注"
+        .Cells(startRowIdx, "X").Offset(5, 0).Value = "受注明細"
+        .Cells(startRowIdx, "AB").Offset(3, 0).Value = "CUSTOMERS"
+        .Cells(startRowIdx, "AB").Offset(4, 0).Value = "ORDERS"
+        .Cells(startRowIdx, "AB").Offset(5, 0).Value = "ORDER_DETAILS"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 22
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "2,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "SQL作成Sheetを作成する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 23
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "2-1,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "Sheet[Sheet作成]の赤枠項目にSheet作成情報を入力する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 25
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "No"
+        .Cells(startRowIdx, "G").Offset(1, 0).Value = "TBL論理名"
+        .Cells(startRowIdx, "L").Offset(1, 0).Value = "TBL物理名"
+        .Cells(startRowIdx, "S").Offset(1, 0).Value = "参照Sheet名"
+        .Cells(startRowIdx, "X").Offset(1, 0).Value = "DB"
+        .Cells(startRowIdx, "AA").Offset(1, 0).Value = "Schema名(任意)"
+        .Cells(startRowIdx, "AG").Offset(1, 0).Value = "作成Sheet名(任意)"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = "1"
+        .Cells(startRowIdx, "E").Offset(3, 0).Value = "2"
+        .Cells(startRowIdx, "E").Offset(4, 0).Value = "3"
+        .Cells(startRowIdx, "G").Offset(2, 0).Value = "顧客"
+        .Cells(startRowIdx, "G").Offset(3, 0).Value = "受注"
+        .Cells(startRowIdx, "G").Offset(4, 0).Value = "受注明細"
+        .Cells(startRowIdx, "L").Offset(2, 0).Value = "CUSTOMERS"
+        .Cells(startRowIdx, "L").Offset(3, 0).Value = "ORDERS"
+        .Cells(startRowIdx, "L").Offset(4, 0).Value = "ORDER_DETAILS"
+        .Cells(startRowIdx, "S").Offset(2, 0).Value = "TBL1"
+        .Cells(startRowIdx, "S").Offset(3, 0).Value = "TBL1"
+        .Cells(startRowIdx, "S").Offset(4, 0).Value = "TBL1"
+        .Cells(startRowIdx, "X").Offset(2, 0).Value = "Oracle"
+        .Cells(startRowIdx, "X").Offset(3, 0).Value = "Oracle"
+        .Cells(startRowIdx, "X").Offset(4, 0).Value = "Oracle"
+        .Cells(startRowIdx, "AA").Offset(2, 0).Value = "SYSTEM"
+        .Cells(startRowIdx, "AA").Offset(3, 0).Value = "SYSTEM"
+        .Cells(startRowIdx, "AA").Offset(4, 0).Value = "SYSTEM"
+        .Cells(startRowIdx, "AG").Offset(2, 0).Value = "INPUT1"
+        .Cells(startRowIdx, "AG").Offset(3, 0).Value = "INPUT2"
+        .Cells(startRowIdx, "AG").Offset(4, 0).Value = "INPUT3"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 30
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "2-2,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "上部"
+        .Cells(startRowIdx, "G").Offset(1, 0).Value = "Sheet作成"
+        .Cells(startRowIdx, "K").Offset(1, 0).Value = "ボタンを押す"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 32
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "2-3,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "Sheetが２種類作成される"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = """I-XXX"""
+        .Cells(startRowIdx, "E").Offset(3, 0).Value = """D-XXX"""
+        .Cells(startRowIdx, "H").Offset(2, 0).Value = "← INSERT用"
+        .Cells(startRowIdx, "H").Offset(3, 0).Value = "← DELETE用"
+        .Cells(startRowIdx, "E").Offset(5, 0).Value = "I-INPUT1"
+        .Cells(startRowIdx, "I").Offset(5, 0).Value = "D-INPUT1"
+        .Cells(startRowIdx, "M").Offset(5, 0).Value = "I-INPUT2"
+        .Cells(startRowIdx, "Q").Offset(5, 0).Value = "D-INPUT2"
+        .Cells(startRowIdx, "U").Offset(5, 0).Value = "I-INPUT3"
+        .Cells(startRowIdx, "Y").Offset(5, 0).Value = "D-INPUT3"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 39
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "3,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "INSERT"
+        .Cells(startRowIdx, "F").Offset(1, 0).Value = "SQLファイルを作成する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 40
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "3-1,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "赤枠に値を入力する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 42
+        .Cells(startRowIdx, "D").Offset(1, 0).Value = "Sheet[I-INPUT1]"
+        .Cells(startRowIdx, "D").Offset(9, 0).Value = "No"
+        .Cells(startRowIdx, "D").Offset(10, 0).Value = "1"
+        .Cells(startRowIdx, "D").Offset(11, 0).Value = "2"
+        .Cells(startRowIdx, "D").Offset(12, 0).Value = "3"
+        .Cells(startRowIdx, "F").Offset(2, 0).Value = "No"
+        .Cells(startRowIdx, "F").Offset(3, 0).Value = "PK"
+        .Cells(startRowIdx, "F").Offset(4, 0).Value = "論理名"
+        .Cells(startRowIdx, "F").Offset(5, 0).Value = "物理名"
+        .Cells(startRowIdx, "F").Offset(6, 0).Value = "型"
+        .Cells(startRowIdx, "F").Offset(7, 0).Value = "桁"
+        .Cells(startRowIdx, "F").Offset(8, 0).Value = "NULL不可"
+        .Cells(startRowIdx, "F").Offset(9, 0).Value = "初期値"
+        .Cells(startRowIdx, "J").Offset(2, 0).Value = "1"
+        .Cells(startRowIdx, "P").Offset(2, 0).Value = "2"
+        .Cells(startRowIdx, "V").Offset(2, 0).Value = "3"
+        .Cells(startRowIdx, "J").Offset(3, 0).Value = "Y"
+        .Cells(startRowIdx, "J").Offset(4, 0).Value = "顧客ID"
+        .Cells(startRowIdx, "P").Offset(4, 0).Value = "顧客名"
+        .Cells(startRowIdx, "V").Offset(4, 0).Value = "メールアドレス"
+        .Cells(startRowIdx, "J").Offset(5, 0).Value = "CUSTOMER_ID"
+        .Cells(startRowIdx, "P").Offset(5, 0).Value = "CUSTOMER_NAME"
+        .Cells(startRowIdx, "V").Offset(5, 0).Value = "EMAIL"
+        .Cells(startRowIdx, "J").Offset(6, 0).Value = "NUMBER"
+        .Cells(startRowIdx, "P").Offset(6, 0).Value = "VARCHAR2"
+        .Cells(startRowIdx, "V").Offset(6, 0).Value = "VARCHAR2"
+        .Cells(startRowIdx, "J").Offset(7, 0).Value = "10,0"
+        .Cells(startRowIdx, "P").Offset(7, 0).Value = "'100"
+        .Cells(startRowIdx, "V").Offset(7, 0).Value = "'255"
+        .Cells(startRowIdx, "J").Offset(8, 0).Value = "Y"
+        .Cells(startRowIdx, "P").Offset(8, 0).Value = "Y"
+        .Cells(startRowIdx, "J").Offset(10, 0).Value = "'0000000001"
+        .Cells(startRowIdx, "J").Offset(11, 0).Value = "'0000000002"
+        .Cells(startRowIdx, "J").Offset(12, 0).Value = "'0000000003"
+        .Cells(startRowIdx, "P").Offset(10, 0).Value = "AAA"
+        .Cells(startRowIdx, "P").Offset(11, 0).Value = "BBB"
+        .Cells(startRowIdx, "P").Offset(12, 0).Value = "CCC"
+        .Cells(startRowIdx, "V").Offset(10, 0).Value = "AAA@AAA.jp"
+        .Cells(startRowIdx, "V").Offset(11, 0).Value = "BBB@BBB.jp"
+        .Cells(startRowIdx, "V").Offset(12, 0).Value = "CCC@CCC.jp"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 55
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "3-2,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "設定値を設定する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 57
+        .Cells(startRowIdx, "D").Offset(1, 0).Value = "作成"
+        .Cells(startRowIdx, "D").Offset(2, 0).Value = "FILE名"
+        .Cells(startRowIdx, "D").Offset(3, 0).Value = "DB"
+        .Cells(startRowIdx, "D").Offset(4, 0).Value = "SCHEMA"
+        .Cells(startRowIdx, "D").Offset(5, 0).Value = "TBL論"
+        .Cells(startRowIdx, "D").Offset(6, 0).Value = "TBL物"
+        .Cells(startRowIdx, "G").Offset(3, 0).Value = "Oracle"
+        .Cells(startRowIdx, "G").Offset(4, 0).Value = "SYSTEM"
+        .Cells(startRowIdx, "G").Offset(5, 0).Value = "顧客"
+        .Cells(startRowIdx, "G").Offset(6, 0).Value = "CUSTOMERS"
+        .Cells(startRowIdx, "R").Offset(1, 0).Value = "作成するファイル名を指定 (未入力の場合、Sheet名で作成)"
+        .Cells(startRowIdx, "R").Offset(3, 0).Value = "DBの種類を指定"
+        .Cells(startRowIdx, "R").Offset(4, 0).Value = "スキーマ名を指定"
+        .Cells(startRowIdx, "R").Offset(5, 0).Value = "テーブル論理名を指定"
+        .Cells(startRowIdx, "R").Offset(6, 0).Value = "テーブル物理名を指定"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 64
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "3-3,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "左部"
+        .Cells(startRowIdx, "G").Offset(1, 0).Value = "SQL作成"
+        .Cells(startRowIdx, "K").Offset(1, 0).Value = "ボタンを押す"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 66
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "3-4,"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "このExcelファイルと同じ場所に本日日付フォルダが作成され、その中にファイルが２種類作成される"
+        .Cells(startRowIdx, "F").Offset(2, 0).Value = "1,"
+        .Cells(startRowIdx, "G").Offset(2, 0).Value = "INSERT SQLファイル"
+        .Cells(startRowIdx, "H").Offset(3, 0).Formula2 = "=""Excelファイル > ""&TEXT(TODAY(),""yyyymmdd"")&"" > [I-CUSTOMERS.sql]"""
+        .Cells(startRowIdx, "F").Offset(4, 0).Value = "2,"
+        .Cells(startRowIdx, "G").Offset(4, 0).Value = "A5M2 インポート用 CSVファイル"
+        .Cells(startRowIdx, "H").Offset(5, 0).Formula2 = "=""Excelファイル > ""&TEXT(TODAY(),""yyyymmdd"")&"" > [IMP-I-CUSTOMERS.csv]"""
+        '--------------------------------------------------------------------------------
+        startRowIdx = 73
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "4,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "DELETE"
+        .Cells(startRowIdx, "F").Offset(1, 0).Value = "SQLファイルを作成する"
+        .Cells(startRowIdx, "C").Offset(2, 0).Value = "4-1,"
+        .Cells(startRowIdx, "C").Offset(3, 0).Value = "4-2,"
+        .Cells(startRowIdx, "C").Offset(4, 0).Value = "4-3,"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = "3-1, と同じ手順"
+        .Cells(startRowIdx, "E").Offset(3, 0).Value = "3-2, と同じ手順"
+        .Cells(startRowIdx, "E").Offset(4, 0).Value = "3-3, と同じ手順"
+        .Cells(startRowIdx, "C").Offset(5, 0).Value = "4-4,"
+        .Cells(startRowIdx, "E").Offset(5, 0).Value = "このExcelファイルと同じ場所に本日日付フォルダが作成され、その中にファイルが作成される"
+        .Cells(startRowIdx, "F").Offset(6, 0).Value = "1,"
+        .Cells(startRowIdx, "G").Offset(6, 0).Value = "DELETE SQLファイル"
+        .Cells(startRowIdx, "H").Offset(7, 0).Formula2 = "=""Excelファイル > ""&TEXT(TODAY(),""yyyymmdd"")&"" > [D-CUSTOMERS.sql]"""
+        startRowIdx = 78
+    End With
+
+    '========== Sheet設定 ==========
+    ws.Activate
+    'タブ色
+    ws.Tab.Color = RGB(128, 128, 128) '#808080
+    '文字揃え
+    ws.Cells.VerticalAlignment = xlTop
+    ws.Cells.HorizontalAlignment = xlLeft
+    '列幅
+    ws.Columns.ColumnWidth = 2
+    With ws
+        startRowIdx = 4
+        '太字/文字色
+        Set rng = ws.Cells(startRowIdx, "E").Offset(1, 0)
+        rng.Characters(Start:=49, Length:=2).Font.Bold = True
+        rng.Characters(Start:=49, Length:=2).Font.Color = RGB(255, 0, 0) '#FF0000
+        '--------------------------------------------------------------------------------
+        startRowIdx = 7
+        'セル結合
+        .Range(.Cells(startRowIdx, "F").Offset(2, 0), .Cells(startRowIdx, "J").Offset(5, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "K").Offset(2, 0), .Cells(startRowIdx, "O").Offset(5, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "P").Offset(2, 0), .Cells(startRowIdx, "U").Offset(5, 0)).Merge Across:=True
+        '罫線
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "U").Offset(5, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlInsideVertical, xlInsideHorizontal)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).Color = RGB(191, 191, 191) '#BFBFBF
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "F").Offset(3, 0), .Cells(startRowIdx, "U").Offset(5, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 0, 0) '#FF0000
+        Next
+        '文字揃え
+        .Range(.Cells(startRowIdx, "F").Offset(3, 0), .Cells(startRowIdx, "J").Offset(5, 0)).HorizontalAlignment = xlRight
+        '背景色
+        .Range(.Cells(startRowIdx, "F").Offset(4, 0), .Cells(startRowIdx, "U").Offset(4, 0)).Interior.Color = RGB(217, 230, 255) '#D9E6FF
+        '--------------------------------------------------------------------------------
+        startRowIdx = 15
+        'セル結合
+        .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "G").Offset(2, 0)).Merge
+        .Range(.Cells(startRowIdx, "H").Offset(2, 0), .Cells(startRowIdx, "K").Offset(2, 0)).Merge
+        .Range(.Cells(startRowIdx, "L").Offset(2, 0), .Cells(startRowIdx, "Q").Offset(2, 0)).Merge
+        .Range(.Cells(startRowIdx, "E").Offset(3, 0), .Cells(startRowIdx, "Q").Offset(3, 0)).Merge
+        .Range(.Cells(startRowIdx, "U").Offset(2, 0), .Cells(startRowIdx, "W").Offset(5, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "X").Offset(2, 0), .Cells(startRowIdx, "AA").Offset(5, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "AB").Offset(2, 0), .Cells(startRowIdx, "AG").Offset(5, 0)).Merge Across:=True
+        '太字/背景色
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "Q").Offset(2, 0))
+        rng.Font.Bold = True
+        rng.Interior.Color = RGB(135, 231, 173) '#87E7AD
+        Set rng = .Range(.Cells(startRowIdx, "U").Offset(2, 0), .Cells(startRowIdx, "AG").Offset(2, 0))
+        rng.Font.Bold = True
+        rng.Interior.Color = RGB(135, 231, 173) '#87E7AD
+        '文字揃え
+        .Range(.Cells(startRowIdx, "U").Offset(3, 0), .Cells(startRowIdx, "W").Offset(5, 0)).HorizontalAlignment = xlRight
+        '罫線
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "Q").Offset(3, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlInsideVertical, xlInsideHorizontal)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "U").Offset(2, 0), .Cells(startRowIdx, "AG").Offset(5, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlInsideVertical, xlInsideHorizontal)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "G").Offset(2, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 0, 0) '#FF0000
+        Next
+        '--------------------------------------------------------------------------------
+        startRowIdx = 23
+        '太字/文字色
+        Set rng = ws.Cells(startRowIdx, "E").Offset(1, 0)
+        rng.Characters(Start:=16, Length:=2).Font.Bold = True
+        rng.Characters(Start:=16, Length:=2).Font.Color = RGB(255, 0, 0) '#FF0000
+        '--------------------------------------------------------------------------------
+        startRowIdx = 25
+        'セル結合
+        .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "F").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "K").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "L").Offset(1, 0), .Cells(startRowIdx, "R").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "S").Offset(1, 0), .Cells(startRowIdx, "W").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "X").Offset(1, 0), .Cells(startRowIdx, "Z").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "AA").Offset(1, 0), .Cells(startRowIdx, "AF").Offset(4, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "AG").Offset(1, 0), .Cells(startRowIdx, "AM").Offset(4, 0)).Merge Across:=True
+        '太字/背景色/文字揃え
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "AM").Offset(1, 0))
+        rng.Font.Bold = True
+        rng.Interior.Color = RGB(135, 231, 173) '#87E7AD
+        rng.HorizontalAlignment = xlCenter
+        '文字揃え
+        .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "F").Offset(4, 0)).HorizontalAlignment = xlCenter
+        '背景色
+        .Range(.Cells(startRowIdx, "E").Offset(2, 0), .Cells(startRowIdx, "AM").Offset(2, 0)).Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        .Range(.Cells(startRowIdx, "E").Offset(4, 0), .Cells(startRowIdx, "AM").Offset(4, 0)).Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        .Range(.Cells(startRowIdx, "G").Offset(2, 0), .Cells(startRowIdx, "K").Offset(4, 0)).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        '罫線
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "AM").Offset(4, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "AM").Offset(4, 0))
+        For Each borderType In Array(xlInsideVertical, xlInsideHorizontal)
+            rng.Borders(borderType).Weight = xlHairline
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "L").Offset(1, 0), .Cells(startRowIdx, "AM").Offset(1, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 0, 0) '#FF0000
+        Next
+        '--------------------------------------------------------------------------------
+        startRowIdx = 30
+        Set rng = .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "J").Offset(1, 0))
+        'セル結合/太字/文字色/文字揃え/罫線/背景色
+        rng.Merge
+        rng.Font.Bold = True
+        rng.Font.Color = RGB(255, 255, 255) '#FFFFFF
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).LineStyle = xlDouble
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 255, 255) '#FFFFFF
+        Next
+        rng.Interior.Color = RGB(91, 155, 213) '#5B9BD5
+        '--------------------------------------------------------------------------------
+        startRowIdx = 32
+        'セル結合/背景色
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(5, 0), .Cells(startRowIdx, "H").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        Set rng = .Range(.Cells(startRowIdx, "I").Offset(5, 0), .Cells(startRowIdx, "L").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(237, 125, 49) '#ED7D31
+        Set rng = .Range(.Cells(startRowIdx, "M").Offset(5, 0), .Cells(startRowIdx, "P").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        Set rng = .Range(.Cells(startRowIdx, "Q").Offset(5, 0), .Cells(startRowIdx, "T").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(237, 125, 49) '#ED7D31
+        Set rng = .Range(.Cells(startRowIdx, "U").Offset(5, 0), .Cells(startRowIdx, "X").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        Set rng = .Range(.Cells(startRowIdx, "Y").Offset(5, 0), .Cells(startRowIdx, "AB").Offset(5, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(237, 125, 49) '#ED7D31
+        '文字揃え/罫線
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(5, 0), .Cells(startRowIdx, "AB").Offset(5, 0))
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom, xlInsideVertical, xlInsideHorizontal)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        '--------------------------------------------------------------------------------
+        startRowIdx = 39
+        'セル結合/背景色/文字揃え
+        Set rng = .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "E").Offset(1, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        '--------------------------------------------------------------------------------
+        startRowIdx = 40
+        '太字/文字色
+        Set rng = ws.Cells(startRowIdx, "E").Offset(1, 0)
+        rng.Characters(Start:=0, Length:=2).Font.Bold = True
+        rng.Characters(Start:=0, Length:=2).Font.Color = RGB(255, 0, 0) '#FF0000
+        '--------------------------------------------------------------------------------
+        startRowIdx = 42
+        'フォント
+        .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "AA").Offset(12, 0)).Font.Name = "HGｺﾞｼｯｸM"
+        'セル結合
+        .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "E").Offset(12, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "F").Offset(2, 0), .Cells(startRowIdx, "I").Offset(12, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "J").Offset(2, 0), .Cells(startRowIdx, "O").Offset(12, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "P").Offset(2, 0), .Cells(startRowIdx, "U").Offset(12, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "V").Offset(2, 0), .Cells(startRowIdx, "AA").Offset(12, 0)).Merge Across:=True
+        '文字揃え
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "AA").Offset(9, 0))
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(10, 0), .Cells(startRowIdx, "E").Offset(12, 0))
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        '太字
+        .Range(.Cells(startRowIdx, "J").Offset(3, 0), .Cells(startRowIdx, "AA").Offset(3, 0)).Font.Bold = True
+        .Range(.Cells(startRowIdx, "J").Offset(8, 0), .Cells(startRowIdx, "AA").Offset(8, 0)).Font.Bold = True
+        '太字色
+        .Range(.Cells(startRowIdx, "J").Offset(8, 0), .Cells(startRowIdx, "AA").Offset(8, 0)).Font.Color = RGB(255, 0, 0) '#FF0000
+        '背景色
+        .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "E").Offset(8, 0)).Interior.Color = RGB(128, 128, 128) '#808080
+        .Range(.Cells(startRowIdx, "D").Offset(9, 0), .Cells(startRowIdx, "E").Offset(12, 0)).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range(.Cells(startRowIdx, "F").Offset(2, 0), .Cells(startRowIdx, "I").Offset(9, 0)).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range(.Cells(startRowIdx, "J").Offset(3, 0), .Cells(startRowIdx, "O").Offset(3, 0)).Interior.Color = RGB(255, 0, 0) '#FF0000
+        .Range(.Cells(startRowIdx, "F").Offset(11, 0), .Cells(startRowIdx, "AA").Offset(11, 0)).Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        '罫線
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "I").Offset(9, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(2, 0), .Cells(startRowIdx, "AA").Offset(12, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop)
+            rng.Borders(borderType).Weight = xlThin
+            rng.Borders(borderType).ColorIndex = xlAutomatic
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(10, 0), .Cells(startRowIdx, "AA").Offset(12, 0))
+        rng.Borders(xlInsideHorizontal).Weight = xlHairline
+        rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+        Set rng = .Range(.Cells(startRowIdx, "J").Offset(10, 0), .Cells(startRowIdx, "AA").Offset(12, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 0, 0) '#FF0000
+        Next
+        '--------------------------------------------------------------------------------
+        startRowIdx = 57
+        'フォント
+        .Range(.Cells(startRowIdx, "D").Offset(1, 0), .Cells(startRowIdx, "P").Offset(6, 0)).Font.Name = "HGｺﾞｼｯｸM"
+        'セル結合/背景色/文字揃え
+        Set rng = .Range(.Cells(startRowIdx, "D").Offset(1, 0), .Cells(startRowIdx, "F").Offset(6, 0))
+        rng.Merge Across:=True
+        rng.Interior.Color = RGB(255, 192, 0) '#FFC000
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        Set rng = .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "P").Offset(6, 0))
+        rng.Merge Across:=True
+        rng.Interior.Color = RGB(255, 242, 204) '#FFF2CC
+        '--------------------------------------------------------------------------------
+        startRowIdx = 64
+        Set rng = .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "J").Offset(1, 0))
+        'セル結合/太字/文字色/文字揃え/罫線/背景色
+        rng.Merge
+        rng.Font.Bold = True
+        rng.Font.Color = RGB(255, 255, 255) '#FFFFFF
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).LineStyle = xlDouble
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 255, 255) '#FFFFFF
+        Next
+        rng.Interior.Color = RGB(91, 155, 213) '#5B9BD5
+        '--------------------------------------------------------------------------------
+        startRowIdx = 73
+        'セル結合/背景色/文字揃え
+        Set rng = .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "E").Offset(1, 0))
+        rng.Merge
+        rng.Interior.Color = RGB(237, 125, 49) '#ED7D31
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+    End With
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
 End Sub
 '------------------------------------------------------------
 '概要 : Sheet[SQL入力]を作成する

@@ -18,6 +18,9 @@ Public Sub CreateSheet_InputCsvContents()
     Dim shpWidth As Double: shpWidth = 4
     Dim shpHeight As Double: shpHeight = 1.5
 
+    'Sheet作成[使い方]
+    Call CreateSheet_HowToUse
+
     '新規Sheet作成 & 新規Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
     ws.Name = ChangeUniqueSheetNm("INPUT")
@@ -129,6 +132,183 @@ Public Sub CreateSheet_InputCsvContents()
 
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
+End Sub
+'------------------------------------------------------------
+'概要 : Sheet[使い方]を作成する
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Private Sub CreateSheet_HowToUse()
+    Dim ws As Worksheet       'Sheet
+    Dim i As Long             'Loopカウンタ
+    Dim startRowIdx As Long   '開始行
+    Dim rng As Range          '範囲
+    Dim borderType As Variant '罫線位置区分
+
+    'Sheet作成 & Sheet名セット
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
+    ws.Name = ChangeUniqueSheetNm("使い方")
+
+    '========== 書込 ==========
+    With ws
+        .Range("B2").Value = "使い方"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 3
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "1,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "赤枠に値を入力する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 5
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "No"
+        .Cells(startRowIdx, "J").Offset(1, 0).Value = "1"
+        .Cells(startRowIdx, "N").Offset(1, 0).Value = "2"
+        .Cells(startRowIdx, "R").Offset(1, 0).Value = "3"
+        .Cells(startRowIdx, "E").Offset(2, 0).Value = "項目名(論理)"
+        .Cells(startRowIdx, "J").Offset(2, 0).Value = "項目名1"
+        .Cells(startRowIdx, "N").Offset(2, 0).Value = "項目名2"
+        .Cells(startRowIdx, "R").Offset(2, 0).Value = "項目名3"
+        .Cells(startRowIdx, "E").Offset(3, 0).Value = "項目名(物理)"
+        .Cells(startRowIdx, "J").Offset(3, 0).Value = "COL_NM_1"
+        .Cells(startRowIdx, "N").Offset(3, 0).Value = "COL_NM_2"
+        .Cells(startRowIdx, "R").Offset(3, 0).Value = "COL_NM_3"
+        .Cells(startRowIdx, "E").Offset(4, 0).Value = "ダブクォ付与"
+        .Cells(startRowIdx, "J").Offset(4, 0).Value = "Y"
+        .Cells(startRowIdx, "N").Offset(4, 0).Value = "Y"
+        .Cells(startRowIdx, "R").Offset(4, 0).Value = "Y"
+        .Cells(startRowIdx, "C").Offset(4, 0).Value = "No"
+        .Cells(startRowIdx, "C").Offset(5, 0).Value = "1"
+        .Cells(startRowIdx, "C").Offset(6, 0).Value = "2"
+        .Cells(startRowIdx, "C").Offset(7, 0).Value = "3"
+        .Cells(startRowIdx, "J").Offset(5, 0).Value = "A"
+        .Cells(startRowIdx, "J").Offset(6, 0).Value = "B"
+        .Cells(startRowIdx, "J").Offset(7, 0).Value = "C"
+        .Cells(startRowIdx, "N").Offset(5, 0).Value = "a"
+        .Cells(startRowIdx, "N").Offset(6, 0).Value = "b"
+        .Cells(startRowIdx, "N").Offset(7, 0).Value = "c"
+        .Cells(startRowIdx, "R").Offset(5, 0).Value = "1"
+        .Cells(startRowIdx, "R").Offset(6, 0).Value = "2"
+        .Cells(startRowIdx, "R").Offset(7, 0).Value = "3"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 13
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "2,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "設定値を設定する"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 15
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "FILE名"
+        .Cells(startRowIdx, "C").Offset(2, 0).Value = "CSV/TSV"
+        .Cells(startRowIdx, "C").Offset(3, 0).Value = "HEADER"
+        .Cells(startRowIdx, "C").Offset(4, 0).Value = "HEAD論/物"
+        .Cells(startRowIdx, "G").Offset(1, 0).Value = "ファイル名"
+        .Cells(startRowIdx, "G").Offset(2, 0).Value = "CSV"
+        .Cells(startRowIdx, "G").Offset(3, 0).Value = "有"
+        .Cells(startRowIdx, "G").Offset(4, 0).Value = "論理"
+        .Cells(startRowIdx, "N").Offset(1, 0).Value = "作成するファイル名を指定"
+        .Cells(startRowIdx, "N").Offset(2, 0).Value = "CSV or TSV を指定"
+        .Cells(startRowIdx, "N").Offset(3, 0).Value = "1行目にヘッダーを作成するか指定"
+        .Cells(startRowIdx, "N").Offset(4, 0).Value = "1行目のヘッダー(論理名 or 物理名)を指定"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 20
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "3,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "左部"
+        .Cells(startRowIdx, "E").Offset(1, 0).Value = "作成"
+        .Cells(startRowIdx, "H").Offset(1, 0).Value = "ボタンを押す"
+        '--------------------------------------------------------------------------------
+        startRowIdx = 22
+        .Cells(startRowIdx, "B").Offset(1, 0).Value = "4,"
+        .Cells(startRowIdx, "C").Offset(1, 0).Value = "このExcelファイルと同じ場所にファイルが作成される"
+        .Cells(startRowIdx, "D").Offset(2, 0).Value = "[ファイル名.csv]"
+    End With
+
+    '========== Sheet設定 ==========
+    ws.Activate
+    'タブ色
+    ws.Tab.Color = RGB(128, 128, 128) '#808080
+    '文字揃え
+    ws.Cells.VerticalAlignment = xlTop
+    ws.Cells.HorizontalAlignment = xlLeft
+    '列幅
+    ws.Columns.ColumnWidth = 2
+    With ws
+        startRowIdx = 3
+        '太字/文字色
+        Set rng = ws.Cells(startRowIdx, "C").Offset(1, 0)
+        rng.Characters(Start:=0, Length:=2).Font.Bold = True
+        rng.Characters(Start:=0, Length:=2).Font.Color = RGB(255, 0, 0) '#FF0000
+        '--------------------------------------------------------------------------------
+        startRowIdx = 5
+        'セル結合
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "D").Offset(7, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "I").Offset(7, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "J").Offset(1, 0), .Cells(startRowIdx, "M").Offset(7, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "N").Offset(1, 0), .Cells(startRowIdx, "Q").Offset(7, 0)).Merge Across:=True
+        .Range(.Cells(startRowIdx, "R").Offset(1, 0), .Cells(startRowIdx, "U").Offset(7, 0)).Merge Across:=True
+        'フォント
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "U").Offset(7, 0)).Font.Name = "HGｺﾞｼｯｸM"
+        '文字揃え
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "U").Offset(7, 0)).VerticalAlignment = xlCenter
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "U").Offset(7, 0)).HorizontalAlignment = xlCenter
+        .Range(.Cells(startRowIdx, "J").Offset(5, 0), .Cells(startRowIdx, "U").Offset(7, 0)).VerticalAlignment = xlTop
+        .Range(.Cells(startRowIdx, "J").Offset(5, 0), .Cells(startRowIdx, "U").Offset(7, 0)).HorizontalAlignment = xlLeft
+        '背景色
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "I").Offset(4, 0)).Interior.Color = RGB(155, 194, 230) '#9BC2E6
+        .Range(.Cells(startRowIdx, "J").Offset(1, 0), .Cells(startRowIdx, "U").Offset(1, 0)).Interior.Color = RGB(155, 194, 230) '#9BC2E6
+        .Range(.Cells(startRowIdx, "J").Offset(2, 0), .Cells(startRowIdx, "U").Offset(4, 0)).Interior.Color = RGB(189, 215, 238) '#BDD7EE
+        .Range(.Cells(startRowIdx, "C").Offset(5, 0), .Cells(startRowIdx, "D").Offset(7, 0)).Interior.Color = RGB(217, 217, 217) '#D9D9D9
+        .Range(.Cells(startRowIdx, "E").Offset(5, 0), .Cells(startRowIdx, "I").Offset(7, 0)).Interior.Color = RGB(191, 191, 191) '#BFBFBF
+        .Range(.Cells(startRowIdx, "J").Offset(6, 0), .Cells(startRowIdx, "U").Offset(6, 0)).Interior.Color = RGB(242, 242, 242) '#F2F2F2
+        '罫線
+        Set rng = .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "U").Offset(7, 0))
+        rng.Borders(xlInsideHorizontal).Weight = xlHairline
+        rng.Borders(xlInsideHorizontal).ColorIndex = xlAutomatic
+        Set rng = .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "I").Offset(4, 0))
+        For Each borderType In Array(xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThin
+        Next
+        Set rng = .Range(.Cells(startRowIdx, "J").Offset(5, 0), .Cells(startRowIdx, "U").Offset(7, 0))
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 0, 0) '#FF0000
+        Next
+        '--------------------------------------------------------------------------------
+        startRowIdx = 15
+        'フォント
+        .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "L").Offset(4, 0)).Font.Name = "HGｺﾞｼｯｸM"
+        'セル結合/文字揃え/背景色
+        Set rng = .Range(.Cells(startRowIdx, "C").Offset(1, 0), .Cells(startRowIdx, "F").Offset(4, 0))
+        rng.Merge Across:=True
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        rng.Interior.Color = RGB(255, 192, 0) '#FFC000
+        Set rng = .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "L").Offset(4, 0))
+        rng.Merge Across:=True
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        rng.Interior.Color = RGB(255, 242, 204) '#FFF2CC
+        .Range(.Cells(startRowIdx, "G").Offset(1, 0), .Cells(startRowIdx, "L").Offset(1, 0)).HorizontalAlignment = xlLeft
+        '--------------------------------------------------------------------------------
+        startRowIdx = 20
+        Set rng = .Range(.Cells(startRowIdx, "E").Offset(1, 0), .Cells(startRowIdx, "G").Offset(1, 0))
+        'セル結合
+        rng.Merge
+        '太字/文字色
+        rng.Font.Bold = True
+        rng.Font.Color = RGB(255, 255, 255) '#FFFFFF
+        '文字揃え
+        rng.VerticalAlignment = xlCenter
+        rng.HorizontalAlignment = xlCenter
+        '罫線
+        For Each borderType In Array(xlEdgeLeft, xlEdgeTop, xlEdgeRight, xlEdgeBottom)
+            rng.Borders(borderType).LineStyle = xlDouble
+            rng.Borders(borderType).Weight = xlThick
+            rng.Borders(borderType).Color = RGB(255, 255, 255) '#FFFFFF
+        Next
+        '背景色
+        rng.Interior.Color = RGB(91, 155, 213) '#5B9BD5
+    End With
+    '表示倍率
+    ActiveWindow.Zoom = 85
+    '目盛線
+    ActiveWindow.DisplayGridlines = False
 End Sub
 '------------------------------------------------------------
 '概要 : CSV or TSV ファイル作成
