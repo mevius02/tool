@@ -6,7 +6,7 @@ Windows Registry Editor Version 5.00
 ; 【ファイル作成方法】
 ;   このファイル内容をテキストに貼り付け保存
 ;     → ファイル名は自由 (例)add_sakura_context_menu.reg
-;     → 文字コードは「Unicode」or「UTF-16 LE」
+;     → 文字コードは「Unicode」or「UTF-16」
 ;     → @="サクラエディタで開く"の項目名は自由に変更可
 ; 【パス指定場所】
 ;   C:\からファイル[sakura.exe]までの絶対パスを指定
