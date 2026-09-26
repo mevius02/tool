@@ -1442,7 +1442,11 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
             ws.Range(ws.Cells(startRowIdx, colIdx), ws.Cells(endRowIdx, colIdx)).NumberFormatLocal = "yyyy/mm/dd(aaa)"
             For rowIdx = startRowIdx To endRowIdx
                 If rowIdx = startRowIdx Then
-                    testValList(rowIdx, colIdx) = "CURRENT_TIMESTAMP"
+                    If colType = "DATE" Then
+                        testValList(rowIdx, colIdx) = "CURRENT_DATE"
+                    Else
+                        testValList(rowIdx, colIdx) = "CURRENT_TIMESTAMP"
+                    End If
                 ElseIf rowIdx = startRowIdx + 1 Then
                     testValList(rowIdx, colIdx) = IIf(notNull = "Y", Format$(testDate + (rowIdx - 14), fmtDate), "NULL")
                 Else
@@ -1703,53 +1707,59 @@ Private Sub Btn_CreateSqlFile_DELETE()
             ElseIf cellVal <> "DEFAULT" Then
                 '■■■ [文字列]型の場合 ■■■
                 If colTypeDict_Str.exists(colType) Then
-                    '桁数超過の場合(Oracleは全角1文字が3Byte)
-                    If dbNm = ORACLE Then
-                        If IsOverByteLength_Oracle(cellVal, colLen) Then
-                            errMsg = "桁数超過しています"
-                        End If
-                    Else
-                        If colLen < Len(cellVal) Then
-                            errMsg = "桁数超過しています"
+                    '桁数有りの場合
+                    If 0 < LenB(colLen) Then
+                        '桁数超過の場合(Oracleは全角1文字が3Byte)
+                        If dbNm = ORACLE Then
+                            If IsOverByteLength_Oracle(cellVal, colLen) Then
+                                errMsg = "桁数超過しています"
+                            End If
+                        Else
+                            If colLen < Len(cellVal) Then
+                                errMsg = "桁数超過しています"
+                            End If
                         End If
                     End If
                 '■■■ [数値]型の場合 ■■■
                 ElseIf colTypeDict_Num.exists(colType) Then
-                    '正数桁/小数桁 セット
-                    dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
-                    intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
-                    'カンマ除去
-                    cellVal = Replace(cellVal, ",", "")
-                    '空の場合
-                    If LenB(cellVal) = 0 Then
-                        errMsg = "数値ではありません"
-                    '数値以外の場合
-                    ElseIf Not IsNumeric(cellVal) Then
-                        errMsg = "数値ではありません"
-                    '小数不可の場合
-                    ElseIf dcmlPart = "0" Then
-                        '少数有りの場合
-                        If 0 < InStr(cellVal, ".") Then
-                            errMsg = "小数は登録できません"
-                       '桁数超過の場合
-                        Else
-                            If intPart < Len(cellVal) Then
-                                errMsg = "桁数超過しています"
+                    '桁数有りの場合
+                    If 0 < LenB(colLen) Then
+                        '正数桁/小数桁 セット
+                        dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
+                        intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
+                        'カンマ除去
+                        cellVal = Replace(cellVal, ",", "")
+                        '空の場合
+                        If LenB(cellVal) = 0 Then
+                            errMsg = "数値ではありません"
+                        '数値以外の場合
+                        ElseIf Not IsNumeric(cellVal) Then
+                            errMsg = "数値ではありません"
+                        '小数不可の場合
+                        ElseIf dcmlPart = "0" Then
+                            '少数有りの場合
+                            If 0 < InStr(cellVal, ".") Then
+                                errMsg = "小数は登録できません"
+                           '桁数超過の場合
+                            Else
+                                If intPart < Len(cellVal) Then
+                                    errMsg = "桁数超過しています"
+                                End If
                             End If
-                        End If
-                    '小数可の場合
-                    Else
-                        '少数無しの場合
-                        If InStr(cellVal, ".") = 0 Then
-                            '桁数超過の場合
-                            If intPart < Len(cellVal) Then
-                                errMsg = "正数が桁数超過しています"
-                            End If
-                        '少数有りの場合
+                        '小数可の場合
                         Else
-                            '桁数超過の場合
-                            If intPart < Len(Split(cellVal, ".")(1)) Then
-                                errMsg = "小数が桁数超過しています"
+                            '少数無しの場合
+                            If InStr(cellVal, ".") = 0 Then
+                                '桁数超過の場合
+                                If intPart < Len(cellVal) Then
+                                    errMsg = "正数が桁数超過しています"
+                                End If
+                            '少数有りの場合
+                            Else
+                                '桁数超過の場合
+                                If intPart < Len(Split(cellVal, ".")(1)) Then
+                                    errMsg = "小数が桁数超過しています"
+                                End If
                             End If
                         End If
                     End If
@@ -1887,7 +1897,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                 line = line & colNm & "=" & cellVal & " AND "
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & colNm & "='" & ConvertCsvVal(cellVal) & "' AND "
+                line = line & colNm & "='" & ConvertCsvVal(cellVal, True) & "' AND "
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & colNm & "=" & Replace(cellVal, ",", "") & " AND "
@@ -1907,7 +1917,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & colNm & "='" & ConvertCsvVal(cellVal) & "' AND "
+                line = line & colNm & "='" & ConvertCsvVal(cellVal, True) & "' AND "
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 4)) & ";"
@@ -2081,53 +2091,59 @@ Private Sub Btn_CreateSqlFile_INSERT()
             ElseIf cellVal <> "DEFAULT" Then
                 '■■■ [文字列]型の場合 ■■■
                 If colTypeDict_Str.exists(colType) Then
-                    '桁数超過の場合(Oracleは全角1文字が3Byte)
-                    If dbNm = ORACLE Then
-                        If IsOverByteLength_Oracle(cellVal, colLen) Then
-                            errMsg = "桁数超過しています"
-                        End If
-                    Else
-                        If colLen < Len(cellVal) Then
-                            errMsg = "桁数超過しています"
+                    '桁数有りの場合
+                    If 0 < LenB(colLen) Then
+                        '桁数超過の場合(Oracleは全角1文字が3Byte)
+                        If dbNm = ORACLE Then
+                            If IsOverByteLength_Oracle(cellVal, colLen) Then
+                                errMsg = "桁数超過しています"
+                            End If
+                        Else
+                            If colLen < Len(cellVal) Then
+                                errMsg = "桁数超過しています"
+                            End If
                         End If
                     End If
                 '■■■ [数値]型の場合 ■■■
                 ElseIf colTypeDict_Num.exists(colType) Then
-                    '正数桁/小数桁 セット
-                    dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
-                    intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
-                    'カンマ除去
-                    cellVal = Replace(cellVal, ",", "")
-                    '空の場合
-                    If LenB(cellVal) = 0 Then
-                        errMsg = "数値ではありません"
-                    '数値以外の場合
-                    ElseIf Not IsNumeric(cellVal) Then
-                        errMsg = "数値ではありません"
-                    '小数不可の場合
-                    ElseIf dcmlPart = "0" Then
-                        '少数有りの場合
-                        If 0 < InStr(cellVal, ".") Then
-                            errMsg = "小数は登録できません"
-                       '桁数超過の場合
-                        Else
-                            If intPart < Len(cellVal) Then
-                                errMsg = "桁数超過しています"
+                    '桁数有りの場合
+                    If 0 < LenB(colLen) Then
+                        '正数桁/小数桁 セット
+                        dcmlPart = IIf(0 = InStr(colLen, ","), 0, CLng(Split(colLen, ",")(1)))
+                        intPart = CLng(Split(colLen, ",")(0)) - dcmlPart
+                        'カンマ除去
+                        cellVal = Replace(cellVal, ",", "")
+                        '空の場合
+                        If LenB(cellVal) = 0 Then
+                            errMsg = "数値ではありません"
+                        '数値以外の場合
+                        ElseIf Not IsNumeric(cellVal) Then
+                            errMsg = "数値ではありません"
+                        '小数不可の場合
+                        ElseIf dcmlPart = "0" Then
+                            '少数有りの場合
+                            If 0 < InStr(cellVal, ".") Then
+                                errMsg = "小数は登録できません"
+                           '桁数超過の場合
+                            Else
+                                If intPart < Len(cellVal) Then
+                                    errMsg = "桁数超過しています"
+                                End If
                             End If
-                        End If
-                    '小数可の場合
-                    Else
-                        '少数無しの場合
-                        If InStr(cellVal, ".") = 0 Then
-                            '桁数超過の場合
-                            If intPart < Len(cellVal) Then
-                                errMsg = "正数が桁数超過しています"
-                            End If
-                        '少数有りの場合
+                        '小数可の場合
                         Else
-                            '桁数超過の場合
-                            If intPart < Len(Split(cellVal, ".")(1)) Then
-                                errMsg = "小数が桁数超過しています"
+                            '少数無しの場合
+                            If InStr(cellVal, ".") = 0 Then
+                                '桁数超過の場合
+                                If intPart < Len(cellVal) Then
+                                    errMsg = "正数が桁数超過しています"
+                                End If
+                            '少数有りの場合
+                            Else
+                                '桁数超過の場合
+                                If intPart < Len(Split(cellVal, ".")(1)) Then
+                                    errMsg = "小数が桁数超過しています"
+                                End If
                             End If
                         End If
                     End If
@@ -2265,7 +2281,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 line = line & cellVal & ", "
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & "'" & ConvertCsvVal(cellVal) & "', "
+                line = line & "'" & ConvertCsvVal(cellVal, True) & "', "
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & Replace(cellVal, ",", "") & ", "
@@ -2285,7 +2301,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & "'" & ConvertCsvVal(cellVal) & "', "
+                line = line & "'" & ConvertCsvVal(cellVal, True) & "', "
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 2)) & ");"
@@ -2330,7 +2346,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 line = line & ","
             '■■■ [文字列]型の場合 ■■■
             ElseIf colTypeDict_Str.exists(colType) Then
-                line = line & """" & ConvertCsvVal(cellVal) & ""","
+                line = line & """" & ConvertCsvVal(cellVal, False) & ""","
             '■■■ [数値]型の場合 ■■■
             ElseIf colTypeDict_Num.exists(colType) Then
                 line = line & Replace(cellVal, ",", "") & ","
@@ -2350,7 +2366,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
                 End If
             '■■■ その他の場合 ■■■
             Else
-                line = line & """" & ConvertCsvVal(cellVal) & ""","
+                line = line & """" & ConvertCsvVal(cellVal, False) & ""","
             End If
         Next
         line = Trim$(Left$(line, Len(line) - 1))
@@ -3138,18 +3154,22 @@ End Sub
 '概要 : 文字列をCSV出力値に変換する
 '     : 1,改行を\nに変換
 '     : 2,タブを文字列に変換
-'     : 3,ダブルクォーテーションをエスケープ
-'引数 : str : 文字列
+'     : 3,シングルクォーテーションをエスケープ
+'     : 4,ダブルクォーテーションをエスケープ
+'引数 : str    : 文字列
+'     : sinFlg : シングルクォーテーションエスケープ可否フラグ(True:する / False:しない)
 '戻値 : CSV出力値
 '備考 : -
 '------------------------------------------------------------
-Private Function ConvertCsvVal(ByVal str As String) As String
+Private Function ConvertCsvVal(ByVal str As String, sinFlg As Boolean) As String
     '改行
     str = Replace$(str, vbCr, "\n")
     str = Replace$(str, vbLf, "\n")
     str = Replace$(str, vbCrLf, "\n")
     'タブ
     str = Replace$(str, vbTab, "[TAB]")
+    'シングルクォーテーション
+    If sinFlg Then str = Replace$(str, "'", "''")
     'ダブルクォーテーション
     str = Replace$(str, """", """""")
     ConvertCsvVal = str
