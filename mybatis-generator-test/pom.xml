@@ -40,17 +40,17 @@
 
                 <dependencies>
                     <!-- Oracle -->
-                    <!-- <dependency>
+                    <dependency>
                         <groupId>com.oracle.database.jdbc</groupId>
                         <artifactId>ojdbc11</artifactId>
                         <version>23.4.0.24.05</version>
-                    </dependency> -->
+                    </dependency>
                     <!-- PostgreSQL -->
-                    <!-- <dependency>
+                    <dependency>
                         <groupId>org.postgresql</groupId>
                         <artifactId>postgresql</artifactId>
                         <version>42.7.4</version>
-                    </dependency> -->
+                    </dependency>
                     <!-- SQLServer -->
                     <dependency>
                         <groupId>com.microsoft.sqlserver</groupId>
@@ -62,4 +62,36 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- Oracle -->
+        <profile>
+            <id>oracle</id>
+            <properties>
+                <jdbc.driver>oracle.jdbc.OracleDriver</jdbc.driver>
+                <jdbc.url>jdbc:oracle:thin:@localhost:1521/FREE</jdbc.url>
+                <jdbc.user>system</jdbc.user>
+                <jdbc.password>oracle</jdbc.password>
+            </properties>
+        </profile>
+        <!-- PostgreSQL -->
+        <profile>
+            <id>postgresql</id>
+            <properties>
+                <jdbc.driver>org.postgresql.Driver</jdbc.driver>
+                <jdbc.url>jdbc:postgresql://localhost:5432/postgres</jdbc.url>
+                <jdbc.user>postgres</jdbc.user>
+                <jdbc.password>postgres</jdbc.password>
+            </properties>
+        </profile>
+        <!-- SQLServer -->
+        <profile>
+            <id>sqlserver</id>
+            <properties>
+                <jdbc.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</jdbc.driver>
+                <jdbc.url>jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false</jdbc.url>
+                <jdbc.user>mbg_user</jdbc.user>
+                <jdbc.password>sqlserver</jdbc.password>
+            </properties>
+        </profile>
+    </profiles>
 </project>

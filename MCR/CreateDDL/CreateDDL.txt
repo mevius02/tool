@@ -533,7 +533,7 @@ Private Sub Btn_UpdateSheet_TableInfo()
         '自分以外 & TBL定義Sheetの場合
         If ws.Name <> wsNmInfo And Trim$(ws.Range("A1").Value2) = "DB" Then
             '終了行 セット
-            endRowIdx = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+            endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
             'データ有の場合
             If 7 <= endRowIdx Then
                 '項目定義 取得

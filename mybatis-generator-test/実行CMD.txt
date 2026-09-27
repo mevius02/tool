@@ -1,1 +1,3 @@
-mvn mybatis-generator:generate
+mvn -Poracle     mybatis-generator:generate
+mvn -Ppostgresql mybatis-generator:generate
+mvn -Psqlserver  mybatis-generator:generate
