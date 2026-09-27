@@ -6,12 +6,12 @@ Windows Registry Editor Version 5.00
 ; 【ファイル作成方法】
 ;   このファイル内容をテキストに貼り付け保存
 ;     → ファイル名は自由 (例)add_sakura_context_menu.reg
-;     → 文字コードは「Unicode」or「UTF-16」
+;     → 文字コードは「Unicode」or「UTF-16」で保存
 ;     → @="サクラエディタで開く"の項目名は自由に変更可
 ; 【パス指定場所】
 ;   C:\からファイル[sakura.exe]までの絶対パスを指定
-;     → C:\\AAA\\BBB\\CCC\\sakura.exe\ ← この部分(末尾\必要)
-;     → !!! 注意 !!! [sakura.exe]までのパスの区切り文字 "\" は2文字ずつ必要
+;     → C:\\AAA\\BBB\\CCC\\sakura.exe\ ← この部分
+;     → !!! 注意 !!! パスの区切り文字 "\" の文字数、1文字と2文字の間違い注意
 ;==================================================
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\サクラエディタで開く]
@@ -19,4 +19,4 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\AAA\\BBB\\CCC\\sakura.exe"
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\サクラエディタで開く\command]
-@="\"C:\AAA\\BBB\\CCC\\\sakura.exe\" \"%1\""
+@="\"C:\AAA\\BBB\\CCC\\sakura.exe\" \"%1\""
