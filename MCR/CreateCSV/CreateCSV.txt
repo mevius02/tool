@@ -656,13 +656,15 @@ Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVa
     If Right$(filePath, 1) <> "\" Then filePath = filePath & "\"
     '先頭付与
     If Left$(fileExt, 1) <> "." Then fileExt = "." & fileExt
+    '末尾除去
+    If Right$(fileNm, Len(fileExt)) = fileExt Then fileNm = Left$(fileNm, Len(fileNm) - Len(fileExt))
 
     With stream
         .Type = 2
         .Charset = charsetNm
         .Open
         .WriteText contents
-        .SaveToFile filePath & fileNm, 2 '既存ファイル上書き設定
+        .SaveToFile filePath & fileNm & fileExt, 2 '既存ファイル上書き設定
         .Close
     End With
     Set stream = Nothing
@@ -674,7 +676,7 @@ Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVa
         With binStream
             .Type = 1
             .Open
-            .LoadFromFile filePath & fileNm
+            .LoadFromFile filePath & fileNm & fileExt
             .Position = bomLen
             byteData = .Read
             .Close
@@ -684,7 +686,7 @@ Private Sub CreateTxtFile(ByVal filePath As String, ByVal fileNm As String, ByVa
             .Type = 1
             .Open
             .Write byteData
-            .SaveToFile filePath & fileNm, 2
+            .SaveToFile filePath & fileNm & fileExt, 2
             .Close
         End With
         Set binStream = Nothing
