@@ -38,21 +38,21 @@
         <!-- TBL情報 -->
         <!-- ■■■■■ Oracle ■■■■■ -->
         <table schema="SYSTEM" tableName="TEST_TBL" domainObjectName="TestTbl" />
-        <!-- <table schema="SYSTEM" tableName="CUSTOMERS" domainObjectName="Customers" />
+        <table schema="SYSTEM" tableName="CUSTOMERS" domainObjectName="Customers" />
         <table schema="SYSTEM" tableName="ORDERS" domainObjectName="Orders" />
         <table schema="SYSTEM" tableName="ORDER_DETAILS" domainObjectName="OrderDetails" />
-        <table schema="SYSTEM" tableName="PRODUCTS" domainObjectName="Products" /> -->
+        <table schema="SYSTEM" tableName="PRODUCTS" domainObjectName="Products" />
         <!-- ■■■■■ PostgreSQL ■■■■■ -->
         <table schema="public" tableName="test_tbl" domainObjectName="TestTbl" />
-        <!-- <table schema="public" tableName="customers" domainObjectName="Customers" />
+        <table schema="public" tableName="customers" domainObjectName="Customers" />
         <table schema="public" tableName="orders" domainObjectName="Orders" />
         <table schema="public" tableName="order_details" domainObjectName="OrderDetails" />
-        <table schema="public" tableName="products" domainObjectName="Products" /> -->
+        <table schema="public" tableName="products" domainObjectName="Products" />
         <!-- ■■■■■ SQLServer ■■■■■ -->
         <table schema="dbo" tableName="TEST_TBL" domainObjectName="TestTbl" />
-        <!-- <table schema="dbo" tableName="CUSTOMERS" domainObjectName="Customers" />
+        <table schema="dbo" tableName="CUSTOMERS" domainObjectName="Customers" />
         <table schema="dbo" tableName="ORDERS" domainObjectName="Orders" />
         <table schema="dbo" tableName="ORDER_DETAILS" domainObjectName="OrderDetails" />
-        <table schema="dbo" tableName="PRODUCTS" domainObjectName="Products" /> -->
+        <table schema="dbo" tableName="PRODUCTS" domainObjectName="Products" />
     </context>
 </generatorConfiguration>

@@ -1,6 +1,12 @@
 '変数未宣言エラー設定ON
 Option Explicit
-'●名称変換区分
+'●[定数](RGB値)A5M2緑色
+Private Const COLOR_A5M2 As Long = 135 + 231 * 256& + 173 * 65536 'RGB(135, 231, 173) #87E7AD
+'●[定数]DB種別(Oracle/PostgreSQL/SQLServer)
+Private Const ORACLE = "Oracle"
+Private Const POSTGRESQL = "PostgreSQL"
+Private Const SQLSERVER = "SQLServer"
+'●[定数]名称変換種別
 Private Const L_SNAKE = "LOWER_SNAKE"
 Private Const U_SNAKE = "UPPER_SNAKE"
 Private Const L_CAMEL = "LOWER_CAMEL"
@@ -25,38 +31,39 @@ Public Sub CreateSheet_TableInfo()
     Dim shp As Shape
     Dim shpWidth As Double: shpWidth = 3.5
     Dim shpHeight As Double: shpHeight = 1
-    '●A5M2緑色
-    Dim a5m2Color As Long: a5m2Color = RGB(135, 231, 173) '#87E7AD
 
     '新規Sheet作成 & 新規Sheet名セット
     Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Worksheets(1))
     ws.Name = ChangeUniqueSheetNm("TBL定義書")
 
     '========== 書込 ==========
-    ws.Range("A1").Value = "SCHEMA"
-    ws.Range("A2").Value = "TBL-No"
-    ws.Range("B2").Value = "TBL(論理)"
-    ws.Range("C2").Value = "TBL(物理)"
-    ws.Range("D2").Value = "COL-No"
-    ws.Range("E2").Value = "PK"
-    ws.Range("F2").Value = "COL(論理)"
-    ws.Range("G2").Value = "COL(物理)"
-    ws.Range("H2").Value = "型"
-    ws.Range("I2").Value = "桁"
-    ws.Range("J2").Value = "NULL不可"
-    ws.Range("K2").Value = "初期値"
+    ws.Range("A1").Value = "DB"
+    ws.Range("B1").Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=ORACLE & "," & POSTGRESQL & "," & SQLSERVER
+    ws.Range("B1").Value = ORACLE
+    ws.Range("A2").Value = "SCHEMA"
+    ws.Range("A3").Value = "TBL-No"
+    ws.Range("B3").Value = "TBL(論理)"
+    ws.Range("C3").Value = "TBL(物理)"
+    ws.Range("D3").Value = "COL-No"
+    ws.Range("E3").Value = "PK"
+    ws.Range("F3").Value = "COL(論理)"
+    ws.Range("G3").Value = "COL(物理)"
+    ws.Range("H3").Value = "型"
+    ws.Range("I3").Value = "桁"
+    ws.Range("J3").Value = "NULL不可"
+    ws.Range("K3").Value = "初期値"
 
     '========== Sheet設定 ==========
     With ws
         'Tab色
-        .Tab.Color = a5m2Color
+        .Tab.Color = COLOR_A5M2
         '背景色
-        .Range("A1").Interior.Color = RGB(248, 203, 173) '#F8CBAD
-        .Range("B1").Interior.Color = RGB(252, 228, 214) '#FCE4D6
-        .Range("A2:K2").Interior.Color = a5m2Color
+        .Range("A1:A2").Interior.Color = RGB(248, 203, 173) '#F8CBAD
+        .Range("B1:B2").Interior.Color = RGB(252, 228, 214) '#FCE4D6
+        .Range("A3:K3").Interior.Color = COLOR_A5M2
         '太字
-        .Range("A1").Font.Bold = True
-        .Range("A2:K2").Font.Bold = True
+        .Range("A1:A2").Font.Bold = True
+        .Range("A3:K3").Font.Bold = True
         '文字揃え
         .Cells.VerticalAlignment = xlTop
         .Cells.HorizontalAlignment = xlLeft
@@ -64,9 +71,7 @@ Public Sub CreateSheet_TableInfo()
         .Columns("D:E").HorizontalAlignment = xlCenter
         .Columns("I").HorizontalAlignment = xlRight
         .Columns("J").HorizontalAlignment = xlCenter
-        .Rows(2).HorizontalAlignment = xlCenter
-        '行幅
-        .Rows(1).RowHeight = 38
+        .Rows(3).HorizontalAlignment = xlCenter
         '列幅
         .Columns("A").ColumnWidth = 10
         .Columns("B:C").ColumnWidth = 30
@@ -77,23 +82,26 @@ Public Sub CreateSheet_TableInfo()
         .Columns("I").ColumnWidth = 10
         .Columns("J").ColumnWidth = 12
         .Columns("K").ColumnWidth = 20
+        '罫線
+        .Range("A1:B2").Borders(xlInsideHorizontal).Weight = xlThin
+        .Range("A1:B2").Borders(xlInsideHorizontal).Color = RGB(255, 255, 255)
         'フィルター
-        .Rows(2).AutoFilter
+        .Rows(3).AutoFilter
         'グループ化
-        .Rows(1).Group
+        .Rows("1:2").Group
         '折り返して表示
-        .Range("A2").WrapText = True
-        .Range("A3:K5").WrapText = True
+        .Range("A2:A3").WrapText = True
+        .Range("A4:K6").WrapText = True
     End With
     '罫線
-    Call DrawRuledLine_Grid(ws.Range("A2:K5"))
+    Call DrawRuledLine_Grid(ws.Range("A3:K6"))
     ws.Activate
     '表示倍率
     ActiveWindow.Zoom = 85
     '目盛線
     ActiveWindow.DisplayGridlines = False
     'ウィンドウ枠の固定
-    ws.Range("C3").Select
+    ws.Range("C4").Select
     ActiveWindow.FreezePanes = True
 
     '========== マクロボタン 作成 ==========
@@ -109,8 +117,8 @@ Public Sub CreateSheet_TableInfo()
         .TextFrame2.VerticalAnchor = msoAnchorMiddle                       '文字揃え(横)
         .TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter   '文字揃え(縦)
         .OnAction = "Btn_MyBatisGenerator"                                 'マクロ登録
-        .Top = ws.Range("C1").Top + 5                                      '配置場所(縦)
-        .Left = ws.Range("C1").Left + 45                                   '配置場所(横)
+        .Top = ws.Range("C1").Top + 4                                      '配置場所(縦)
+        .Left = ws.Range("C1").Left + 4                                    '配置場所(横)
     End With
 
     '処理中描画ON設定
@@ -127,11 +135,12 @@ Private Sub Btn_MyBatisGenerator()
     '処理中描画OFF設定
     Call SettingRenderingProcess(False)
 
-    Dim i As Long                             'Loopカウンタ
+    Dim i As Long, j As Long                  'Loopカウンタ
     Dim ws As Worksheet: Set ws = ActiveSheet 'Sheet
     'Dim rowIdx As Long                        '行
     'Dim colIdx As Long                        '列
-    Dim endRowIdx As Long                     '終了行
+    Dim endRowIdx1 As Long                     '終了行1
+    Dim endRowIdx2 As Long                     '終了行2
     'Dim rng As Range                          '範囲
 
     '●生成日時
@@ -141,13 +150,16 @@ Private Sub Btn_MyBatisGenerator()
     Dim preTblNm As String
     Dim crntTblNm As String
 
-    '●スキーマ名
-    Dim schemaNm As String: schemaNm = Trim$(ws.Range("B1").Value2)
+    '●DB/スキーマ
+    Dim db As String: db = ws.Range("B1").Value2
+    Dim schema As String: schema = Trim$(ws.Range("B2").Value2)
     '●TBL定義データ
     Dim tblInfo As Variant
-    '●テーブル名(論理/物理)/項目名(論理/物理)
+    '●テーブル名(論理/物理/lowCamel/upCamel)/項目名(論理/物理)
     Dim logiTblNm As String
     Dim physiTblNm As String
+    Dim physiTblNmLC As String
+    Dim physiTblNmUC As String
     Dim logiColNm As String
     Dim physiColNm As String
     '●PK/型/桁/NULL不可/正数部/小数部
@@ -160,9 +172,13 @@ Private Sub Btn_MyBatisGenerator()
 
     '●日時スタンプ
     Dim timestamp As String: timestamp = Format(Now, "yyyymmddhhnnss")
-    '●ファイルパス(元)/ファイルパス/ファイル名/拡張子
+    Dim timestampEn As String: timestampEn = FormatEnglishDate(genTime)
+    '●ファイルパス(元/MapperJava/MapperXml)/ファイルパス/ファイル名/拡張子
     Dim filePathBase As String: filePathBase = ThisWorkbook.path & "\generated_" & timestamp & "\"
-    Dim filePath As String
+    Dim filePath_entity As String: filePath_entity = filePathBase & "com\example\entity\"
+    Dim filePath_mapperJava As String: filePath_mapperJava = filePathBase & "com\example\mapper\"
+    Dim filePath_mapperXml As String: filePath_mapperXml = filePathBase & "mapper\"
+    Dim filePath As Variant
     Dim fileNm As String
     Dim fileExt As String
     '●ファイル内容/行
@@ -172,34 +188,45 @@ Private Sub Btn_MyBatisGenerator()
     '●メッセージ内容
     Dim msg As String
 
-    '終了行 セット
-    endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    '●項目有無フラグ(PK/BLOB系)
+    Dim pkFlg As Boolean
+    Dim blobFlg As Boolean
 
-    'スキーマ名 未入力の場合
-    If LenB(schemaNm) = 0 Then
-        Call MsgBox("(B2) スキーマ名を入力して下さい", vbCritical, "ERROR")
+    '●追加文字
+    Dim addStr As String
+
+    '終了行 セット
+    endRowIdx1 = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    'DB 未選択の場合
+    If LenB(db) = 0 Then
+        Call MsgBox("(B1) DBを選択して下さい", vbCritical, "ERROR")
+        Exit Sub
+    End If
+    'スキーマ 未入力の場合
+    If LenB(schema) = 0 Then
+        Call MsgBox("(B2) スキーマを入力して下さい", vbCritical, "ERROR")
         Exit Sub
     End If
     'TBL定義 無しの場合
-    If endRowIdx <= 2 Then
+    If endRowIdx1 <= 3 Then
         Call MsgBox("TBL定義がありません", vbCritical, "ERROR")
         Exit Sub
     End If
 
     '========== ファイル作成先フォルダ 作成 ==========
-    filePath = filePathBase & "mapper\"
-    If Not CreateFolderPath(filePath) Then
-        msg = "フォルダの作成に失敗しました" & vbCrLf & _
-              "PATH : " & filePath
-        Call MsgBox(msg, vbCritical, "")
-        Exit Sub
-    End If
+    For Each filePath In Array(filePath_entity, filePath_mapperJava, filePath_mapperXml)
+        If Not CreateFolderPath(filePath) Then
+            msg = "フォルダの作成に失敗しました" & vbCrLf & _
+                  "PATH : " & filePath
+            Call MsgBox(msg, vbCritical, "")
+            Exit Sub
+        End If
+    Next
 
     'TBL定義データ 取得
-    tblInfo = ws.Range("A3:K" & endRowIdx).Value2
-
-    'TBL名(前) セット
-    preTblNm = tblInfo(1, 3)
+    tblInfo = ws.Range("A4:K" & endRowIdx1).Value2
+    Debug.Print UBound(tblInfo, 1)
 
     For i = 1 To UBound(tblInfo, 1)
         'TBL定義 取得(テーブル名(論理/物理)/項目名(論理/物理)/PK/型/桁/NULL不可/正数部/小数部)
@@ -211,33 +238,566 @@ Private Sub Btn_MyBatisGenerator()
         colType = CStr(tblInfo(i, 8))
         colLen = CStr(tblInfo(i, 9))
         notNull = CStr(tblInfo(i, 10))
+        'TBL名(変換) セット
+        physiTblNmLC = ConvertCamelSnakeNm(physiTblNm, L_CAMEL)
+        physiTblNmUC = ConvertCamelSnakeNm(physiTblNm, U_CAMEL)
         'TBL名(現在) セット
         crntTblNm = physiTblNm
+        'テーブル終了行 セット
+        endRowIdx2 = 0
+        For j = i To UBound(tblInfo, 1)
+            If crntTblNm <> tblInfo(j, 3) Then
+                endRowIdx2 = j - 1
+                Exit For
+            End If
+        Next
+        If endRowIdx2 = 0 Then endRowIdx2 = endRowIdx1 - 3
+        'PK有無フラグ セット
+        pkFlg = False
+        For j = i To endRowIdx2
+            If tblInfo(j, 5) = "Y" Then
+                pkFlg = True
+                Exit For
+            End If
+        Next
+        'BLOB系有無フラグ セット
+        blobFlg = False
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                blobFlg = True
+                Exit For
+            End If
+        Next
 
-        '■■■■■■■■■■ XML ■■■■■■■■■■
-        'fileContents = fileContents & "" & vbCrLf
+        '■■■■■■■■■■ MAPER(java) ■■■■■■■■■■
+        fileContents = ""
+        fileContents = fileContents & "package com.example.mapper;" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "import com.example.entity." & physiTblNmUC & ";" & vbCrLf
+        fileContents = fileContents & "import com.example.entity." & physiTblNmUC & "Example;" & vbCrLf
+        fileContents = fileContents & "import com.example.entity." & physiTblNmUC & "WithBLOBs;" & vbCrLf
+        fileContents = fileContents & "import java.util.List;" & vbCrLf
+        fileContents = fileContents & "import org.apache.ibatis.annotations.Param;" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "public interface " & physiTblNmUC & "Mapper {" & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    long countByExample(" & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int deleteByExample(" & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int insert(" & physiTblNmUC & "WithBLOBs row);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int insertSelective(" & physiTblNmUC & "WithBLOBs row);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    List<" & physiTblNmUC & "WithBLOBs> selectByExampleWithBLOBs(" & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    List<" & physiTblNmUC & "> selectByExample(" & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int updateByExampleSelective(@Param(""row"") " & physiTblNmUC & "WithBLOBs row, @Param(""example"") " & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int updateByExampleWithBLOBs(@Param(""row"") " & physiTblNmUC & "WithBLOBs row, @Param(""example"") " & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & vbCrLf
+        fileContents = fileContents & "    /**" & vbCrLf
+        fileContents = fileContents & "     * This method was generated by MyBatis Generator." & vbCrLf
+        fileContents = fileContents & "     * This method corresponds to the database table " & physiTblNm & vbCrLf
+        fileContents = fileContents & "     *" & vbCrLf
+        fileContents = fileContents & "     * @mbg.generated " & timestampEn & vbCrLf
+        fileContents = fileContents & "     */" & vbCrLf
+        fileContents = fileContents & "    int updateByExample(@Param(""row"") TestTbl row, @Param(""example"") " & physiTblNmUC & "Example example);" & vbCrLf
+        fileContents = fileContents & "}" & vbCrLf
 
+        'ファイル作成(UTF-8(BOM無し))
+        Call CreateTxtFile(filePath_mapperJava, physiTblNmUC & "Mapper", "java", fileContents, "UTF-8", False)
+
+        '■■■■■■■■■■ MAPER(xml) ■■■■■■■■■■
         fileContents = ""
         fileContents = fileContents & "<?xml version=""1.0"" encoding=""UTF-8""?>" & vbCrLf
         fileContents = fileContents & "<!DOCTYPE mapper PUBLIC ""-//mybatis.org//DTD Mapper 3.0//EN"" ""http://mybatis.org/dtd/mybatis-3-mapper.dtd"">" & vbCrLf
-        fileContents = fileContents & "<mapper namespace=""com.example.mapper." & schemaNm & "." & ConvertCamelSnakeNm(physiTblNm, U_CAMEL) & "Mapper"">" & vbCrLf
-        fileContents = fileContents & "  <resultMap id=""BaseResultMap"" type=""com.example.entity." & schemaNm & "." & ConvertCamelSnakeNm(physiTblNm, U_CAMEL) & """>" & vbCrLf
+        fileContents = fileContents & "<mapper namespace=""com.example.mapper." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "Mapper"">" & vbCrLf
+        fileContents = fileContents & "  <resultMap id=""BaseResultMap"" type=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & """>" & vbCrLf
         fileContents = fileContents & "    <!--" & vbCrLf
         fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
         fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
-        fileContents = fileContents & "      This element was generated on " & FormatEnglishDate(genTime) & "." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
         fileContents = fileContents & "    -->" & vbCrLf
-        fileContents = fileContents & "    <result column=""" & physiColNm & """ jdbcType=""" & GetJdbcType(colType) & """ property=""" & ConvertCamelSnakeNm(physiColNm, L_CAMEL) & """ />" & vbCrLf
-
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "    <" & IIf(tblInfo(j, 5) = "Y", "id", "result") & " column=""" & tblInfo(j, 7) & """ jdbcType=""" & GetJdbcType(db, tblInfo(j, 8)) & """ property=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & """ />" & vbCrLf
+            End If
+        Next
         fileContents = fileContents & "  </resultMap>" & vbCrLf
-        fileContents = fileContents & "</mapper>" & vbCrLf
-
+        '===== BLOB系 =====
+        If blobFlg Then
+            fileContents = fileContents & "  <resultMap extends=""BaseResultMap"" id=""ResultMapWithBLOBs"" type=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "WithBLOBs"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            For j = i To endRowIdx2
+                If IsBlobColType(db, tblInfo(j, 8)) Then
+                    fileContents = fileContents & "    <result column=""" & tblInfo(j, 7) & """ jdbcType=""" & GetJdbcType(db, tblInfo(j, 8)) & """ property=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & """ />" & vbCrLf
+                End If
+            Next
+            fileContents = fileContents & "  </resultMap>" & vbCrLf
+        End If
+        fileContents = fileContents & "  <sql id=""Example_Where_Clause"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    <where>" & vbCrLf
+        fileContents = fileContents & "      <foreach collection=""oredCriteria"" item=""criteria"" separator=""or"">" & vbCrLf
+        fileContents = fileContents & "        <if test=""criteria.valid"">" & vbCrLf
+        fileContents = fileContents & "          <trim prefix=""("" prefixOverrides=""and"" suffix="")"">" & vbCrLf
+        fileContents = fileContents & "            <foreach collection=""criteria.criteria"" item=""criterion"">" & vbCrLf
+        fileContents = fileContents & "              <choose>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.noValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.singleValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition} #{criterion.value}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.betweenValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.listValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition}" & vbCrLf
+        fileContents = fileContents & "                  <foreach close="")"" collection=""criterion.value"" item=""listItem"" open=""("" separator="","">" & vbCrLf
+        fileContents = fileContents & "                    #{listItem}" & vbCrLf
+        fileContents = fileContents & "                  </foreach>" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "              </choose>" & vbCrLf
+        fileContents = fileContents & "            </foreach>" & vbCrLf
+        fileContents = fileContents & "          </trim>" & vbCrLf
+        fileContents = fileContents & "        </if>" & vbCrLf
+        fileContents = fileContents & "      </foreach>" & vbCrLf
+        fileContents = fileContents & "    </where>" & vbCrLf
+        fileContents = fileContents & "  </sql>" & vbCrLf
+        fileContents = fileContents & "  <sql id=""Update_By_Example_Where_Clause"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    <where>" & vbCrLf
+        fileContents = fileContents & "      <foreach collection=""example.oredCriteria"" item=""criteria"" separator=""or"">" & vbCrLf
+        fileContents = fileContents & "        <if test=""criteria.valid"">" & vbCrLf
+        fileContents = fileContents & "          <trim prefix=""("" prefixOverrides=""and"" suffix="")"">" & vbCrLf
+        fileContents = fileContents & "            <foreach collection=""criteria.criteria"" item=""criterion"">" & vbCrLf
+        fileContents = fileContents & "              <choose>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.noValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.singleValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition} #{criterion.value}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.betweenValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "                <when test=""criterion.listValue"">" & vbCrLf
+        fileContents = fileContents & "                  and ${criterion.condition}" & vbCrLf
+        fileContents = fileContents & "                  <foreach close="")"" collection=""criterion.value"" item=""listItem"" open=""("" separator="","">" & vbCrLf
+        fileContents = fileContents & "                    #{listItem}" & vbCrLf
+        fileContents = fileContents & "                  </foreach>" & vbCrLf
+        fileContents = fileContents & "                </when>" & vbCrLf
+        fileContents = fileContents & "              </choose>" & vbCrLf
+        fileContents = fileContents & "            </foreach>" & vbCrLf
+        fileContents = fileContents & "          </trim>" & vbCrLf
+        fileContents = fileContents & "        </if>" & vbCrLf
+        fileContents = fileContents & "      </foreach>" & vbCrLf
+        fileContents = fileContents & "    </where>" & vbCrLf
+        fileContents = fileContents & "  </sql>" & vbCrLf
+        fileContents = fileContents & "  <sql id=""Base_Column_List"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    "
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & tblInfo(j, 7) & ", "
+            End If
+        Next
+        '末尾除去/付与
+        fileContents = Left$(fileContents, Len(fileContents) - 2) & vbCrLf
+        fileContents = fileContents & "  </sql>" & vbCrLf
+        '===== BLOB系 =====
+        If blobFlg Then
+            fileContents = fileContents & "  <sql id=""Blob_Column_List"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    "
+            For j = i To endRowIdx2
+                If IsBlobColType(db, tblInfo(j, 8)) Then
+                    fileContents = fileContents & tblInfo(j, 7) & ", "
+                End If
+            Next
+            '末尾除去/付与
+            fileContents = Left$(fileContents, Len(fileContents) - 2) & vbCrLf
+            fileContents = fileContents & "  </sql>" & vbCrLf
+            fileContents = fileContents & "  <select id=""selectByExampleWithBLOBs"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "Example"" resultMap=""ResultMapWithBLOBs"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    select" & vbCrLf
+            fileContents = fileContents & "    <if test=""distinct"">" & vbCrLf
+            fileContents = fileContents & "      distinct" & vbCrLf
+            fileContents = fileContents & "    </if>" & vbCrLf
+            fileContents = fileContents & "    <include refid=""Base_Column_List"" />" & vbCrLf
+            fileContents = fileContents & "    ," & vbCrLf
+            fileContents = fileContents & "    <include refid=""Blob_Column_List"" />" & vbCrLf
+            fileContents = fileContents & "    from " & schema & "." & physiTblNm & vbCrLf
+            fileContents = fileContents & "    <if test=""_parameter != null"">" & vbCrLf
+            fileContents = fileContents & "      <include refid=""Example_Where_Clause"" />" & vbCrLf
+            fileContents = fileContents & "    </if>" & vbCrLf
+            fileContents = fileContents & "    <if test=""orderByClause != null"">" & vbCrLf
+            fileContents = fileContents & "      order by ${orderByClause}" & vbCrLf
+            fileContents = fileContents & "    </if>" & vbCrLf
+            fileContents = fileContents & "  </select>" & vbCrLf
+        End If
+        fileContents = fileContents & "  <select id=""selectByExample"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "Example"" resultMap=""BaseResultMap"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    select" & vbCrLf
+        fileContents = fileContents & "    <if test=""distinct"">" & vbCrLf
+        fileContents = fileContents & "      distinct" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "    <include refid=""Base_Column_List"" />" & vbCrLf
+        fileContents = fileContents & "    from " & schema & "." & physiTblNm & vbCrLf
+        fileContents = fileContents & "    <if test=""_parameter != null"">" & vbCrLf
+        fileContents = fileContents & "      <include refid=""Example_Where_Clause"" />" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "    <if test=""orderByClause != null"">" & vbCrLf
+        fileContents = fileContents & "      order by ${orderByClause}" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "  </select>" & vbCrLf
+        If pkFlg Then
+            fileContents = fileContents & "  <select id=""selectByPrimaryKey"" parameterType=""com.example.entity.system." & physiTblNmUC & "Key"" resultMap=""BaseResultMap"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    select " & vbCrLf
+            fileContents = fileContents & "    <include refid=""Base_Column_List"" />" & vbCrLf
+            fileContents = fileContents & "    from " & schema & "." & physiTblNm & vbCrLf
+            addStr = "where"
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) = "Y" Then
+                    fileContents = fileContents & "    " & addStr & " " & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}" & vbCrLf
+                    addStr = "  and"
+                End If
+            Next
+            fileContents = fileContents & "  </select>" & vbCrLf
+            fileContents = fileContents & "  <delete id=""deleteByPrimaryKey"" parameterType=""com.example.entity.system." & physiTblNmUC & "Key"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    delete from " & schema & "." & physiTblNm & vbCrLf
+            addStr = "where"
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) = "Y" Then
+                    fileContents = fileContents & "    " & addStr & " " & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}" & vbCrLf
+                    addStr = "  and"
+                End If
+            Next
+            fileContents = fileContents & "  </delete>" & vbCrLf
+        End If
+        fileContents = fileContents & "  <delete id=""deleteByExample"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "Example"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    delete from " & schema & "." & physiTblNm & vbCrLf
+        fileContents = fileContents & "    <if test=""_parameter != null"">" & vbCrLf
+        fileContents = fileContents & "      <include refid=""Example_Where_Clause"" />" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "  </delete>" & vbCrLf
+        If blobFlg Then
+            addStr = "WithBLOBs"
+        Else
+            addStr = ""
+        End If
+        fileContents = fileContents & "  <insert id=""insert"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & addStr & """>" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    insert into " & schema & "." & physiTblNm & " ("
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & tblInfo(j, 7) & ", "
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & tblInfo(j, 7) & ", "
+            End If
+        Next
+        '末尾除去/付与
+        fileContents = Left$(fileContents, Len(fileContents) - 2) & vbCrLf
+        fileContents = fileContents & "      )" & vbCrLf
+        fileContents = fileContents & "    values ("
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "#{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}, "
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "#{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}, "
+            End If
+        Next
+        '末尾除去/付与
+        fileContents = Left$(fileContents, Len(fileContents) - 2) & vbCrLf
+        fileContents = fileContents & "      )" & vbCrLf
+        fileContents = fileContents & "  </insert>" & vbCrLf
+        fileContents = fileContents & "  <insert id=""insertSelective"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & addStr & """>" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    insert into " & schema & "." & physiTblNm & vbCrLf
+        fileContents = fileContents & "    <trim prefix=""("" suffix="")"" suffixOverrides="","">" & vbCrLf
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        " & tblInfo(j, 7) & "," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        " & tblInfo(j, 7) & "," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        fileContents = fileContents & "    </trim>" & vbCrLf
+        fileContents = fileContents & "    <trim prefix=""values ("" suffix="")"" suffixOverrides="","">" & vbCrLf
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        fileContents = fileContents & "    </trim>" & vbCrLf
+        fileContents = fileContents & "  </insert>" & vbCrLf
+        fileContents = fileContents & "  <select id=""countByExample"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & "Example"" resultType=""java.lang.Long"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    select count(*) from " & schema & "." & physiTblNm & vbCrLf
+        fileContents = fileContents & "    <if test=""_parameter != null"">" & vbCrLf
+        fileContents = fileContents & "      <include refid=""Example_Where_Clause"" />" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "  </select>" & vbCrLf
+        fileContents = fileContents & "  <update id=""updateByExampleSelective"" parameterType=""map"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    update " & schema & "." & physiTblNm & vbCrLf
+        fileContents = fileContents & "    <set>" & vbCrLf
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        " & tblInfo(j, 7) & " = #{row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "      <if test=""row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                fileContents = fileContents & "        " & tblInfo(j, 7) & " = #{row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                fileContents = fileContents & "      </if>" & vbCrLf
+            End If
+        Next
+        fileContents = fileContents & "    </set>" & vbCrLf
+        fileContents = fileContents & "    <if test=""example != null"">" & vbCrLf
+        fileContents = fileContents & "      <include refid=""Update_By_Example_Where_Clause"" />" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "  </update>" & vbCrLf
+        fileContents = fileContents & "  <update id=""updateByExample" & addStr & """ parameterType=""map"">" & vbCrLf
+        fileContents = fileContents & "    <!--" & vbCrLf
+        fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+        fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+        fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+        fileContents = fileContents & "    -->" & vbCrLf
+        fileContents = fileContents & "    update " & schema & "." & physiTblNm & vbCrLf
+        addStr = "set "
+        For j = i To endRowIdx2
+            If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "    " & addStr & tblInfo(j, 7) & " = #{row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                addStr = "  "
+            End If
+        Next
+        For j = i To endRowIdx2
+            If IsBlobColType(db, tblInfo(j, 8)) Then
+                fileContents = fileContents & "    " & addStr & tblInfo(j, 7) & " = #{row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                addStr = "  "
+            End If
+        Next
+        '末尾除去/付与
+        fileContents = Left$(fileContents, Len(fileContents) - (Len(vbCrLf) + 1)) & vbCrLf
+        fileContents = fileContents & "    <if test=""example != null"">" & vbCrLf
+        fileContents = fileContents & "      <include refid=""Update_By_Example_Where_Clause"" />" & vbCrLf
+        fileContents = fileContents & "    </if>" & vbCrLf
+        fileContents = fileContents & "  </update>" & vbCrLf
+        If pkFlg Then
+            fileContents = fileContents & "  <update id=""updateByPrimaryKeySelective"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & """>" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    update " & schema & "." & physiTblNm & vbCrLf
+            fileContents = fileContents & "    <set>" & vbCrLf
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) <> "Y" Then
+                    fileContents = fileContents & "      <if test=""" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & " != null"">" & vbCrLf
+                    fileContents = fileContents & "        " & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                    fileContents = fileContents & "      </if>" & vbCrLf
+                End If
+            Next
+            fileContents = fileContents & "    </set>" & vbCrLf
+            addStr = "where"
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) = "Y" Then
+                    fileContents = fileContents & "    " & addStr & " " & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}" & vbCrLf
+                    addStr = "  and"
+                End If
+            Next
+            fileContents = fileContents & "  </update>" & vbCrLf
+            fileContents = fileContents & "  <update id=""updateByPrimaryKey"" parameterType=""com.example.entity." & ConvertCamelSnakeNm(schema, L_CAMEL) & "." & physiTblNmUC & """>" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    update " & schema & "." & physiTblNm & vbCrLf
+            addStr = "set "
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) <> "Y" Then
+                    fileContents = fileContents & "    " & addStr & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                    addStr = "  "
+                End If
+            Next
+            '末尾除去/付与
+            fileContents = Left$(fileContents, Len(fileContents) - (Len(vbCrLf) + 1)) & vbCrLf
+            addStr = "where"
+            For j = i To endRowIdx2
+                If tblInfo(j, 5) = "Y" Then
+                    fileContents = fileContents & "    " & addStr & " " & tblInfo(j, 7) & " = #{" & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}" & vbCrLf
+                    addStr = "  and"
+                End If
+            Next
+            fileContents = fileContents & "  </update>" & vbCrLf
+        End If
+        If blobFlg Then
+            fileContents = fileContents & "  <update id=""updateByExample"" parameterType=""map"">" & vbCrLf
+            fileContents = fileContents & "    <!--" & vbCrLf
+            fileContents = fileContents & "      WARNING - @mbg.generated" & vbCrLf
+            fileContents = fileContents & "      This element is automatically generated by MyBatis Generator, do not modify." & vbCrLf
+            fileContents = fileContents & "      This element was generated on " & timestampEn & "." & vbCrLf
+            fileContents = fileContents & "    -->" & vbCrLf
+            fileContents = fileContents & "    update " & schema & "." & physiTblNm & vbCrLf
+            addStr = "set "
+            For j = i To endRowIdx2
+                If Not IsBlobColType(db, tblInfo(j, 8)) Then
+                    fileContents = fileContents & "    " & addStr & tblInfo(j, 7) & " = #{row." & ConvertCamelSnakeNm(tblInfo(j, 7), L_CAMEL) & ",jdbcType=" & GetJdbcType(db, tblInfo(j, 8)) & "}," & vbCrLf
+                    addStr = "  "
+                End If
+            Next
+            '末尾除去/付与
+            fileContents = Left$(fileContents, Len(fileContents) - (Len(vbCrLf) + 1)) & vbCrLf
+            fileContents = fileContents & "    <if test=""example != null"">" & vbCrLf
+            fileContents = fileContents & "      <include refid=""Update_By_Example_Where_Clause"" />" & vbCrLf
+            fileContents = fileContents & "    </if>" & vbCrLf
+            fileContents = fileContents & "  </update>" & vbCrLf
+        End If
+        fileContents = fileContents & "</mapper>"
         filePath = filePathBase & "mapper\"
-        fileNm = "CUSTOMERS"
-        fileExt = "xml"
 
         'ファイル作成(UTF-8(BOM無し))
-        Call CreateTxtFile(filePath, fileNm, fileExt, fileContents, "UTF-8", False)
+        Call CreateTxtFile(filePath_mapperXml, physiTblNmUC & "Mapper", "xml", fileContents, "UTF-8", False)
+
+        '次のTBL開始行
+        i = endRowIdx2
     Next
 
     'ステータスバー初期化
@@ -720,63 +1280,86 @@ Private Function IsLowerCaseChar(ByVal str As String) As Boolean
 End Function
 '------------------------------------------------------------
 '概要 : 対応するJDBCタイプ名を取得する
-'引数 : colType : 項目型名
+'引数 : dbType  : DB種別(Oracle/PostgreSQL/SQLServer)
+'     : colType : 項目型名
 '戻値 : JDBCタイプ名
 '備考 : -
 '------------------------------------------------------------
-Private Function GetJdbcType(ByVal colType As String) As String
+Private Function GetJdbcType(ByVal dbType As String, ByVal colType As String) As String
     Dim result As String
-    Select Case colType
-        '========== Oracle ==========
-        Case "VARCHAR2"
-            result = "VARCHAR"
-        Case "NVARCHAR2"
-            result = "NVARCHAR"
-        Case "NUMBER"
-            result = "NUMERIC"
-        Case "BLOB"
-            result = "BLOB"
-        Case "RAW"
-            result = "VARBINARY"
-        '========== PostgreSQL ==========
-        Case "character varying", "text"
-            result = "VARCHAR"
-        Case "character"
-            result = "CHAR"
-        Case "numeric"
-            result = "NUMERIC"
-        Case "timestamp with time zone", "timestamp without time zone"
-            result = "TIMESTAMP"
-        Case "date"
-            result = "DATE"
-        Case "boolean"
-            result = "BIT"
-        Case "bytea"
-            result = "BINARY"
-        '========== SQLServer ==========
-        Case "varchar"
-            result = "VARCHAR"
-        Case "nvarchar"
-            result = "NVARCHAR"
-        Case "numeric"
-            result = "NUMERIC"
-        Case "datetime2"
-            result = "TIMESTAMP"
-        'Case "date"
-        '    result = "DATE"
-        Case "bit"
-            result = "BIT"
-        Case "varbinary"
-            result = "VARBINARY"
-        Case "xml"
-            result = "LONGNVARCHAR"
-        Case "uniqueidentifier"
-            result = "CHAR"
-    End Select
-    '特殊日時の場合
-    If 0 < InStr(colType, "TIMESTAMP") Or colType = "DATE" Or colType = "datetimeoffset" Then result = "TIMESTAMP"
+    If dbType = ORACLE Then
+        Select Case colType
+            Case "VARCHAR2"
+                result = "VARCHAR"
+            Case "NVARCHAR2"
+                result = "NVARCHAR"
+            Case "NUMBER"
+                result = "NUMERIC"
+            Case "DATE"
+                result = "TIMESTAMP"
+            Case "BLOB"
+                result = "BLOB"
+            Case "RAW"
+                result = "VARBINARY"
+        End Select
+        If Left$(colType, 9) = "TIMESTAMP" And InStr(colType, "TIME ZONE") = 0 Then result = "TIMESTAMP"
+    ElseIf dbType = POSTGRESQL Then
+        Select Case colType
+            Case "character varying", "text"
+                result = "VARCHAR"
+            Case "character"
+                result = "CHAR"
+            Case "numeric"
+                result = "NUMERIC"
+            Case "timestamp with time zone", "timestamp without time zone"
+                result = "TIMESTAMP"
+            Case "date"
+                result = "DATE"
+            Case "boolean"
+                result = "BIT"
+            Case "bytea"
+                result = "BINARY"
+        End Select
+    ElseIf dbType = SQLSERVER Then
+        Select Case colType
+            Case "varchar"
+                result = "VARCHAR"
+            Case "nvarchar"
+                result = "NVARCHAR"
+            Case "numeric"
+                result = "NUMERIC"
+            Case "datetime2"
+                result = "TIMESTAMP"
+            Case "date"
+                result = "DATE"
+            Case "bit"
+                result = "BIT"
+            Case "varbinary"
+                result = "VARBINARY"
+            Case "xml"
+                result = "LONGNVARCHAR"
+            Case "uniqueidentifier"
+                result = "CHAR"
+        End Select
+    End If
     'その他の場合
     If result = "" Then result = "OTHER"
     GetJdbcType = result
 End Function
-
+'------------------------------------------------------------
+'概要 : 項目型がBLOB系か判定する
+'引数 : dbType  : DB種別(Oracle/PostgreSQL/SQLServer)
+'     : colType : 項目型名
+'戻値 : 判定結果(True:である / False:でない)
+'備考 : -
+'------------------------------------------------------------
+Private Function IsBlobColType(ByVal dbType As String, ByVal colType As String) As Boolean
+    IsBlobColType = False
+    If dbType = ORACLE Then
+        If colType = "BLOB" Or colType = "RAW" Then IsBlobColType = True
+    ElseIf dbType = POSTGRESQL Then
+        If colType = "bytea" Then IsBlobColType = True
+    ElseIf dbType = SQLSERVER Then
+        If colType = "varbinary" Or colType = "xml" Then IsBlobColType = True
+    End If
+End Function
