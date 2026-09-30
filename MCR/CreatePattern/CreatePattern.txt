@@ -325,11 +325,25 @@ Private Sub Btn_CreateSheet_ResultPattern()
     endRowIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).row
     endColIdx = inputWs.Cells.SpecialCells(xlCellTypeLastCell).Column
 
+    'データ無しの場合
+    If endRowIdx <= 6 Then
+        Call MsgBox("出力対象がありません", vbCritical, "ERROR")
+        Exit Sub
+    End If
+
     '入力値範囲 セット
     Set inputRng = inputWs.Range(inputWs.Range("C6"), inputWs.Cells(endRowIdx, endColIdx))
 
-    '書込データリスト 作成 & 書込データ終了(行/列) セット
+    '書込データリスト 作成
     writeSrcList = GetAllPattern(inputRng)
+
+    'データ無しの場合
+    If UBound(writeSrcList) = -1 Then
+        Call MsgBox("出力対象がありません", vbCritical, "ERROR")
+        Exit Sub
+    End If
+
+    '書込データ終了(行/列) セット
     writeEndRowIdx = UBound(writeSrcList, 1)
     writeEndColIdx = UBound(writeSrcList, 2)
 
@@ -337,7 +351,7 @@ Private Sub Btn_CreateSheet_ResultPattern()
     If 1048500 <= writeEndRowIdx Then
         msg = "Excelの行数限界を超えています" & vbCrLf & _
               "（パターン数：" & Format(writeEndRowIdx, "#,##0") & " 行）"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     '▼30万行OVER 警告
     ElseIf 300000 <= writeEndRowIdx Then
@@ -346,7 +360,7 @@ Private Sub Btn_CreateSheet_ResultPattern()
               "Sheet作成に時間が掛かりますが、作成しますか？" & vbCrLf & _
               "10万行  ：約5秒" & vbCrLf & _
               "100万行：約30秒"
-        answer = MsgBox(msg, vbExclamation + vbYesNo, "")
+        answer = MsgBox(msg, vbExclamation + vbYesNo, "WARNING")
         'NOの場合
         If answer = vbNo Then Exit Sub
     End If
@@ -359,7 +373,7 @@ Private Sub Btn_CreateSheet_ResultPattern()
     inputWs.Range(inputWs.Range("C2"), inputWs.Cells(2, writeEndColIdx + 2)).Copy
     newWs.Range("A1").Value = "No"
     newWs.Range("A2").Resize(writeEndRowIdx, 1).Formula2 = "=ROW()-1"
-    newWs.Range(newWs.Range("B1"), newWs.Cells(1, writeEndColIdx)).PasteSpecial xlPasteAll
+    newWs.Range(newWs.Range("B1"), newWs.Cells(1, writeEndColIdx + 1)).PasteSpecial xlPasteAll
     Application.CutCopyMode = False
 
     'データ 一括書込
@@ -429,6 +443,12 @@ Private Function GetAllPattern(srcRng As Range) As Variant()
     For colIdx = 1 To srcCol.Count
         totalPtnCnt = totalPtnCnt * srcCol(colIdx).Count
     Next
+
+    '要素有りの列が無しの場合
+    If srcCol.Count = 0 Then
+        GetAllPattern = Array()
+        Exit Function
+    End If
 
     '配列サイズ再定義
     ReDim workList(1 To srcCol.Count)

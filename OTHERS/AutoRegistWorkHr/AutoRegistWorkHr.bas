@@ -133,7 +133,7 @@ Public Sub CreateSheet_Init()
         .range("A3:A33").NumberFormatLocal = "yyyy-mm-dd"
         .range("B3:B33").NumberFormatLocal = "aaa"
         '条件付き書式
-        .range("B3:B33").FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$B:$B," & "A3)>0").Interior.Color = RGB(191, 191, 191)
+        .range("B3:B33").FormatConditions.Add(Type:=xlExpression, Formula1:="=COUNTIF(祝日!$A:$A," & "A3)>0").Interior.Color = RGB(191, 191, 191)
         .range("B3:B33").FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(A" & "3,2)=7").Interior.Color = RGB(191, 191, 191)
         .range("B3:B33").FormatConditions.Add(Type:=xlExpression, Formula1:="=WEEKDAY(A" & "3,2)=6").Interior.Color = RGB(191, 191, 191)
         .range("A3:F33").FormatConditions.Add(Type:=xlExpression, Formula1:="=ISODD(ROW())").Interior.Color = RGB(242, 242, 242)
@@ -232,13 +232,13 @@ Private Function InputForm_Time(ByVal title As String, ByVal msg As String, ByVa
     inputVal = CStr(inputVal)
     'フォーマットチェック
     If InStr(inputVal, ":") = 0 Or Len(inputVal) < 4 Or 5 < Len(inputVal) Then
-        MsgBox "24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation
+        Call MsgBox("24時間形式で入力して下さい（例：9:00, 13:00）", vbExclamation, "ERROR")
         InputForm_Time = "-1"
         Exit Function
     End If
     '範囲チェック
     If CLng(Replace$(inputVal, ":", "")) < CLng(Replace$(minVal, ":", "")) Or CLng(Replace$(maxVal, ":", "")) < CLng(Replace$(inputVal, ":", "")) Then
-        MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+        Call MsgBox("範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, "ERROR")
         InputForm_Time = "-1"
         Exit Function
     End If
@@ -285,34 +285,34 @@ Private Function InputForm_Date(ByVal title As String, ByVal msg As String, ByVa
     If ymFlg Then
         '▼桁数チェック
         If Len(inputVal) <> 5 And Len(inputVal) <> 6 Then
-            MsgBox "年月形式 (YYYYMM) で入力して下さい", vbExclamation
+            Call MsgBox("年月形式 (YYYYMM) で入力して下さい", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         '▼存在年月チェック
         ElseIf Not IsExistsDate(Left$(inputVal, 4), Mid$(inputVal, 5), "01") Then
-            MsgBox "存在しない年月です (" & inputVal & ")", vbExclamation
+            Call MsgBox("存在しない年月です (" & inputVal & ")", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         '▼範囲チェック
         ElseIf inputVal < minVal Or maxVal < inputVal Then
-            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            Call MsgBox("範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         End If
     Else
         '▼桁数チェック
         If Len(inputVal) <> 8 Then
-            MsgBox "日付形式 (YYYYMMDD) で入力して下さい", vbExclamation
+            Call MsgBox("日付形式 (YYYYMMDD) で入力して下さい", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         '▼存在日付チェック
         ElseIf Not IsExistsDate(Left$(inputVal, 4), Mid$(inputVal, 5, 2), Right$(inputVal, 2)) Then
-            MsgBox "存在しない日付です (" & inputVal & ")", vbExclamation
+            Call MsgBox("存在しない日付です (" & inputVal & ")", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         '▼範囲チェック
         ElseIf inputVal < minVal Or maxVal < inputVal Then
-            MsgBox "範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation
+            Call MsgBox("範囲内で入力して下さい（" & minVal & " ～ " & maxVal & "）", vbExclamation, "ERROR")
             InputForm_Date = -1
             Exit Function
         End If

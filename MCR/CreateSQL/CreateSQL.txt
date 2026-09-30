@@ -79,6 +79,8 @@ Private Sub CreateSheet_GetTblInfoSql()
     sqlList.Add ("            THEN NVL(TO_CHAR(COL.DATA_LENGTH), ' ')")
     sqlList.Add ("        WHEN COL.DATA_TYPE IN ('NUMBER')")
     sqlList.Add ("            THEN NVL(TO_CHAR(COL.DATA_PRECISION), ' ') || ',' || NVL(TO_CHAR(COL.DATA_SCALE), ' ')")
+    sqlList.Add ("        WHEN COL.DATA_TYPE LIKE 'TIMESTAMP%'")
+    sqlList.Add ("            THEN REGEXP_SUBSTR(COL.DATA_TYPE, '[0-9]+')")
     sqlList.Add ("        ELSE ' '")
     sqlList.Add ("        END AS ""桁""")
     sqlList.Add ("    , CASE WHEN COL.NULLABLE = 'N' THEN 'Y' ELSE 'N' END AS ""NULL不可""")
@@ -139,7 +141,7 @@ Private Sub CreateSheet_GetTblInfoSql()
     sqlList.Add ("            THEN COALESCE(col.character_maximum_length ::text, '')")
     sqlList.Add ("        WHEN col.data_type IN ('numeric')")
     sqlList.Add ("            THEN COALESCE(col.numeric_precision ::text, '') || ',' || COALESCE(col.numeric_scale ::text, '')")
-    sqlList.Add ("        WHEN col.data_type IN ('time zone')")
+    sqlList.Add ("        WHEN col.data_type IN ('timestamp with time zone', 'timestamp without time zone')")
     sqlList.Add ("            THEN COALESCE(col.datetime_precision::text, '')")
     sqlList.Add ("        ELSE ''")
     sqlList.Add ("        END AS ""桁""")
@@ -237,6 +239,8 @@ Private Sub CreateSheet_GetTblInfoSql()
     sqlList.Add ("                    END")
     sqlList.Add ("        WHEN type_info.name IN ('decimal', 'numeric')")
     sqlList.Add ("            THEN CONVERT(VARCHAR, col.PRECISION) + ',' + CONVERT(VARCHAR, col.scale)")
+    sqlList.Add ("        WHEN type_info.name IN ('datetime2', 'datetimeoffset', 'time')")
+    sqlList.Add ("            THEN CONVERT(VARCHAR, col.scale)")
     sqlList.Add ("        ELSE ''")
     sqlList.Add ("        END AS [桁]")
     sqlList.Add ("    , CASE WHEN col.is_nullable = 0 THEN 'Y' ELSE 'N' END AS [NULL不可]")
@@ -1021,8 +1025,7 @@ Private Sub Btn_CreateSheet_InputSql()
     '終了行 取得
     endRowIdx1 = ActiveSheet.Cells(ActiveSheet.Rows.Count, "C").End(xlUp).Row
     If endRowIdx1 <= 1 Then
-        msg = "[TBL物理名] を入力して下さい"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("[TBL物理名] を入力して下さい", vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -1030,8 +1033,7 @@ Private Sub Btn_CreateSheet_InputSql()
     '終了行 取得
     endRowIdx2 = ActiveSheet.Cells(ActiveSheet.Rows.Count, "D").End(xlUp).Row
     If endRowIdx2 <= 1 Then
-        msg = "[参照Sheet名] を入力して下さい"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("[参照Sheet名] を入力して下さい", vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -1061,26 +1063,22 @@ Private Sub Btn_CreateSheet_InputSql()
         msg = lineNo & "行目："
         '=== [TBL物理名]が未入力の場合 ==========
         If LenB(inputTblNm) = 0 Then
-            msg = msg & "[TBL物理名] を入力して下さい"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "[TBL物理名] を入力して下さい", vbCritical, "ERROR")
             Exit Sub
         End If
         '=== [参照Sheet名]が未入力の場合 ==========
         If LenB(inputRefWsNm) = 0 Then
-            msg = msg & "[参照Sheet名] を入力して下さい"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "[参照Sheet名] を入力して下さい", vbCritical, "ERROR")
             Exit Sub
         End If
         '=== [DB]が未選択の場合 ==========
         If LenB(inputDbNm) = 0 Then
-            msg = msg & "[DB] を選択して下さい"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "[DB] を選択して下さい", vbCritical, "ERROR")
             Exit Sub
         End If
         '=== [参照Sheet名]のSheetが存在しない場合 ==========
         If Not IsExistsSheet(inputRefWsNm) Then
-            msg = msg & "参照Sheet名 [" & inputRefWsNm & "] が存在しません"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "参照Sheet名 [" & inputRefWsNm & "] が存在しません", vbCritical, "ERROR")
             Exit Sub
         End If
         '=== [参照Sheet名]のSheetの中身が空の場合 ==========
@@ -1088,8 +1086,7 @@ Private Sub Btn_CreateSheet_InputSql()
         Set refWs = ThisWorkbook.Sheets(inputRefWsNm)
         endRowIdx = refWs.Cells(refWs.Rows.Count, "C").End(xlUp).Row
         If endRowIdx <= 1 Then
-            msg = msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません", vbCritical, "ERROR")
             Exit Sub
         End If
         'TBL(物理) 取得
@@ -1106,8 +1103,7 @@ Private Sub Btn_CreateSheet_InputSql()
         Next
         '=== 参照Sheetに[TBL物理名]が存在しない場合 ==========
         If Not existsFlg Then
-            msg = msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません"
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg & "Sheet [" & inputRefWsNm & "] に TBL [" & inputTblNm & "] が存在しません", vbCritical, "ERROR")
             Exit Sub
         End If
     Next
@@ -1646,18 +1642,15 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '========== ▼入力チェック[DB名/スキーマ名/テーブル物理名] ==========
     If LenB(ws.Range("B3").Value2) = 0 Then
-        msg = "(B3) [DB] を選択してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B3) [DB] を選択してください", vbCritical, "ERROR")
         Exit Sub
     End If
     If LenB(ws.Range("B4").Value2) = 0 Then
-        msg = "(B4) [Schema名] を入力してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B4) [Schema名] を入力してください", vbCritical, "ERROR")
         Exit Sub
     End If
     If LenB(ws.Range("B6").Value2) = 0 Then
-        msg = "(B6) [テーブル物理名] を入力してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B6) [テーブル物理名] を入力してください", vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -1820,7 +1813,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
         If Not CreateFolderPath(cratFilePath & datestamp) Then
             msg = "フォルダの作成に失敗しました" & vbCrLf & _
                   "PATH : " & cratFilePath & datestamp
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg, vbCritical, "ERROR")
             'ステータスバー初期化
             Application.StatusBar = False
             Exit Sub
@@ -1842,7 +1835,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
               "エラーファイルを作成しました" & vbCrLf & _
               "PATH : " & cratFilePath & datestamp & vbCrLf & _
               "FILE名 : " & cratFileNm
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -1931,7 +1924,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
     msg = "SQLファイルを作成しました！！" & vbCrLf & _
           "PATH : " & cratFilePath & datestamp & vbCrLf & _
           "SQL FILE名 : " & cratFileNm
-    Call MsgBox(msg, vbInformation, "")
+    Call MsgBox(msg, vbInformation, "FINISH")
 
     'ステータスバー初期化
     Application.StatusBar = False
@@ -2030,18 +2023,15 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '========== ▼入力チェック[DB名/スキーマ名/テーブル物理名] ==========
     If LenB(ws.Range("B3").Value2) = 0 Then
-        msg = "(B3) [DB] を選択してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B3) [DB] を選択してください", vbCritical, "ERROR")
         Exit Sub
     End If
     If LenB(ws.Range("B4").Value2) = 0 Then
-        msg = "(B4) [Schema名] を入力してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B4) [Schema名] を入力してください", vbCritical, "ERROR")
         Exit Sub
     End If
     If LenB(ws.Range("B6").Value2) = 0 Then
-        msg = "(B6) [テーブル物理名] を入力してください"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox("(B6) [テーブル物理名] を入力してください", vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -2204,7 +2194,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
         If Not CreateFolderPath(cratFilePath & datestamp) Then
             msg = "フォルダの作成に失敗しました" & vbCrLf & _
                   "PATH : " & cratFilePath & datestamp
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg, vbCritical, "ERROR")
             'ステータスバー初期化
             Application.StatusBar = False
             Exit Sub
@@ -2226,7 +2216,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
               "エラーファイルを作成しました" & vbCrLf & _
               "PATH : " & cratFilePath & datestamp & vbCrLf & _
               "FILE名 : " & cratFileNm1
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     End If
 
@@ -2381,7 +2371,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
           "PATH : " & cratFilePath & datestamp & vbCrLf & _
           "SQL FILE名 : " & cratFileNm1 & vbCrLf & _
           "CSV FILE名 : " & cratFileNm2
-    Call MsgBox(msg, vbInformation, "")
+    Call MsgBox(msg, vbInformation, "FINISH")
 
     'ステータスバー初期化
     Application.StatusBar = False

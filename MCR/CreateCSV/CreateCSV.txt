@@ -356,19 +356,19 @@ Private Sub Btn_CreateCsvFile()
     '=== [CSV/TSV]が未選択の場合 ==========
     If LenB(ws.Range("B2").Value2) = 0 Then
         msg = "(B2) [CSV/TSV] を選択して下さい"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     End If
     '=== [CSV/TSV]が未選択の場合 ==========
     If LenB(ws.Range("B3").Value2) = 0 Then
         msg = "(B3) [HEADER] を選択して下さい"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     End If
     '=== [CSV/TSV]が未選択の場合 ==========
     If LenB(ws.Range("B4").Value2) = 0 Then
         msg = "(B4) [HEAD論/物] を選択して下さい"
-        Call MsgBox(msg, vbCritical, "")
+        Call MsgBox(msg, vbCritical, "ERROR")
         Exit Sub
     End If
 

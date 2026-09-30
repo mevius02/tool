@@ -1862,7 +1862,7 @@ Private Sub Btn_CreateDdlFile()
         If Not CreateFolderPath(cratFilePath & datestamp) Then
             msg = "フォルダの作成に失敗しました" & vbCrLf & _
                   "PATH : " & cratFilePath & datestamp
-            Call MsgBox(msg, vbCritical, "")
+            Call MsgBox(msg, vbCritical, "ERROR")
             Exit Sub
         End If
     End If
@@ -1875,7 +1875,7 @@ Private Sub Btn_CreateDdlFile()
     msg = "DDLファイルを作成しました！！" & vbCrLf & _
           "PATH : " & cratFilePath & datestamp & vbCrLf & _
           "FILE名 : " & cratFileNm
-    Call MsgBox(msg, vbInformation, "")
+    Call MsgBox(msg, vbInformation, "FINISH")
 
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
