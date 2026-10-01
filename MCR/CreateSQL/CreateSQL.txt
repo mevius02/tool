@@ -686,7 +686,7 @@ Private Sub CreateSheet_HowToUse()
         .Cells(startRowIdx, "G").Offset(4, 0).Value = "SYSTEM"
         .Cells(startRowIdx, "G").Offset(5, 0).Value = "顧客"
         .Cells(startRowIdx, "G").Offset(6, 0).Value = "CUSTOMERS"
-        .Cells(startRowIdx, "R").Offset(1, 0).Value = "作成するファイル名を指定 (未入力の場合、Sheet名で作成)"
+        .Cells(startRowIdx, "R").Offset(1, 0).Value = "作成するファイル名を指定 (未入力の場合、TBL物理名で作成)"
         .Cells(startRowIdx, "R").Offset(3, 0).Value = "DBの種類を指定"
         .Cells(startRowIdx, "R").Offset(4, 0).Value = "スキーマ名を指定"
         .Cells(startRowIdx, "R").Offset(5, 0).Value = "テーブル論理名を指定"
@@ -1253,7 +1253,7 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     End With
 
     'メモ書込
-    ws.Range("A1").AddComment "未入力の場合、Sheet名で作成"
+    ws.Range("A1").AddComment "未入力の場合、TBL物理名で作成"
     ws.Range("A1").Comment.Shape.Width = 150
     ws.Range("A1").Comment.Shape.Height = 20
     ws.Range("A1").Comment.Shape.TextFrame.HorizontalAlignment = xlHAlignCenter
@@ -1876,7 +1876,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '========== SQLファイル作成 ==========
     'ファイル名 作成 & ファイル作成
-    cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm <> "", cratFileNm, wsNm), "sql")
+    cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm <> "", cratFileNm, "D-" & physiTblNm), "sql")
     Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm)
 
     '項目範囲 取得
@@ -2269,7 +2269,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '========== SQLファイル作成 ==========
     'ファイル名 作成 & ファイル作成
-    cratFileNm1 = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm1 <> "", cratFileNm1, wsNm), "sql")
+    cratFileNm1 = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm1 <> "", cratFileNm1, "I-" & physiTblNm), "sql")
     Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm1)
 
     '項目範囲 取得
@@ -2350,7 +2350,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '========== CSVファイル作成 ==========
     'ファイル名 作成 & ファイル作成
-    cratFileNm2 = ChangeUniqueFileNm(cratFilePath & datestamp, "IMP-" & IIf(cratFileNm2 <> "", cratFileNm2, wsNm), "csv")
+    cratFileNm2 = ChangeUniqueFileNm(cratFilePath & datestamp, "IMP-" & IIf(cratFileNm2 <> "", cratFileNm2, physiTblNm), "csv")
     Set cratFile = fso.CreateTextFile(cratFilePath & datestamp & "\" & cratFileNm2)
 
     '========== CSVファイル書込 ==========
