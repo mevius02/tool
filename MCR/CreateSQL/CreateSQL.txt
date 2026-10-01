@@ -1203,6 +1203,8 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     Dim testDate As Date: testDate = Date
     '●日付フォーマット
     Dim fmtDate As String: fmtDate = "yyyy-mm-dd"
+    '●PK数
+    Dim pkCnt As Long
 
     '●入力値配列(No/TBL物理名/参照Sheet名/Schema名/作成Sheet名)
     Dim inputTblNm As String:    inputTblNm = CStr(inputArr(1))    '入力TBL物理名
@@ -1265,7 +1267,7 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     tblNm = UCase$(inputTblNm)
     '作成TBL名を参照Sheetの上から検索
     endRowIdx = refWs.Cells(refWs.Rows.Count, "C").End(xlUp).Row
-    rngVals = refWs.Range("C1:C" & endRowIdx).Value2
+    rngVals = refWs.Range("C1:E" & endRowIdx).Value2
     '要素数
     cnt = 0
     'TBL物理名検索
@@ -1273,6 +1275,8 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
         '見つけた場合
         If tblNm = UCase$(rngVals(rowIdx, 1)) Then
             cnt = cnt + 1
+            'PKの場合
+            If rngVals(rowIdx, 3) = "Y" Then pkCnt = pkCnt + 1
         '見つからない & 既にセット済の場合 (TBL情報を全て転記し終わった場合)
         ElseIf alreadySetFlg Then
             Exit For
@@ -1286,14 +1290,33 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
     For rowIdx = 1 To UBound(rngVals, 1)
         '見つけた場合
         If tblNm = UCase$(rngVals(rowIdx, 1)) Then
+            'PK/NOT NULL 取得
+            pk = refWs.Cells(rowIdx, "E").Value2
+            notNull = refWs.Cells(rowIdx, "J").Value2
             '(TBL論理名)セット
             If Not alreadySetFlg Then
                 ws.Range("B5").Value = Trim$(refWs.Cells(rowIdx, "B").Value)
                 alreadySetFlg = True
+                'DELETE作成 & PK無しTBLの場合
+                If delFlg And pkCnt = 0 Then
+                    '1項目だけ情報コピー
+                    tblValList(1, colIdx) = refWs.Cells(rowIdx, "D").Value2       'No
+                    tblValList(2, colIdx) = IIf(pk = "Y", "Y", "")                'PK(Yのみ)
+                    tblValList(3, colIdx) = Trim$(refWs.Cells(rowIdx, "F").Value) '項目論理名
+                    tblValList(4, colIdx) = refWs.Cells(rowIdx, "G").Value2       '項目物理名
+                    tblValList(5, colIdx) = refWs.Cells(rowIdx, "H").Value2       '型
+                    tblValList(6, colIdx) = Trim$(refWs.Cells(rowIdx, "I").Value) '桁
+                    tblValList(7, colIdx) = IIf(notNull = "Y", "Y", "")           'NULL不可(Yのみ)
+                    initVal = Trim$(refWs.Cells(rowIdx, "K").Value)               '初期値
+                    If 0 < InStr(initVal, " NULL ") Then
+                        initVal = "NULL"
+                    ElseIf Left$(initVal, 1) = "'" Then
+                        initVal = "'" & initVal
+                    End If
+                    tblValList(8, colIdx) = initVal
+                    colIdx = colIdx + 1
+                End If
             End If
-            'PK/NOT NULL 取得
-            pk = refWs.Cells(rowIdx, "E").Value2
-            notNull = refWs.Cells(rowIdx, "J").Value2
             'INSERT or DELETE & PK の場合
             If Not delFlg Or (delFlg And pk = "Y") Then
                 '項目情報コピー
