@@ -883,7 +883,7 @@ End Function
 Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
-        If ws.Name = wsNm Then
+        If StrComp(ws.Name, wsNm, vbTextCompare) = 0 Then
             IsExistsSheet = True
             Exit Function
         End If

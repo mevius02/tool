@@ -1431,7 +1431,7 @@ Private Sub CreateSheet_InputSql(ByVal delFlg As Boolean, ByVal inputArr As Vari
                 str = String(intPart, "9")
                 testValList(startRowIdx + 1, colIdx) = String(intPart, "9")
                 For rowIdx = startRowIdx + 2 To endRowIdx
-                    str = RemoveFrontCharacter(Right$(CStr(rowIdx - 13), colLen), "0")
+                    str = RemoveFrontCharacter(Right$(CStr(rowIdx - 13), intPart), "0")
                     str = IIf(str = "", "0", str)
                     If rowIdx = startRowIdx + 2 Then
                         testValList(rowIdx, colIdx) = IIf(notNull = "Y", str, "NULL")
@@ -2706,7 +2706,7 @@ Private Function IsExistsSheet(ByVal wsNm As String) As Boolean
     Dim ws As Worksheet
     For Each ws In Sheets
         '存在する場合
-        If ws.Name = wsNm Then
+        If StrComp(ws.Name, wsNm, vbTextCompare) = 0 Then
             IsExistsSheet = True
             Exit Function
         End If
