@@ -1613,7 +1613,8 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '●設定値範囲データ
     Dim settingVals As Variant
-    '●項目名/型/桁/NULL不可/正数部/小数部
+    '●PK/項目名/型/桁/NULL不可/正数部/小数部
+    Dim pk As String
     Dim colNm As String
     Dim colType As String
     Dim colLen As Variant
@@ -1640,6 +1641,8 @@ Private Sub Btn_CreateSqlFile_DELETE()
     '●PKkey辞書(重複チェック用)
     Dim pkKeyDict As Object: Set pkKeyDict = CreateObject("Scripting.Dictionary")
     Dim pkKey As String
+    '●PK数
+    Dim pkCnt As Long
 
     '●日付スタンプ
     Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
@@ -1699,9 +1702,13 @@ Private Sub Btn_CreateSqlFile_DELETE()
         Application.StatusBar = "ERROR Check... " & GetColNm(colIdx) & "列"
 
         '設定値 取得
+        pk = settingVals(2, colIdx - 3)              'PK
         colType = UCase$(settingVals(5, colIdx - 3)) '型
         colLen = CStr(settingVals(6, colIdx - 3))    '桁
         notNull = CStr(settingVals(7, colIdx - 3))   'NULL不可
+
+        'PK数 セット
+        If pk = "Y" Then pkCnt = pkCnt + 1
 
         '型末尾のかっこ 除去
         If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
@@ -1798,7 +1805,7 @@ Private Sub Btn_CreateSqlFile_DELETE()
 
     '========== ▼PK重複チェック ==========
     '(必須/型/桁)チェックエラー無しの場合
-    If errMsgList.Count = 0 Then
+    If errMsgList.Count = 0 And 1 <= pkCnt Then
         'PK列の全値リスト 再作成
         ReDim pkVals(1 To endRowIdx - 13, 1 To pkColIdxList.Count)
         '列ごとの値を全て取得しセット
@@ -1993,7 +2000,8 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '●設定値範囲データ
     Dim settingVals As Variant
-    '●項目名/型/桁/NULL不可/正数部/小数部
+    '●PK/項目名/型/桁/NULL不可/正数部/小数部
+    Dim pk As String
     Dim colNm As String
     Dim colType As String
     Dim colLen As Variant
@@ -2020,6 +2028,8 @@ Private Sub Btn_CreateSqlFile_INSERT()
     '●PKkey辞書(重複チェック用)
     Dim pkKeyDict As Object: Set pkKeyDict = CreateObject("Scripting.Dictionary")
     Dim pkKey As String
+    '●PK数
+    Dim pkCnt As Long
 
     '●日付スタンプ
     Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
@@ -2080,9 +2090,13 @@ Private Sub Btn_CreateSqlFile_INSERT()
         Application.StatusBar = "ERROR Check... " & GetColNm(colIdx) & "列"
 
         '設定値 取得
+        pk = settingVals(2, colIdx - 3)              'PK
         colType = UCase$(settingVals(5, colIdx - 3)) '型
         colLen = CStr(settingVals(6, colIdx - 3))    '桁
         notNull = CStr(settingVals(7, colIdx - 3))   'NULL不可
+
+        'PK数 セット
+        If pk = "Y" Then pkCnt = pkCnt + 1
 
         '型末尾のかっこ 除去
         If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
@@ -2179,7 +2193,7 @@ Private Sub Btn_CreateSqlFile_INSERT()
 
     '========== ▼PK重複チェック ==========
     '(必須/型/桁)チェックエラー無しの場合
-    If errMsgList.Count = 0 Then
+    If errMsgList.Count = 0 And 1 <= pkCnt Then
         'PK列の全値リスト 再作成
         ReDim pkVals(1 To endRowIdx - 13, 1 To pkColIdxList.Count)
         '列ごとの値を全て取得しセット
