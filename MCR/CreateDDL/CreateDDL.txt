@@ -2868,3 +2868,249 @@ Public Sub CreateSheet_AllDdl()
     '処理中描画ON設定
     Call SettingRenderingProcess(True)
 End Sub
+'------------------------------------------------------------
+'概要 : -
+'引数 : -
+'戻値 : -
+'備考 : -
+'------------------------------------------------------------
+Public Sub CreateFile_AllDdl()
+    '処理中描画OFF設定
+    Call SettingRenderingProcess(False)
+
+    'Book/Sheet/Sheet(TBL定義書)
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    Dim ws As Worksheet
+    Dim wsInfo As Worksheet: Set wsInfo = ActiveSheet
+    Dim wsNmInfo As String: wsNmInfo = "TBL定義書"
+    'Loopカウンタ/終了行/書込行
+    Dim i As Long
+    Dim endRowIdx As Long
+    Dim wtriteRowIdx As Long: wtriteRowIdx = 3
+
+    '●始点/終点
+    Dim bgnIdx As Long
+    Dim endIdx As Long
+
+    '●DB項目型辞書(文字列/数値/日付)
+    Dim colTypeDict_Str As Object: Set colTypeDict_Str = GetDbColTypeDict_String
+    Dim colTypeDict_Num As Object: Set colTypeDict_Num = GetDbColTypeDict_Numeric
+    Dim colTypeDict_Date As Object: Set colTypeDict_Date = GetDbColTypeDict_Date
+    '●DB予約語辞書(Oracle/PostgreSQL/SQLServer)
+    Dim dbReservedWordDict_Ora As Object: Set dbReservedWordDict_Ora = GetDbReservedWordDict_Ora
+    Dim dbReservedWordDict_Pos As Object: Set dbReservedWordDict_Pos = GetDbReservedWordDict_Pos
+    Dim dbReservedWordDict_Sql As Object: Set dbReservedWordDict_Sql = GetDbReservedWordDict_Sql
+    '●現在日時セット記述 辞書
+    Dim setCrntDateDict As Object: Set setCrntDateDict = GetDbSetCrntDateDict
+
+    '●DB名/スキーマ名/テーブル名(論理/物理)
+    Dim dbNm As String
+    Dim schemaNm As String
+    Dim logiTblNm As String
+    Dim physiTblNm As String
+
+    '●項目定義データ
+    Dim colInfo As Variant
+    '●PK/項目名(論理/物理)/型/桁/NULL不可/初期値/正数部/小数部
+    Dim pk As String
+    Dim logiColNm As String
+    Dim physiColNm As String
+    Dim colType As String
+    Dim colLen As Variant
+    Dim notNull As String
+    Dim initVal As String
+    Dim intPart As Long
+    Dim dcmlPart As Long
+
+    '●内容/PK行/行
+    Dim contents As String
+    Dim contents2 As String
+    Dim pkLine As String
+    Dim line1 As String
+    Dim line2 As String
+    '●TBLオプション
+    Dim tblOp As String
+    '●追加フラグ
+    Dim addFlg As Boolean: addFlg = False
+
+    '●メッセージ
+    Dim msg As String
+    '●日付スタンプ
+    Dim datestamp As String: datestamp = Format(Now, "yyyymmdd")
+    '●ファイルObject
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    '●作成ファイルPath/ファイル名/作成ファイル
+    Dim cratFilePath As String: cratFilePath = ThisWorkbook.path & "\"
+    Dim cratFileNm As String
+    Dim cratFile As Object
+    '●作成ファイル数
+    Dim cratFileCnt As Long
+
+    '全Sheet Loop
+    For Each ws In wb.Worksheets
+        '自分以外 & TBL定義Sheetの場合
+        If ws.Name <> wsNmInfo And Trim$(ws.Range("A1").Value2) = "DB" Then
+            cratFileNm = "DDL-" & ws.Name
+            '終了行 セット
+            endRowIdx = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            'TBL定義 取得
+            dbNm = ws.Range("B1").Value2
+            schemaNm = Trim$(ws.Range("B2").Value2)
+            logiTblNm = Trim$(ws.Range("B3").Value2)
+            physiTblNm = Trim$(ws.Range("B4").Value2)
+            '項目定義 取得
+            colInfo = ws.Range(ws.Range("B7"), ws.Cells(endRowIdx, "H")).Value2
+
+            '========== DDL内容 作成 ==========
+            pkLine = "    PRIMARY KEY("
+            contents = ""
+            contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+            contents = contents & "--   TBL削除(存在する場合) [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+            contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+            contents = contents & "DROP TABLE IF EXISTS " & schemaNm & "." & physiTblNm & ";" & vbCrLf
+            If dbNm = SQLSERVER Then
+                contents = contents & "-- ===== OLD ver =====" & vbCrLf
+                contents = contents & "-- IF OBJECT_ID('" & schemaNm & "." & physiTblNm & "', 'U') IS NOT NULL DROP TABLE " & schemaNm & "." & physiTblNm & ";" & vbCrLf
+            End If
+            contents = contents & vbCrLf
+            contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+            contents = contents & "--   TBL作成 [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+            contents = contents & "-- ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" & vbCrLf
+
+            '=== 見出し ==========
+            line1 = "--[項目名(論理)] "
+            line2 = "--[項目名(物理)] "
+            For i = 1 To UBound(colInfo, 1)
+                'COL名(論理/物理)
+                logiColNm = Trim$(colInfo(i, 2))
+                physiColNm = Trim$(colInfo(i, 3))
+                '桁数調整
+                Call AppendCharaToString(logiColNm, physiColNm, " ")
+                line1 = line1 & i & ":" & logiColNm & " / "
+                line2 = line2 & i & ":" & physiColNm & " / "
+            Next
+            '末尾除去
+            line1 = Left$(line1, Len(line1) - 3)
+            line2 = Left$(line2, Len(line2) - 3)
+            '追加
+            contents = contents & line1 & vbCrLf
+            contents = contents & line2 & vbCrLf
+
+            '=== 内容 ==========
+            contents = contents & "CREATE TABLE " & schemaNm & "." & physiTblNm & "(" & vbCrLf
+            For i = 1 To UBound(colInfo, 1)
+                '項目定義 セット(COL名(論理/物理)/型/桁/NULL不可/初期値)
+                pk = Trim$(colInfo(i, 1))
+                logiColNm = Trim$(colInfo(i, 2))
+                physiColNm = Trim$(colInfo(i, 3))
+                colType = Trim$(colInfo(i, 4))
+                colLen = Trim$(colInfo(i, 5))
+                notNull = Trim$(colInfo(i, 6))
+                initVal = Trim$(colInfo(i, 7))
+                '型末尾のかっこ 除去
+                If 0 < InStr(colType, "(") And 0 < InStr(colType, ")") Then
+                    bgnIdx = InStr(colType, "(") - 1
+                    endIdx = InStr(colType, ")") + 1
+                    colType = Trim$(Left$(colType, bgnIdx) & Mid$(colType, endIdx))
+                End If
+                '桁のかっこ 付与
+                If 0 < LenB(colLen) Then
+                    If Left$(colLen, 1) <> "(" Then
+                        colLen = "(" & colLen
+                    End If
+                    If Right$(colLen, 1) <> ")" Then
+                        colLen = colLen & ")"
+                    End If
+                End If
+                '初期値 整形(シングルクォート付与)
+                If 0 < LenB(initVal) Then
+                    '[文字列]型 or [日付]型の場合
+                    If (colTypeDict_Str.exists(UCase$(colType)) And UCase$(initVal) <> "NULL") Or (colTypeDict_Date.exists(UCase$(colType)) And Not setCrntDateDict.exists(UCase$(initVal)) And UCase$(initVal) <> "NULL") Then
+                        If Left$(initVal, 1) <> "'" Then
+                            initVal = "'" & initVal
+                        End If
+                        If Right$(initVal, 1) <> "'" Then
+                            initVal = initVal & "'"
+                        End If
+                    End If
+                    initVal = " DEFAULT " & initVal
+                End If
+                'NULL不可の場合
+                notNull = IIf(notNull = "Y", " NOT NULL", "")
+                'PKの場合
+                If pk = "Y" Then pkLine = pkLine & physiColNm & ", "
+                '内容追加
+                contents = contents & "    " & physiColNm & " " & colType & colLen & initVal & notNull & "," & vbCrLf
+            Next
+            '末尾除去 & 付与
+            If 16 < Len(pkLine) Then
+                pkLine = Left$(pkLine, Len(pkLine) - 2) & ")" & vbCrLf
+                contents = contents & vbCrLf & pkLine
+            Else
+                contents = Left$(contents, Len(contents) - (Len(vbCrLf) + 1)) & vbCrLf
+            End If
+            contents = contents & ");" & vbCrLf
+
+            '=== TBLオプション ==========
+            tblOp = ws.Range("F2").Value2
+            If 0 < LenB(tblOp) Then
+                contents = contents & "-- ===== TBLオプション =====" & vbCrLf
+                contents = contents & tblOp & vbCrLf
+            End If
+
+            '=== 論理名 ==========
+            contents2 = "" & vbCrLf
+            contents2 = contents2 & "-- ==================================================" & vbCrLf
+            contents2 = contents2 & "--  論理名 追加 [" & logiTblNm & " / " & physiTblNm & "]" & vbCrLf
+            contents2 = contents2 & "-- ==================================================" & vbCrLf
+            If 0 < LenB(logiTblNm) Then
+                If dbNm = ORACLE Or dbNm = POSTGRESQL Then
+                    contents2 = contents2 & "COMMENT ON TABLE " & schemaNm & "." & physiTblNm & " IS '" & logiTblNm & "';" & vbCrLf
+                ElseIf dbNm = SQLSERVER Then
+                    contents2 = contents2 & "EXEC sp_addextendedproperty @name=N'MS_Description', @level0type=N'SCHEMA', @level0name=N'" & schemaNm & "', @level1type=N'TABLE', @level1name=N'" & physiTblNm & "', @value=N'" & logiTblNm & "';" & vbCrLf
+                End If
+                addFlg = True
+            End If
+            For i = 1 To UBound(colInfo, 1)
+                'COL名(論理/物理)
+                logiColNm = Trim$(colInfo(i, 2))
+                physiColNm = Trim$(colInfo(i, 3))
+                If 0 < LenB(logiColNm) Then
+                    If dbNm = ORACLE Or dbNm = POSTGRESQL Then
+                        contents2 = contents2 & "COMMENT ON COLUMN " & schemaNm & "." & physiTblNm & "." & physiColNm & " IS '" & logiColNm & "';" & vbCrLf
+                    ElseIf dbNm = SQLSERVER Then
+                        contents2 = contents2 & "EXEC sp_addextendedproperty @name=N'MS_Description', @level0type=N'SCHEMA', @level0name=N'" & schemaNm & "', @level1type=N'TABLE', @level1name=N'" & physiTblNm & "', @level2type=N'COLUMN', @level2name=N'" & physiColNm & "',   @value=N'" & logiColNm & "';" & vbCrLf
+                    End If
+                addFlg = True
+                End If
+            Next
+            '追加
+            If addFlg Then contents = contents & contents2
+
+            '========== ファイル作成先フォルダ作成(存在しない場合) ==========
+            If Not IsExistsFolder(cratFilePath, datestamp) Then
+                If Not CreateFolderPath(cratFilePath & datestamp) Then
+                    msg = "フォルダの作成に失敗しました" & vbCrLf & _
+                          "PATH : " & cratFilePath & datestamp
+                    Call MsgBox(msg, vbCritical, "ERROR")
+                    Exit Sub
+                End If
+            End If
+
+            '========== ファイル名 作成 & ファイル作成 ==========
+            cratFileNm = ChangeUniqueFileNm(cratFilePath & datestamp, IIf(cratFileNm <> "", cratFileNm, ws.Name), "sql")
+            Call CreateTxtFile(cratFilePath & datestamp, cratFileNm, "sql", contents, "UTF-8", False)
+
+            cratFileCnt = cratFileCnt + 1
+        End If
+    Next
+
+    '完了メッセージ
+    msg = "DDLファイルを作成しました！！" & vbCrLf & _
+          "PATH : " & cratFilePath & datestamp & vbCrLf & _
+          "作成ファイル数 : " & cratFileCnt
+    Call MsgBox(msg, vbInformation, "FINISH")
+
+    '処理中描画ON設定
+    Call SettingRenderingProcess(True)
+End Sub
